@@ -90,7 +90,7 @@ namespace PlayerDrafter
             switch (playerData.Classes.Count)
             {
                 case 0:
-                    icon3.Image = Image.FromFile("icons\\icon.png");
+                    icon3.Image = Image.FromFile("icons\\inf.png");
                     break;
                 case 1:
                     icon3.Image = Image.FromFile($"icons\\{playerData.Classes[0]}.png");
