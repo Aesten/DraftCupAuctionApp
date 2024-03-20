@@ -111,11 +111,21 @@ namespace PlayerDrafter
             player_selector.Items.RemoveAt(index);
             _playerDataList.RemoveAt(index);
             player_count.Text = _playerDataList.Count.ToString();
+            name.TextChanged -= name_TextChanged;
+            comment.TextChanged -= comment_TextChanged;
+            inf_check.CheckedChanged -= inf_check_CheckedChanged;
+            arc_check.CheckedChanged -= arc_check_CheckedChanged;
+            cav_check.CheckedChanged -= cav_check_CheckedChanged;
             name.Text = null;
             comment.Text = null;
             inf_check.Checked = false;
             arc_check.Checked = false;
             cav_check.Checked = false;
+            name.TextChanged += name_TextChanged;
+            comment.TextChanged += comment_TextChanged;
+            inf_check.CheckedChanged += inf_check_CheckedChanged;
+            arc_check.CheckedChanged += arc_check_CheckedChanged;
+            cav_check.CheckedChanged += cav_check_CheckedChanged;
         }
         
         private void save_Click(object sender, EventArgs e)
@@ -133,9 +143,7 @@ namespace PlayerDrafter
         {
             _edited = true;
             var index = player_selector.SelectedIndex;
-            player_selector.SelectedIndexChanged -= player_selector_SelectedIndexChanged;
             player_selector.Items[index] = name.Text;
-            player_selector.SelectedIndexChanged += player_selector_SelectedIndexChanged;
             _selectedPlayer.Player = name.Text;
         }
 

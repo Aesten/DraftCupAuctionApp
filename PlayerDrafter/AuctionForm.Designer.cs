@@ -49,10 +49,6 @@
             this.team1_captain = new System.Windows.Forms.TextBox();
             this.team1_money = new System.Windows.Forms.TextBox();
             this.team1_expenses = new System.Windows.Forms.ListBox();
-            this.ListBox7 = new System.Windows.Forms.ListBox();
-            this.textBox6 = new System.Windows.Forms.TextBox();
-            this.textBox7 = new System.Windows.Forms.TextBox();
-            this.ListBox8 = new System.Windows.Forms.ListBox();
             this.team2_expenses = new System.Windows.Forms.ListBox();
             this.team2_money = new System.Windows.Forms.TextBox();
             this.team2_captain = new System.Windows.Forms.TextBox();
@@ -285,40 +281,6 @@
             this.team1_expenses.Size = new System.Drawing.Size(54, 220);
             this.team1_expenses.TabIndex = 21;
             this.team1_expenses.TabStop = false;
-            // 
-            // ListBox7
-            // 
-            this.ListBox7.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.ListBox7.ItemHeight = 24;
-            this.ListBox7.Location = new System.Drawing.Point(1162, 377);
-            this.ListBox7.Name = "ListBox7";
-            this.ListBox7.Size = new System.Drawing.Size(54, 220);
-            this.ListBox7.TabIndex = 33;
-            // 
-            // textBox6
-            // 
-            this.textBox6.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox6.Location = new System.Drawing.Point(1162, 342);
-            this.textBox6.Name = "textBox6";
-            this.textBox6.Size = new System.Drawing.Size(54, 29);
-            this.textBox6.TabIndex = 32;
-            // 
-            // textBox7
-            // 
-            this.textBox7.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox7.Location = new System.Drawing.Point(957, 342);
-            this.textBox7.Name = "textBox7";
-            this.textBox7.Size = new System.Drawing.Size(199, 29);
-            this.textBox7.TabIndex = 31;
-            // 
-            // ListBox8
-            // 
-            this.ListBox8.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.ListBox8.ItemHeight = 24;
-            this.ListBox8.Location = new System.Drawing.Point(957, 377);
-            this.ListBox8.Name = "ListBox8";
-            this.ListBox8.Size = new System.Drawing.Size(199, 220);
-            this.ListBox8.TabIndex = 30;
             // 
             // team2_expenses
             // 
@@ -592,7 +554,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(944, 1041);
+            this.ClientSize = new System.Drawing.Size(947, 1041);
             this.Controls.Add(this.half_budget_display);
             this.Controls.Add(this.undo_button);
             this.Controls.Add(this.price);
@@ -619,10 +581,6 @@
             this.Controls.Add(this.team2_money);
             this.Controls.Add(this.team2_captain);
             this.Controls.Add(this.team2_players);
-            this.Controls.Add(this.ListBox7);
-            this.Controls.Add(this.textBox6);
-            this.Controls.Add(this.textBox7);
-            this.Controls.Add(this.ListBox8);
             this.Controls.Add(this.team1_expenses);
             this.Controls.Add(this.team1_money);
             this.Controls.Add(this.team1_captain);
@@ -686,11 +644,6 @@
         private System.Windows.Forms.TextBox team4_money;
         private System.Windows.Forms.TextBox team4_captain;
         private System.Windows.Forms.ListBox team4_players;
-
-        private System.Windows.Forms.ListBox ListBox7;
-        private System.Windows.Forms.TextBox textBox6;
-        private System.Windows.Forms.TextBox textBox7;
-        private System.Windows.Forms.ListBox ListBox8;
 
         private System.Windows.Forms.ListBox team2_expenses;
         private System.Windows.Forms.ListBox team2_players;

@@ -111,10 +111,12 @@ namespace PlayerDrafter
             _edited = true;
             _selectedTeam = null;
             var index = team_selector.SelectedIndex;
-            team_selector.SelectedIndex = - 1;
+            team_selector.SelectedIndex = -1;
             team_selector.Items.RemoveAt(index);
             _teamList.RemoveAt(index);
+            name.TextChanged -= name_TextChanged;
             name.Text = null;
+            name.TextChanged += name_TextChanged;
             team_count.Text = _teamList.Count.ToString();
             remaining_budget.Text = @"0.0";
             player_list.Items.Clear();
@@ -137,9 +139,7 @@ namespace PlayerDrafter
         {
             _edited = true;
             var index = team_selector.SelectedIndex;
-            team_selector.SelectedIndexChanged -= team_selector_SelectedIndexChanged;
             team_selector.Items[index] = name.Text;
-            team_selector.SelectedIndexChanged += team_selector_SelectedIndexChanged;
             _selectedTeam.Captain = name.Text;
         }
         
