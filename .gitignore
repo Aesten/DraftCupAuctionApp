@@ -1,0 +1,9 @@
+﻿Dependencies/
+Properties/
+.idea/
+packages/
+
+PlayerDrafter/bin/
+PlayerDrafter/obj/
+*.json
+
