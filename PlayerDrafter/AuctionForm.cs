@@ -175,20 +175,28 @@ namespace PlayerDrafter
         private void undo_button_Click(object sender, EventArgs e)
         {
             var step = _auctionSteps[_auctionSteps.Count - 1];
-            var playerNumber = _teamList[step.TeamIndex].Players.Count;
-            var cost = decimal.Parse(_teamElements[step.TeamIndex].Costs.Items[playerNumber - 1].ToString());
-            
-            _teamList[step.TeamIndex].Players.RemoveAt(playerNumber - 1);
-            _teamList[step.TeamIndex].Money += cost;
-            _teamElements[step.TeamIndex].Players.Items.RemoveAt(playerNumber - 1);
-            _teamElements[step.TeamIndex].Costs.Items.RemoveAt(playerNumber - 1);
-            
-            var expenses = _teamList[step.TeamIndex].Players.Sum(p => p.Cost);
-            var initialBudget = _teamList[step.TeamIndex].Money + expenses;
-            _teamElements[step.TeamIndex].Budget.Text = half_budget_display.Checked
-                ? (initialBudget / 2 - expenses).ToString("0.0")
-                : _teamList[step.TeamIndex].Money.ToString("0.0");
 
+            if (step.TeamIndex >= 0)
+            {
+                var playerNumber = _teamList[step.TeamIndex].Players.Count;
+                var cost = decimal.Parse(_teamElements[step.TeamIndex].Costs.Items[playerNumber - 1].ToString());
+            
+                _teamList[step.TeamIndex].Players.RemoveAt(playerNumber - 1);
+                _teamList[step.TeamIndex].Money += cost;
+                _teamElements[step.TeamIndex].Players.Items.RemoveAt(playerNumber - 1);
+                _teamElements[step.TeamIndex].Costs.Items.RemoveAt(playerNumber - 1);
+            
+                var expenses = _teamList[step.TeamIndex].Players.Sum(p => p.Cost);
+                var initialBudget = _teamList[step.TeamIndex].Money + expenses;
+                _teamElements[step.TeamIndex].Budget.Text = half_budget_display.Checked
+                    ? (initialBudget / 2 - expenses).ToString("0.0")
+                    : _teamList[step.TeamIndex].Money.ToString("0.0");
+            }
+            else
+            {
+                _playerDataList.RemoveAt(_playerDataList.Count - 1);
+            }
+            
             _playerDataList.Insert(0, step.Player);
             UpdateState();
             price.Text = @"0.0";
@@ -206,6 +214,8 @@ namespace PlayerDrafter
             _playerDataList.RemoveAt(0);
             _playerDataList.Add(data);
             UpdateState();
+            _auctionSteps.Add(new AuctionStep(data, -1));
+            undo_button.Enabled = true;
         }
         
         private void AuctionForm_FormClosing(object sender, FormClosingEventArgs e)
