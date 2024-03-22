@@ -15,6 +15,8 @@ namespace PlayerDrafter
         private readonly List<Team> _teamList;
         private Team _selectedTeam;
         private bool _edited;
+        private bool _handleEvents;
+        private bool _handleSelectorEdit;
 
         public ListBox GetPlayerListBox()
         {
@@ -53,6 +55,10 @@ namespace PlayerDrafter
         
         private void Initialize()
         {
+            _edited = false;
+            _handleEvents = true;
+            _handleSelectorEdit = true;
+            
             foreach (var team in _teamList)
             {
                 team_selector.Items.Add(team.Captain);
@@ -114,9 +120,9 @@ namespace PlayerDrafter
             team_selector.SelectedIndex = -1;
             team_selector.Items.RemoveAt(index);
             _teamList.RemoveAt(index);
-            name.TextChanged -= name_TextChanged;
+            _handleEvents = false;
             name.Text = null;
-            name.TextChanged += name_TextChanged;
+            _handleEvents = true;
             team_count.Text = _teamList.Count.ToString();
             remaining_budget.Text = @"0.0";
             player_list.Items.Clear();
@@ -137,10 +143,13 @@ namespace PlayerDrafter
 
         private void name_TextChanged(object sender, EventArgs e)
         {
+            if (!_handleEvents) return;
             _edited = true;
+            _handleSelectorEdit = false;
             var index = team_selector.SelectedIndex;
             team_selector.Items[index] = name.Text;
             _selectedTeam.Captain = name.Text;
+            _handleSelectorEdit = true;
         }
         
         private void remaining_budget_ValueChanged(object sender, EventArgs e)
@@ -151,6 +160,8 @@ namespace PlayerDrafter
 
         private void team_selector_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (!_handleSelectorEdit) return;
+            
             if (team_selector.SelectedIndex < 0)
             {
                 Enable(false);

@@ -14,6 +14,8 @@ namespace PlayerDrafter
         private readonly List<PlayerData> _playerDataList;
         private PlayerData _selectedPlayer;
         private bool _edited;
+        private bool _handleEvents;
+        private bool _handleSelectorEdit;
         
         public PlayerListEditor(List<PlayerData> playerList, string playerDataListPath, Form parentForm)
         {
@@ -27,6 +29,10 @@ namespace PlayerDrafter
         
         private void Initialize()
         {
+            _edited = false;
+            _handleEvents = true;
+            _handleSelectorEdit = true;
+            
             foreach (var player in _playerDataList)
             {
                 player_selector.Items.Add(player.Player);
@@ -70,6 +76,8 @@ namespace PlayerDrafter
 
         private void player_selector_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (!_handleSelectorEdit) return;
+            
             if (player_selector.SelectedIndex < 0)
             {
                 Enable(false);
@@ -111,21 +119,13 @@ namespace PlayerDrafter
             player_selector.Items.RemoveAt(index);
             _playerDataList.RemoveAt(index);
             player_count.Text = _playerDataList.Count.ToString();
-            name.TextChanged -= name_TextChanged;
-            comment.TextChanged -= comment_TextChanged;
-            inf_check.CheckedChanged -= inf_check_CheckedChanged;
-            arc_check.CheckedChanged -= arc_check_CheckedChanged;
-            cav_check.CheckedChanged -= cav_check_CheckedChanged;
+            _handleEvents = false;
             name.Text = null;
             comment.Text = null;
             inf_check.Checked = false;
             arc_check.Checked = false;
             cav_check.Checked = false;
-            name.TextChanged += name_TextChanged;
-            comment.TextChanged += comment_TextChanged;
-            inf_check.CheckedChanged += inf_check_CheckedChanged;
-            arc_check.CheckedChanged += arc_check_CheckedChanged;
-            cav_check.CheckedChanged += cav_check_CheckedChanged;
+            _handleEvents = true;
         }
         
         private void save_Click(object sender, EventArgs e)
@@ -141,20 +141,25 @@ namespace PlayerDrafter
 
         private void name_TextChanged(object sender, EventArgs e)
         {
+            if (!_handleEvents) return;
             _edited = true;
+            _handleSelectorEdit = false;
             var index = player_selector.SelectedIndex;
             player_selector.Items[index] = name.Text;
             _selectedPlayer.Player = name.Text;
+            _handleSelectorEdit = true;
         }
 
         private void comment_TextChanged(object sender, EventArgs e)
         {
+            if (!_handleEvents) return;
             _edited = true;
             _selectedPlayer.Comment = comment.Text;
         }
 
         private void inf_check_CheckedChanged(object sender, EventArgs e)
         {
+            if (!_handleEvents) return;
             _edited = true;
             if (inf_check.Checked) AddToClassesIfUnique("inf");
             else _selectedPlayer.Classes.Remove("inf");
@@ -162,6 +167,7 @@ namespace PlayerDrafter
 
         private void arc_check_CheckedChanged(object sender, EventArgs e)
         {
+            if (!_handleEvents) return;
             _edited = true;
             if (arc_check.Checked) AddToClassesIfUnique("arc");
             else _selectedPlayer.Classes.Remove("arc");
@@ -169,6 +175,7 @@ namespace PlayerDrafter
 
         private void cav_check_CheckedChanged(object sender, EventArgs e)
         {
+            if (!_handleEvents) return;
             _edited = true;
             if (cav_check.Checked) AddToClassesIfUnique("cav");
             else _selectedPlayer.Classes.Remove("cav");
