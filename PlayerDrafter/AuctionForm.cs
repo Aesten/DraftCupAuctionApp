@@ -63,6 +63,8 @@ namespace PlayerDrafter
         {
             var count = _playerDataList.Count;
             counterLabel.Text = Math.Max(0, count - 1).ToString();
+            var totalPlayers = _teamList.SelectMany(team => team.Players).Count();
+            auction_counter.Text = totalPlayers.ToString();
             UpdatePlayerDataDisplay(count > 0 ? _playerDataList[0] : null);
             queue1.Text = count > 1 ? _playerDataList[1].Player : @"-----";
             queue2.Text = count > 2 ? _playerDataList[2].Player : @"-----";
@@ -160,8 +162,8 @@ namespace PlayerDrafter
             
             var data = _playerDataList[0];
             _playerDataList.RemoveAt(0);
-            UpdateState();
             UpdateTeams(data.Player, cost, index);
+            UpdateState();
 
             price.Text = @"0.0";
             team_selector.SelectedIndex = -1;

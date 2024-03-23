@@ -75,6 +75,8 @@
             this.price = new System.Windows.Forms.NumericUpDown();
             this.undo_button = new System.Windows.Forms.Button();
             this.half_budget_display = new System.Windows.Forms.CheckBox();
+            this.label6 = new System.Windows.Forms.Label();
+            this.auction_counter = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.icon1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.icon3)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.icon4)).BeginInit();
@@ -227,19 +229,21 @@
             // 
             // label3
             // 
-            this.label3.Location = new System.Drawing.Point(702, 202);
+            this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label3.Location = new System.Drawing.Point(694, 202);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(61, 18);
+            this.label3.Size = new System.Drawing.Size(91, 18);
             this.label3.TabIndex = 15;
             this.label3.Text = "Remaining:";
             // 
             // counterLabel
             // 
-            this.counterLabel.Location = new System.Drawing.Point(763, 202);
+            this.counterLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.counterLabel.Location = new System.Drawing.Point(781, 202);
             this.counterLabel.Name = "counterLabel";
             this.counterLabel.Size = new System.Drawing.Size(35, 18);
             this.counterLabel.TabIndex = 16;
-            this.counterLabel.Text = "this.";
+            this.counterLabel.Text = "0";
             // 
             // team1_players
             // 
@@ -542,7 +546,7 @@
             // half_budget_display
             // 
             this.half_budget_display.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.half_budget_display.Location = new System.Drawing.Point(666, 251);
+            this.half_budget_display.Location = new System.Drawing.Point(666, 272);
             this.half_budget_display.Name = "half_budget_display";
             this.half_budget_display.Size = new System.Drawing.Size(174, 40);
             this.half_budget_display.TabIndex = 61;
@@ -550,11 +554,31 @@
             this.half_budget_display.UseVisualStyleBackColor = true;
             this.half_budget_display.CheckedChanged += new System.EventHandler(this.half_budget_display_CheckedChanged);
             // 
+            // label6
+            // 
+            this.label6.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label6.Location = new System.Drawing.Point(666, 240);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(107, 22);
+            this.label6.TabIndex = 62;
+            this.label6.Text = "Auctioned:";
+            // 
+            // auction_counter
+            // 
+            this.auction_counter.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.auction_counter.Location = new System.Drawing.Point(779, 240);
+            this.auction_counter.Name = "auction_counter";
+            this.auction_counter.Size = new System.Drawing.Size(107, 22);
+            this.auction_counter.TabIndex = 63;
+            this.auction_counter.Text = "0";
+            // 
             // AuctionForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(947, 1041);
+            this.Controls.Add(this.auction_counter);
+            this.Controls.Add(this.label6);
             this.Controls.Add(this.half_budget_display);
             this.Controls.Add(this.undo_button);
             this.Controls.Add(this.price);
@@ -612,6 +636,9 @@
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+
+        private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.Label auction_counter;
 
         private System.Windows.Forms.CheckBox half_budget_display;
 
