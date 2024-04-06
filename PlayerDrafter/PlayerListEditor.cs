@@ -88,7 +88,6 @@ namespace PlayerDrafter
             Enable(true);
             _selectedPlayer = _playerDataList[player_selector.SelectedIndex];
             name.Text = _selectedPlayer.Player;
-            comment.Text = _selectedPlayer.Comment;
             inf_check.Checked = _selectedPlayer.Classes.Contains("inf");
             arc_check.Checked = _selectedPlayer.Classes.Contains("arc");
             cav_check.Checked = _selectedPlayer.Classes.Contains("cav");
@@ -98,13 +97,12 @@ namespace PlayerDrafter
         private void add_Click(object sender, EventArgs e)
         {
             _edited = true;
-            _selectedPlayer = new PlayerData(@"name", new List<string>(), @"comment");
+            _selectedPlayer = new PlayerData(@"name", new List<string>());
             _playerDataList.Add(_selectedPlayer);
             player_selector.Items.Add(@"name");
             player_selector.SelectedIndex = player_selector.Items.Count - 1;
             player_count.Text = _playerDataList.Count.ToString();
             name.Text = @"name";
-            comment.Text = @"comment";
             inf_check.Checked = false;
             arc_check.Checked = false;
             cav_check.Checked = false;
@@ -121,7 +119,6 @@ namespace PlayerDrafter
             player_count.Text = _playerDataList.Count.ToString();
             _handleEvents = false;
             name.Text = null;
-            comment.Text = null;
             inf_check.Checked = false;
             arc_check.Checked = false;
             cav_check.Checked = false;
@@ -148,13 +145,6 @@ namespace PlayerDrafter
             player_selector.Items[index] = name.Text;
             _selectedPlayer.Player = name.Text;
             _handleSelectorEdit = true;
-        }
-
-        private void comment_TextChanged(object sender, EventArgs e)
-        {
-            if (!_handleEvents) return;
-            _edited = true;
-            _selectedPlayer.Comment = comment.Text;
         }
 
         private void inf_check_CheckedChanged(object sender, EventArgs e)
@@ -189,7 +179,6 @@ namespace PlayerDrafter
         private void Enable(bool enabled)
         {
             name.Enabled = enabled;
-            comment.Enabled = enabled;
             inf_check.Enabled = enabled;
             arc_check.Enabled = enabled;
             cav_check.Enabled = enabled;

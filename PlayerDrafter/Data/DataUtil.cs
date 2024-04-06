@@ -8,7 +8,7 @@ namespace PlayerDrafter.Data
         public static bool IsValid<T>(IEnumerable<T> list) {
             if (typeof(T) == typeof(PlayerData))
             {
-                return list.Select(item => (PlayerData)(object)item).All(playerData => playerData.Player != null && playerData.Classes != null && playerData.Comment != null);
+                return list.Select(item => (PlayerData)(object)item).All(playerData => playerData.Player != null && playerData.Classes != null);
             }
 
             if (typeof(T) != typeof(Team)) return false;

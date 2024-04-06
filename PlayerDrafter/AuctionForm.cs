@@ -40,7 +40,9 @@ namespace PlayerDrafter
                 new TeamFormElements(team3_captain, team3_money, team3_players, team3_expenses),
                 new TeamFormElements(team4_captain, team4_money, team4_players, team4_expenses),
                 new TeamFormElements(team5_captain, team5_money, team5_players, team5_expenses),
-                new TeamFormElements(team6_captain, team6_money, team6_players, team6_expenses)
+                new TeamFormElements(team6_captain, team6_money, team6_players, team6_expenses),
+                new TeamFormElements(team7_captain, team7_money, team7_players, team7_expenses),
+                new TeamFormElements(team8_captain, team8_money, team8_players, team8_expenses)
             };
         }
 
@@ -82,12 +84,10 @@ namespace PlayerDrafter
             if (playerData == null)
             {
                 player.Text = @"-----";
-                comment.Text = @"-----";
                 return;
             }
             
             player.Text = playerData.Player;
-            comment.Text = playerData.Comment;
 
             switch (playerData.Classes.Count)
             {

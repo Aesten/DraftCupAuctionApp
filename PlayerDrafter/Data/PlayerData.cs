@@ -4,15 +4,13 @@ namespace PlayerDrafter.Data
 {
     public class PlayerData
     {
-        public PlayerData(string player, List<string> classes, string comment)
+        public PlayerData(string player, List<string> classes)
         {
             Player = player;
             Classes = classes;
-            Comment = comment;
         }
 
         public string Player { get; set; }
         public List<string> Classes { get; set; }
-        public string Comment { get; set; }
     }
 }

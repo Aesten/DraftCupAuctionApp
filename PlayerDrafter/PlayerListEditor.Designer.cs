@@ -39,8 +39,6 @@ namespace PlayerDrafter
             this.inf_check = new System.Windows.Forms.CheckBox();
             this.arc_check = new System.Windows.Forms.CheckBox();
             this.cav_check = new System.Windows.Forms.CheckBox();
-            this.label3 = new System.Windows.Forms.Label();
-            this.comment = new System.Windows.Forms.TextBox();
             this.label4 = new System.Windows.Forms.Label();
             this.player_count = new System.Windows.Forms.Label();
             this.add = new System.Windows.Forms.Button();
@@ -53,36 +51,40 @@ namespace PlayerDrafter
             this.player_selector.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.player_selector.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.player_selector.FormattingEnabled = true;
-            this.player_selector.Location = new System.Drawing.Point(85, 78);
+            this.player_selector.Location = new System.Drawing.Point(170, 150);
+            this.player_selector.Margin = new System.Windows.Forms.Padding(6);
             this.player_selector.Name = "player_selector";
-            this.player_selector.Size = new System.Drawing.Size(254, 32);
+            this.player_selector.Size = new System.Drawing.Size(504, 50);
             this.player_selector.TabIndex = 0;
             this.player_selector.SelectedIndexChanged += new System.EventHandler(this.player_selector_SelectedIndexChanged);
             // 
             // label1
             // 
             this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 20F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(150, 21);
+            this.label1.Location = new System.Drawing.Point(300, 40);
+            this.label1.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(219, 34);
+            this.label1.Size = new System.Drawing.Size(438, 65);
             this.label1.TabIndex = 1;
             this.label1.Text = "Player List Editor";
             // 
             // label5
             // 
             this.label5.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label5.Location = new System.Drawing.Point(43, 154);
+            this.label5.Location = new System.Drawing.Point(86, 296);
+            this.label5.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(71, 22);
+            this.label5.Size = new System.Drawing.Size(142, 42);
             this.label5.TabIndex = 58;
             this.label5.Text = "Name:";
             // 
             // label2
             // 
             this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label2.Location = new System.Drawing.Point(43, 198);
+            this.label2.Location = new System.Drawing.Point(86, 381);
+            this.label2.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(81, 22);
+            this.label2.Size = new System.Drawing.Size(162, 42);
             this.label2.TabIndex = 59;
             this.label2.Text = "Classes:";
             // 
@@ -90,9 +92,10 @@ namespace PlayerDrafter
             // 
             this.name.Enabled = false;
             this.name.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.name.Location = new System.Drawing.Point(120, 151);
+            this.name.Location = new System.Drawing.Point(240, 290);
+            this.name.Margin = new System.Windows.Forms.Padding(6);
             this.name.Name = "name";
-            this.name.Size = new System.Drawing.Size(177, 29);
+            this.name.Size = new System.Drawing.Size(350, 50);
             this.name.TabIndex = 60;
             this.name.TextChanged += new System.EventHandler(this.name_TextChanged);
             // 
@@ -100,9 +103,10 @@ namespace PlayerDrafter
             // 
             this.inf_check.Enabled = false;
             this.inf_check.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.inf_check.Location = new System.Drawing.Point(130, 192);
+            this.inf_check.Location = new System.Drawing.Point(260, 369);
+            this.inf_check.Margin = new System.Windows.Forms.Padding(6);
             this.inf_check.Name = "inf_check";
-            this.inf_check.Size = new System.Drawing.Size(93, 38);
+            this.inf_check.Size = new System.Drawing.Size(186, 73);
             this.inf_check.TabIndex = 64;
             this.inf_check.Text = "Infantry";
             this.inf_check.UseVisualStyleBackColor = true;
@@ -112,9 +116,10 @@ namespace PlayerDrafter
             // 
             this.arc_check.Enabled = false;
             this.arc_check.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.arc_check.Location = new System.Drawing.Point(250, 192);
+            this.arc_check.Location = new System.Drawing.Point(500, 369);
+            this.arc_check.Margin = new System.Windows.Forms.Padding(6);
             this.arc_check.Name = "arc_check";
-            this.arc_check.Size = new System.Drawing.Size(92, 38);
+            this.arc_check.Size = new System.Drawing.Size(184, 73);
             this.arc_check.TabIndex = 65;
             this.arc_check.Text = "Archer";
             this.arc_check.UseVisualStyleBackColor = true;
@@ -124,57 +129,42 @@ namespace PlayerDrafter
             // 
             this.cav_check.Enabled = false;
             this.cav_check.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.cav_check.Location = new System.Drawing.Point(375, 192);
+            this.cav_check.Location = new System.Drawing.Point(750, 369);
+            this.cav_check.Margin = new System.Windows.Forms.Padding(6);
             this.cav_check.Name = "cav_check";
-            this.cav_check.Size = new System.Drawing.Size(90, 38);
+            this.cav_check.Size = new System.Drawing.Size(189, 73);
             this.cav_check.TabIndex = 66;
             this.cav_check.Text = "Cavalry";
             this.cav_check.UseVisualStyleBackColor = true;
             this.cav_check.CheckedChanged += new System.EventHandler(this.cav_check_CheckedChanged);
             // 
-            // label3
-            // 
-            this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label3.Location = new System.Drawing.Point(43, 239);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(101, 22);
-            this.label3.TabIndex = 67;
-            this.label3.Text = "Comment:";
-            // 
-            // comment
-            // 
-            this.comment.Enabled = false;
-            this.comment.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.comment.Location = new System.Drawing.Point(150, 236);
-            this.comment.Name = "comment";
-            this.comment.Size = new System.Drawing.Size(313, 29);
-            this.comment.TabIndex = 68;
-            this.comment.TextChanged += new System.EventHandler(this.comment_TextChanged);
-            // 
             // label4
             // 
             this.label4.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label4.Location = new System.Drawing.Point(345, 81);
+            this.label4.Location = new System.Drawing.Point(690, 156);
+            this.label4.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(70, 22);
+            this.label4.Size = new System.Drawing.Size(140, 42);
             this.label4.TabIndex = 69;
             this.label4.Text = "Count:";
             // 
             // player_count
             // 
             this.player_count.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.player_count.Location = new System.Drawing.Point(421, 81);
+            this.player_count.Location = new System.Drawing.Point(842, 156);
+            this.player_count.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.player_count.Name = "player_count";
-            this.player_count.Size = new System.Drawing.Size(42, 22);
+            this.player_count.Size = new System.Drawing.Size(84, 42);
             this.player_count.TabIndex = 70;
             this.player_count.Text = "0";
             // 
             // add
             // 
             this.add.Font = new System.Drawing.Font("Microsoft Sans Serif", 16F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.add.Location = new System.Drawing.Point(43, 79);
+            this.add.Location = new System.Drawing.Point(86, 152);
+            this.add.Margin = new System.Windows.Forms.Padding(6);
             this.add.Name = "add";
-            this.add.Size = new System.Drawing.Size(30, 31);
+            this.add.Size = new System.Drawing.Size(60, 60);
             this.add.TabIndex = 71;
             this.add.Text = "+";
             this.add.UseVisualStyleBackColor = true;
@@ -184,9 +174,10 @@ namespace PlayerDrafter
             // 
             this.delete.Enabled = false;
             this.delete.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.delete.Location = new System.Drawing.Point(366, 150);
+            this.delete.Location = new System.Drawing.Point(732, 288);
+            this.delete.Margin = new System.Windows.Forms.Padding(6);
             this.delete.Name = "delete";
-            this.delete.Size = new System.Drawing.Size(97, 32);
+            this.delete.Size = new System.Drawing.Size(194, 62);
             this.delete.TabIndex = 72;
             this.delete.Text = "Delete";
             this.delete.UseVisualStyleBackColor = true;
@@ -195,9 +186,10 @@ namespace PlayerDrafter
             // save
             // 
             this.save.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.save.Location = new System.Drawing.Point(213, 298);
+            this.save.Location = new System.Drawing.Point(418, 477);
+            this.save.Margin = new System.Windows.Forms.Padding(6);
             this.save.Name = "save";
-            this.save.Size = new System.Drawing.Size(97, 32);
+            this.save.Size = new System.Drawing.Size(194, 62);
             this.save.TabIndex = 73;
             this.save.Text = "Save";
             this.save.UseVisualStyleBackColor = true;
@@ -205,16 +197,14 @@ namespace PlayerDrafter
             // 
             // PlayerListEditor
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 25F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(517, 354);
+            this.ClientSize = new System.Drawing.Size(1034, 585);
             this.Controls.Add(this.save);
             this.Controls.Add(this.delete);
             this.Controls.Add(this.add);
             this.Controls.Add(this.player_count);
             this.Controls.Add(this.label4);
-            this.Controls.Add(this.comment);
-            this.Controls.Add(this.label3);
             this.Controls.Add(this.cav_check);
             this.Controls.Add(this.arc_check);
             this.Controls.Add(this.inf_check);
@@ -223,6 +213,7 @@ namespace PlayerDrafter
             this.Controls.Add(this.label5);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.player_selector);
+            this.Margin = new System.Windows.Forms.Padding(6);
             this.Name = "PlayerListEditor";
             this.Text = "PlayerListEditor";
             this.ResumeLayout(false);
@@ -237,12 +228,9 @@ namespace PlayerDrafter
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Label player_count;
 
-        private System.Windows.Forms.TextBox comment;
-
         private System.Windows.Forms.CheckBox inf_check;
         private System.Windows.Forms.CheckBox arc_check;
         private System.Windows.Forms.CheckBox cav_check;
-        private System.Windows.Forms.Label label3;
 
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label label2;
