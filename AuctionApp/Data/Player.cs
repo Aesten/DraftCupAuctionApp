@@ -1,4 +1,4 @@
-﻿namespace PlayerDrafter.Data
+﻿namespace AuctionApp.Data
 {
     public class Player
     {

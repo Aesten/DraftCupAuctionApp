@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace PlayerDrafter.Data
+namespace AuctionApp.Data
 {
     public class Team
     {

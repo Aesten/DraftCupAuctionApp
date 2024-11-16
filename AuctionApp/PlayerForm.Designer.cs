@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace PlayerDrafter
+namespace AuctionApp
 {
     partial class PlayerForm
     {

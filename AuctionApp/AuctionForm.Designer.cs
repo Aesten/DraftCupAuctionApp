@@ -1,4 +1,4 @@
-﻿namespace PlayerDrafter
+﻿namespace AuctionApp
 {
     partial class AuctionForm
     {

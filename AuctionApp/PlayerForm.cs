@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Windows.Forms;
-using PlayerDrafter.Data;
+using AuctionApp.Data;
 
-namespace PlayerDrafter
+namespace AuctionApp
 {
     public partial class PlayerForm : Form
     {

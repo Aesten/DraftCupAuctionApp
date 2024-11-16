@@ -6,8 +6,8 @@
         <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
         <ProjectGuid>{B8598AAB-F627-42C4-B8A0-69C043FBCDC5}</ProjectGuid>
         <OutputType>WinExe</OutputType>
-        <RootNamespace>PlayerDrafter</RootNamespace>
-        <AssemblyName>PlayerDrafter</AssemblyName>
+        <RootNamespace>AuctionApp</RootNamespace>
+        <AssemblyName>AuctionApp</AssemblyName>
         <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
         <FileAlignment>512</FileAlignment>
         <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>

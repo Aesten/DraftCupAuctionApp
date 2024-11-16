@@ -3,7 +3,7 @@ Properties/
 .idea/
 packages/
 
-PlayerDrafter/bin/
-PlayerDrafter/obj/
+*/bin/
+*/obj/
 *.json
 

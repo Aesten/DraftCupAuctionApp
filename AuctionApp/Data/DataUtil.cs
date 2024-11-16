@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace PlayerDrafter.Data
+namespace AuctionApp.Data
 {
     public static class DataUtil
     {

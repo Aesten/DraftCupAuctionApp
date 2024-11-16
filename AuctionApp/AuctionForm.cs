@@ -4,10 +4,10 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
+using AuctionApp.Data;
 using Newtonsoft.Json;
-using PlayerDrafter.Data;
 
-namespace PlayerDrafter
+namespace AuctionApp
 {
     public partial class AuctionForm : Form
     {
