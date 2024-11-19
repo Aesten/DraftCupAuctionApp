@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using AuctionApp.JsonObjects;
 
@@ -22,6 +20,7 @@ namespace AuctionApp
             _auction = auction;
             _path = path;
             InitializeComponent();
+            FormClosing += AuctionEditorForm_FormClosing;
 
             _captainElements = new List<TextBox>
             {
@@ -33,6 +32,11 @@ namespace AuctionApp
             };
             
             DisplayData();
+        }
+        
+        private void AuctionEditorForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            _parentForm.Show();
         }
 
         private void DisplayData()
