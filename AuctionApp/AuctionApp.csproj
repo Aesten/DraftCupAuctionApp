@@ -55,47 +55,36 @@
         <Compile Include="AuctionForm.Designer.cs">
             <DependentUpon>AuctionForm.cs</DependentUpon>
         </Compile>
-        <Compile Include="Data\DataUtil.cs" />
-        <Compile Include="Data\Player.cs" />
-        <Compile Include="Data\PlayerData.cs" />
-        <Compile Include="Data\Team.cs" />
+        <Compile Include="EditorForm.cs">
+          <SubType>Form</SubType>
+        </Compile>
+        <Compile Include="EditorForm.Designer.cs">
+          <DependentUpon>EditorForm.cs</DependentUpon>
+        </Compile>
+        <Compile Include="JsonObjects\Auction.cs" />
+        <Compile Include="JsonObjects\AuctionState.cs" />
         <Compile Include="MainForm.cs">
           <SubType>Form</SubType>
         </Compile>
         <Compile Include="MainForm.Designer.cs">
           <DependentUpon>MainForm.cs</DependentUpon>
         </Compile>
-        <Compile Include="PlayerForm.cs">
-          <SubType>Form</SubType>
-        </Compile>
-        <Compile Include="PlayerForm.Designer.cs">
-          <DependentUpon>PlayerForm.cs</DependentUpon>
-        </Compile>
-        <Compile Include="PlayerListEditor.cs">
-          <SubType>Form</SubType>
-        </Compile>
-        <Compile Include="PlayerListEditor.Designer.cs">
-          <DependentUpon>PlayerListEditor.cs</DependentUpon>
-        </Compile>
         <Compile Include="Program.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
-        <Compile Include="TeamListEditor.cs">
+        <Compile Include="SkippedPlayersPopup.cs">
           <SubType>Form</SubType>
         </Compile>
-        <Compile Include="TeamListEditor.Designer.cs">
-          <DependentUpon>TeamListEditor.cs</DependentUpon>
+        <Compile Include="SkippedPlayersPopup.Designer.cs">
+          <DependentUpon>SkippedPlayersPopup.cs</DependentUpon>
         </Compile>
         <EmbeddedResource Include="AuctionForm.resx">
           <DependentUpon>AuctionForm.cs</DependentUpon>
         </EmbeddedResource>
+        <EmbeddedResource Include="EditorForm.resx">
+          <DependentUpon>EditorForm.cs</DependentUpon>
+        </EmbeddedResource>
         <EmbeddedResource Include="MainForm.resx">
           <DependentUpon>MainForm.cs</DependentUpon>
-        </EmbeddedResource>
-        <EmbeddedResource Include="PlayerForm.resx">
-          <DependentUpon>PlayerForm.cs</DependentUpon>
-        </EmbeddedResource>
-        <EmbeddedResource Include="PlayerListEditor.resx">
-          <DependentUpon>PlayerListEditor.cs</DependentUpon>
         </EmbeddedResource>
         <EmbeddedResource Include="Properties\Resources.resx">
             <Generator>ResXFileCodeGenerator</Generator>
@@ -106,8 +95,8 @@
             <AutoGen>True</AutoGen>
             <DependentUpon>Resources.resx</DependentUpon>
         </Compile>
-        <EmbeddedResource Include="TeamListEditor.resx">
-          <DependentUpon>TeamListEditor.cs</DependentUpon>
+        <EmbeddedResource Include="SkippedPlayersPopup.resx">
+          <DependentUpon>SkippedPlayersPopup.cs</DependentUpon>
         </EmbeddedResource>
         <None Include="packages.config" />
         <None Include="Properties\Settings.settings">

@@ -1,39 +1,34 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.IO;
-using System.Linq;
 using System.Windows.Forms;
-using AuctionApp.Data;
-using Newtonsoft.Json;
+using AuctionApp.JsonObjects;
 
 namespace AuctionApp
 {
     public partial class AuctionForm : Form
     {
         private readonly Form _parentForm;
-        private readonly List<PlayerData> _playerDataList;
-        private readonly List<Team> _teamList;
-        private readonly List<TeamFormElements> _teamElements;
-        private readonly List<AuctionStep> _auctionSteps;
-        
-        public AuctionForm(List<PlayerData> playerDataList, List<Team> teamList, Form parentForm, bool shuffle)
-        {
-            FormClosing += AuctionForm_FormClosing;
-            _parentForm = parentForm;
-            _auctionSteps = new List<AuctionStep>();
-            if (shuffle) Shuffle(playerDataList);
-            _playerDataList = playerDataList;
-            _teamList = teamList;
-            InitializeComponent();
-            _teamElements = ListUpTeamElements();
-            UpdateState();
-            if (teamList.Count > 0) LoadTeams();
-        }
+        private readonly string _path;
+        private readonly List<TextBox> _upcomingTextBoxes;
+        private readonly List<PictureBox> _iconPictureBoxes;
+        private readonly List<TeamFormElements> _teamFormElements;
 
-        private List<TeamFormElements> ListUpTeamElements()
+        public AuctionState AuctionStateAccess { get; }
+
+        public AuctionForm(Form parentForm, AuctionState auctionState, string path)
         {
-            return new List<TeamFormElements>
+            InitializeComponent();
+            FormClosing += AuctionForm_FormClosing;
+            
+            _parentForm = parentForm;
+            AuctionStateAccess = auctionState;
+            _path = path;
+            
+            // Create data structures to manage form items in groups
+            _upcomingTextBoxes = new List<TextBox> { player_main_display, queue1, queue2, queue3 };
+            _iconPictureBoxes = new List<PictureBox> { icon1, icon2, icon3, icon4, icon5 };
+            _teamFormElements = new List<TeamFormElements>
             {
                 new TeamFormElements(team1_captain, team1_money, team1_players, team1_expenses),
                 new TeamFormElements(team2_captain, team2_money, team2_players, team2_expenses),
@@ -44,202 +39,11 @@ namespace AuctionApp
                 new TeamFormElements(team7_captain, team7_money, team7_players, team7_expenses),
                 new TeamFormElements(team8_captain, team8_money, team8_players, team8_expenses)
             };
-        }
-
-        private void LoadTeams()
-        {
-            for (var i = 0; i < Math.Min(_teamList.Count, _teamElements.Count); i++)
-            {
-                team_selector.Items.Add(_teamList[i].Captain);
-                _teamElements[i].Captain.Text = _teamList[i].Captain;
-                _teamElements[i].Budget.Text = _teamList[i].Money.ToString("0.0");
-                foreach (var t in _teamList[i].Players)
-                {
-                    _teamElements[i].Players.Items.Add(t.Name);
-                    _teamElements[i].Costs.Items.Add(t.Cost.ToString("0.0"));
-                }
-            }
-        }
-
-        private void UpdateState()
-        {
-            var count = _playerDataList.Count;
-            counterLabel.Text = Math.Max(0, count - 1).ToString();
-            var totalPlayers = _teamList.SelectMany(team => team.Players).Count();
-            auction_counter.Text = totalPlayers.ToString();
-            UpdatePlayerDataDisplay(count > 0 ? _playerDataList[0] : null);
-            queue1.Text = count > 1 ? _playerDataList[1].Player : @"-----";
-            queue2.Text = count > 2 ? _playerDataList[2].Player : @"-----";
-            queue3.Text = count > 3 ? _playerDataList[3].Player : @"-----";
-        }
-
-        private void UpdatePlayerDataDisplay(PlayerData playerData)
-        {
-            icon1.Image = null;
-            icon2.Image = null;
-            icon3.Image = null;
-            icon4.Image = null;
-            icon5.Image = null;
             
-            if (playerData == null)
-            {
-                player.Text = @"-----";
-                return;
-            }
-            
-            player.Text = playerData.Player;
-
-            switch (playerData.Classes.Count)
-            {
-                case 0:
-                    icon3.Image = Image.FromFile("icons\\inf.png");
-                    break;
-                case 1:
-                    icon3.Image = Image.FromFile($"icons\\{playerData.Classes[0]}.png");
-                    break;
-                case 2:
-                    icon2.Image = Image.FromFile($"icons\\{playerData.Classes[0]}.png");
-                    icon4.Image = Image.FromFile($"icons\\{playerData.Classes[1]}.png");
-                    break;
-                default:
-                    icon1.Image = Image.FromFile($"icons\\{playerData.Classes[0]}.png");
-                    icon3.Image = Image.FromFile($"icons\\{playerData.Classes[1]}.png");
-                    icon5.Image = Image.FromFile($"icons\\{playerData.Classes[2]}.png");
-                    break;
-            }
-        }
-
-        private void UpdateTeams(string name, decimal cost, int index)
-        {
-            _teamList[index].Players.Add(new Player(name, cost));
-            _teamList[index].Money -= cost;
-            _teamElements[index].Players.Items.Add(name);
-            _teamElements[index].Costs.Items.Add(price.Text);
-            
-            var expenses = _teamList[index].Players.Sum(p => p.Cost);
-            var initialBudget = _teamList[index].Money + expenses;
-            _teamElements[index].Budget.Text = half_budget_display.Checked
-                ? (initialBudget / 2 - expenses).ToString("0.0")
-                : _teamList[index].Money.ToString("0.0");
+            LoadTeams();
+            UpdateQueueDisplayElements();
         }
         
-        private static void Shuffle<T>(List<T> list)
-        {
-            var rng = new Random();
-            var n = list.Count;
-            while (n > 1)
-            {
-                n--;
-                var k = rng.Next(n + 1);
-                (list[k], list[n]) = (list[n], list[k]);
-            }
-        }
-
-        private void auctionedButton_Click(object sender, EventArgs e)
-        {
-            if (_playerDataList.Count <= 0) return;
-            
-            var teamCaptain = team_selector.Text;
-            var index = _teamList.FindIndex(team => team.Captain == teamCaptain);
-            if (index < 0)
-            {
-                MessageBox.Show(@"Please select a captain", 
-                    @"Invalid Value", 
-                    MessageBoxButtons.OK, 
-                    MessageBoxIcon.Warning);
-                return;
-            }
-            
-            var cost = decimal.Parse(price.Text);
-            if (cost > decimal.Parse(_teamElements[index].Budget.Text))
-            {
-                MessageBox.Show(@"The selected captain cannot afford this player!", 
-                    @"Invalid Value", 
-                    MessageBoxButtons.OK, 
-                    MessageBoxIcon.Warning);
-                return;
-            }
-            
-            var data = _playerDataList[0];
-            _playerDataList.RemoveAt(0);
-            UpdateTeams(data.Player, cost, index);
-            UpdateState();
-
-            price.Text = @"0.0";
-            team_selector.SelectedIndex = -1;
-            
-            Cache();
-            
-            _auctionSteps.Add(new AuctionStep(data, index));
-            undo_button.Enabled = true;
-        }
-        
-        private void undo_button_Click(object sender, EventArgs e)
-        {
-            var step = _auctionSteps[_auctionSteps.Count - 1];
-
-            if (step.TeamIndex >= 0)
-            {
-                var playerNumber = _teamList[step.TeamIndex].Players.Count;
-                var cost = decimal.Parse(_teamElements[step.TeamIndex].Costs.Items[playerNumber - 1].ToString());
-            
-                _teamList[step.TeamIndex].Players.RemoveAt(playerNumber - 1);
-                _teamList[step.TeamIndex].Money += cost;
-                _teamElements[step.TeamIndex].Players.Items.RemoveAt(playerNumber - 1);
-                _teamElements[step.TeamIndex].Costs.Items.RemoveAt(playerNumber - 1);
-            
-                var expenses = _teamList[step.TeamIndex].Players.Sum(p => p.Cost);
-                var initialBudget = _teamList[step.TeamIndex].Money + expenses;
-                _teamElements[step.TeamIndex].Budget.Text = half_budget_display.Checked
-                    ? (initialBudget / 2 - expenses).ToString("0.0")
-                    : _teamList[step.TeamIndex].Money.ToString("0.0");
-            }
-            else
-            {
-                _playerDataList.RemoveAt(_playerDataList.Count - 1);
-            }
-            
-            _playerDataList.Insert(0, step.Player);
-            UpdateState();
-            price.Text = @"0.0";
-            team_selector.SelectedIndex = -1;
-            Cache();
-            
-            _auctionSteps.RemoveAt(_auctionSteps.Count - 1);
-            if (_auctionSteps.Count <= 0) undo_button.Enabled = false;
-        }
-
-        private void skipButton_Click(object sender, EventArgs e)
-        {
-            if (_playerDataList.Count <= 1) return;
-            var data = _playerDataList[0];
-            _playerDataList.RemoveAt(0);
-            _playerDataList.Add(data);
-            UpdateState();
-            _auctionSteps.Add(new AuctionStep(data, -1));
-            undo_button.Enabled = true;
-        }
-        
-        private void AuctionForm_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            _parentForm.Show();
-        }
-
-        private void Cache()
-        {
-            try
-            {
-                var playerDataListJson = JsonConvert.SerializeObject(_playerDataList);
-                File.WriteAllText(Path.Combine(Program.AppDir, "player_list_cache.json"), playerDataListJson);
-                var teamDataListJson = JsonConvert.SerializeObject(_teamList);
-                File.WriteAllText(Path.Combine(Program.AppDir, "team_list_cache.json"), teamDataListJson);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($@"Failed saving cache files: {ex.Message}");
-            }
-        }
-
         private class TeamFormElements
         {
             public TeamFormElements(TextBox captain, TextBox budget, ListBox players, ListBox costs)
@@ -256,28 +60,201 @@ namespace AuctionApp
             public ListBox Costs { get; }
         }
 
-        private class AuctionStep
+        private void LoadTeams()
         {
-            public AuctionStep(PlayerData player, int teamIndex)
+            for (var i = 0; i < Math.Min(AuctionStateAccess.Teams.Count, _teamFormElements.Count); i++)
             {
-                Player = player;
-                TeamIndex = teamIndex;
+                team_selector.Items.Add(AuctionStateAccess.Teams[i].Captain);
+                _teamFormElements[i].Captain.Text = AuctionStateAccess.Teams[i].Captain;
+                _teamFormElements[i].Budget.Text = AuctionStateAccess.Teams[i].CurrentBudget.ToString("0.0");
+                foreach (var t in AuctionStateAccess.Teams[i].Members)
+                {
+                    _teamFormElements[i].Players.Items.Add(t.Name);
+                    _teamFormElements[i].Costs.Items.Add(t.Cost.ToString("0.0"));
+                }
             }
-
-            public PlayerData Player { get; }
-            public int TeamIndex { get; }
         }
 
+        private void UpdateTeamMember_Addition(int teamIndex, decimal cost, string costString)
+        {
+            var player = AuctionStateAccess.PlayerQueue[0];
+            AuctionStateAccess.PlayerQueue.RemoveAt(0);
+            AuctionStateAccess.Teams[teamIndex].Members.Add(new AuctionState.PlayerMember
+            {
+                Name = player.Name,
+                Cost = cost,
+                Classes = player.Classes
+            });
+            
+            _teamFormElements[teamIndex].Players.Items.Add(player.Name);
+            _teamFormElements[teamIndex].Costs.Items.Add(costString);
+            UpdateBudgetDisplay(teamIndex);
+        }
+
+        private void UpdateTeamMember_Removal(int teamIndex, int playerIndex)
+        {
+            var player = new Auction.Player
+            {
+                Name = AuctionStateAccess.Teams[teamIndex].Members[playerIndex].Name,
+                Classes = AuctionStateAccess.Teams[teamIndex].Members[playerIndex].Classes
+            };
+            AuctionStateAccess.Skipped.Add(player);
+            AuctionStateAccess.Teams[teamIndex].Members.RemoveAt(playerIndex);
+            
+            _teamFormElements[teamIndex].Players.Items.RemoveAt(playerIndex);
+            _teamFormElements[teamIndex].Costs.Items.RemoveAt(playerIndex);
+            UpdateBudgetDisplay(teamIndex);
+        }
+
+        public void UpdateQueueDisplayElements()
+        {
+            var remainder = AuctionStateAccess.InitialNumber - AuctionStateAccess.AuctionedNumber - AuctionStateAccess.SkippedNumber;
+            player_counter.Text = $@"{Math.Min(AuctionStateAccess.AuctionedNumber + AuctionStateAccess.SkippedNumber, AuctionStateAccess.InitialNumber)} (/{AuctionStateAccess.InitialNumber})";
+            auction_counter.Text = AuctionStateAccess.AuctionedNumber.ToString();
+            for (var i = 0 ; i < 4 ; i++)
+            {
+                _upcomingTextBoxes[i].Text = remainder > i ? AuctionStateAccess.PlayerQueue[i].Name : @"-----";
+            }
+
+            if (remainder > 0)
+            {
+                DisplayClassIcons(AuctionStateAccess.PlayerQueue[0]);
+            }
+        }
+
+        private void DisplayClassIcons(Auction.Player player)
+        {
+            switch (player.Classes.Count)
+            {
+                case 0:
+                    _iconPictureBoxes[0].Image = null;
+                    _iconPictureBoxes[1].Image = null;
+                    _iconPictureBoxes[2].Image = Image.FromFile("icons\\inf.png");
+                    _iconPictureBoxes[3].Image = null;
+                    _iconPictureBoxes[4].Image = null;
+                    break;
+                case 1:
+                    _iconPictureBoxes[0].Image = null;
+                    _iconPictureBoxes[1].Image = null;
+                    _iconPictureBoxes[2].Image = Image.FromFile($"icons\\{player.Classes[0]}.png");
+                    _iconPictureBoxes[3].Image = null;
+                    _iconPictureBoxes[4].Image = null;
+                    break;
+                case 2:
+                    _iconPictureBoxes[0].Image = null;
+                    _iconPictureBoxes[1].Image = Image.FromFile($"icons\\{player.Classes[0]}.png");
+                    _iconPictureBoxes[2].Image = null;
+                    _iconPictureBoxes[3].Image = Image.FromFile($"icons\\{player.Classes[1]}.png");
+                    _iconPictureBoxes[4].Image = null;
+                    break;
+                default:
+                    _iconPictureBoxes[0].Image = Image.FromFile($"icons\\{player.Classes[0]}.png");
+                    _iconPictureBoxes[1].Image = null;
+                    _iconPictureBoxes[2].Image = Image.FromFile($"icons\\{player.Classes[1]}.png");
+                    _iconPictureBoxes[3].Image = null;
+                    _iconPictureBoxes[4].Image = Image.FromFile($"icons\\{player.Classes[2]}.png");
+                    break;
+            }
+        }
+
+        private void UpdateBudgetDisplay(int index)
+        {
+            var team = AuctionStateAccess.Teams[index];
+            _teamFormElements[index].Budget.Text = AuctionStateAccess.HalfBudgetDisplay
+                ? (team.CurrentBudget - team.InitialBudget / 2).ToString("0.0")
+                : team.CurrentBudget.ToString("0.0");
+        }
+        
+        public void Cache()
+        {
+            AuctionStateAccess.Serialize(_path);
+        }
+        
+        // Events
+        
+        private void auction_button_Click(object sender, EventArgs e)
+        {
+            if (AuctionStateAccess.QueueNumber <= 0) return;
+            
+            var index = team_selector.SelectedIndex;
+            
+            var cost = decimal.Parse(price.Text);
+            if (cost > (AuctionStateAccess.HalfBudgetDisplay ? AuctionStateAccess.Teams[index].CurrentBudgetHalf : AuctionStateAccess.Teams[index].CurrentBudget))
+            {
+                MessageBox.Show(@"The selected captain cannot afford this player!", @"Invalid Value", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            
+            UpdateTeamMember_Addition(index, cost, price.Text);
+            UpdateQueueDisplayElements();
+
+            price.Text = @"0.0";
+            team_selector.SelectedIndex = -1;
+            
+            Cache();
+        }
+        
+        private void remove_button_Click(object sender, EventArgs e)
+        {
+            var teamIndex = _teamFormElements.FindIndex(element => element.Players.SelectedIndex != -1);
+
+            if (teamIndex == -1)
+            {
+                MessageBox.Show(@"Failed to identify the player to remove", @"Invalid Value", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            var playerIndex = _teamFormElements[teamIndex].Players.SelectedIndex;
+            UpdateTeamMember_Removal(teamIndex, playerIndex);
+            UpdateQueueDisplayElements();
+            
+            Cache();
+        }
+
+        private void skip_button_Click(object sender, EventArgs e)
+        {
+            if (AuctionStateAccess.QueueNumber <= 0) return;
+            var player = AuctionStateAccess.PlayerQueue[0];
+            AuctionStateAccess.PlayerQueue.RemoveAt(0);
+            AuctionStateAccess.Skipped.Add(player);
+            UpdateQueueDisplayElements();
+            
+            Cache();
+        }
+        
         private void half_budget_display_CheckedChanged(object sender, EventArgs e)
         {
-            for (var i = 0; i < _teamList.Count; i++)
+            for (var i = 0; i < AuctionStateAccess.Teams.Count; i++)
             {
-                var expenses = _teamList[i].Players.Sum(p => p.Cost);
-                var initialBudget = _teamList[i].Money + expenses;
-                _teamElements[i].Budget.Text = half_budget_display.Checked
-                    ? (initialBudget / 2 - expenses).ToString("0.0")
-                    : _teamList[i].Money.ToString("0.0");
+                UpdateBudgetDisplay(i);
             }
+        }
+        
+        private void AuctionForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            _parentForm.Show();
+        }
+
+        private void players_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            remove_button.Enabled = team1_players.SelectedIndex != -1 ||
+                                    team2_players.SelectedIndex != -1 ||
+                                    team3_players.SelectedIndex != -1 ||
+                                    team4_players.SelectedIndex != -1 ||
+                                    team5_players.SelectedIndex != -1 ||
+                                    team6_players.SelectedIndex != -1 ||
+                                    team7_players.SelectedIndex != -1 ||
+                                    team8_players.SelectedIndex != -1;
+        }
+
+        private void team_selector_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            auction_button.Enabled = team_selector.SelectedIndex != -1;
+        }
+
+        private void manage_skipped_button_Click(object sender, EventArgs e)
+        {
+            new SkippedPlayersPopup(this).Show();
         }
     }
 }

@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
-using AuctionApp.Data;
-using Newtonsoft.Json;
+using AuctionApp.JsonObjects;
 
 namespace AuctionApp
 {
@@ -13,217 +11,94 @@ namespace AuctionApp
         {
             InitializeComponent();
         }
-
-        private void begin_auction_button_Click(object sender, EventArgs e)
+        
+        private void create_auction_button_Click(object sender, EventArgs e)
         {
-            StartAuction(player_list_file_path.Text, team_list_file_path.Text, true);
+            OpenAuctionEditor(GetCreateFileDialogResult());
+        }
+        
+        private void edit_auction_button_Click(object sender, EventArgs e)
+        {
+            OpenAuctionEditor(GetFileDialogResult());
         }
 
-        private void open_player_list_button_Click(object sender, EventArgs e)
+        private void begin_auction_button_Click_1(object sender, EventArgs e)
         {
-            var openFileDialog = new OpenFileDialog();
-            openFileDialog.Title = @"Select Player List JSON File";
-            openFileDialog.Filter = @"JSON Files (*.json)|*.json";
-
-            if (openFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                player_list_file_path.Text = openFileDialog.FileName;
-            }
+            OpenAuctionScreen(GenerateAuctionStateFile(GetFileDialogResult()));
+        }
+        
+        private void resume_auction_button_Click(object sender, EventArgs e)
+        {
+            OpenAuctionScreen(GetFileDialogResult());
         }
 
-        private void open_team_list_button_Click(object sender, EventArgs e)
+        private static string GetFileDialogResult()
         {
-            var openFileDialog = new OpenFileDialog();
-            openFileDialog.Title = @"Select Team List JSON File";
-            openFileDialog.Filter = @"JSON Files (*.json)|*.json";
-
-            if (openFileDialog.ShowDialog() == DialogResult.OK)
+            using (var openFileDialog = new OpenFileDialog())
             {
-                team_list_file_path.Text = openFileDialog.FileName;
-            }
-        }
-
-        private void load_from_cache_button_Click(object sender, EventArgs e)
-        {
-            StartAuction(Path.Combine(Program.AppDir, "player_list_cache.json"), 
-                Path.Combine(Program.AppDir, "team_list_cache.json"),
-                false);
-        }
-
-        private void edit_player_list_Click(object sender, EventArgs e)
-        {
-            var playerListFilePath = player_list_file_path.Text;
-            
-            if (string.IsNullOrEmpty(playerListFilePath))
-            {
-                MessageBox.Show(@"Please select a JSON file for the player list.", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-            
-            if (!File.Exists(playerListFilePath))
-            {
-                MessageBox.Show(@"The selected player list file does not exist.", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-            
-            try
-            {
-                var playerListContent = File.ReadAllText(playerListFilePath);
-                var playerList = JsonConvert.DeserializeObject<List<PlayerData>>(playerListContent);
-                
-                if (!DataUtil.IsValid(playerList))
-                {
-                    MessageBox.Show(@"Invalid JSON content for the player list.", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-                
-                Hide();
-                var playerListEditor = new PlayerListEditor(playerList, playerListFilePath, this);
-                playerListEditor.Show();
-            }
-            catch (JsonReaderException)
-            {
-                MessageBox.Show(@"Invalid JSON format. Error loading JSON file.", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($@"An unexpected error occurred: {ex.Message}", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                openFileDialog.Title = @"Select Auction JSON File";
+                openFileDialog.Filter = @"JSON Files (*.json)|*.json";
+                openFileDialog.RestoreDirectory = true;
+                return openFileDialog.ShowDialog() == DialogResult.OK ? openFileDialog.FileName : null;
             }
         }
 
-        private void new_player_list_Click(object sender, EventArgs e)
+        private static string GetCreateFileDialogResult()
         {
             using (var saveFileDialog = new SaveFileDialog())
             {
+                saveFileDialog.Title = @"Create Auction JSON File";
                 saveFileDialog.Filter = @"JSON files (*.json)|*.json|All files (*.*)|*.*";
-                saveFileDialog.FilterIndex = 1;
                 saveFileDialog.RestoreDirectory = true;
 
-                if (saveFileDialog.ShowDialog() != DialogResult.OK) return;
+                if (saveFileDialog.ShowDialog() != DialogResult.OK) return null;
 
                 try
                 {
-                    File.WriteAllText(saveFileDialog.FileName, @"[]");
-                    player_list_file_path.Text = saveFileDialog.FileName;
-                    edit_player_list_Click(null, null);
+                    File.WriteAllText(saveFileDialog.FileName, @"{}");
+                    return saveFileDialog.FileName;
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show($@"Error creating new JSON file: {ex.Message}", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return null;
                 }
             }
         }
 
-        private void edit_team_list_Click(object sender, EventArgs e)
+        private void OpenAuctionEditor(string path)
         {
-            var teamListFilePath = team_list_file_path.Text;
-            
-            if (string.IsNullOrEmpty(teamListFilePath))
+            var auction = Auction.Deserialize(path);
+            if (auction == null)
             {
-                MessageBox.Show(@"Please select a JSON file for the team list.", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(@"Error reading JSON file", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            
-            if (!File.Exists(teamListFilePath))
-            {
-                MessageBox.Show(@"The selected team list file does not exist.", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-            
-            try
-            {
-                var teamListContent = File.ReadAllText(teamListFilePath);
-                var teamList = JsonConvert.DeserializeObject<List<Team>>(teamListContent);
-                
-                if (!DataUtil.IsValid(teamList))
-                {
-                    MessageBox.Show(@"Invalid JSON content for the team list.", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-                
-                Hide();
-                var teamListEditor = new TeamListEditor(teamList, teamListFilePath, this);
-                teamListEditor.Show();
-            }
-            catch (JsonReaderException)
-            {
-                MessageBox.Show(@"Invalid JSON format. Error loading JSON file.", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($@"An unexpected error occurred: {ex.Message}", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            Hide();
+            var editorForm = new EditorForm(this, auction, path);
+            editorForm.Show();
         }
 
-        private void new_team_list_Click(object sender, EventArgs e)
+        private void OpenAuctionScreen(string path)
         {
-            using (var saveFileDialog = new SaveFileDialog())
+            var auctionState = AuctionState.Deserialize(path);
+            if (auctionState == null)
             {
-                saveFileDialog.Filter = @"JSON files (*.json)|*.json|All files (*.*)|*.*";
-                saveFileDialog.FilterIndex = 1;
-                saveFileDialog.RestoreDirectory = true;
-
-                if (saveFileDialog.ShowDialog() != DialogResult.OK) return;
-
-                try
-                {
-                    File.WriteAllText(saveFileDialog.FileName, @"[]");
-                    team_list_file_path.Text = saveFileDialog.FileName;
-                    edit_team_list_Click(null, null);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($@"Error creating new JSON file: {ex.Message}", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                MessageBox.Show(@"Error reading JSON file", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
+            Hide();
+            var auctionForm = new AuctionForm(this, auctionState, path);
+            auctionForm.Show();
         }
 
-        private void StartAuction(string playerListPath, string teamListPath, bool shuffle)
+        private static string GenerateAuctionStateFile(string path)
         {
-            if (!File.Exists(playerListPath))
-            {
-                MessageBox.Show(@"No cached player list file exists.", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-            
-            if (!File.Exists(teamListPath))
-            {
-                MessageBox.Show(@"No cached team list file exists.", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            try
-            {
-                var playerListContent = File.ReadAllText(playerListPath);
-                var playerList = JsonConvert.DeserializeObject<List<PlayerData>>(playerListContent);
-                
-                if (!DataUtil.IsValid(playerList))
-                {
-                    MessageBox.Show(@"Invalid JSON content for the player list.", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-                
-                var teamListContent = File.ReadAllText(teamListPath);
-                var teamList = JsonConvert.DeserializeObject<List<Team>>(teamListContent);
-                
-                if (!DataUtil.IsValid(teamList))
-                {
-                    MessageBox.Show(@"Invalid JSON content for the team list.", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-                
-                Hide();
-                var auctionForm = new AuctionForm(playerList, teamList, this, shuffle);
-                auctionForm.Show();
-            }
-            catch (JsonReaderException)
-            {
-                MessageBox.Show(@"Invalid JSON format. Error loading cached JSON.", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($@"An unexpected error occurred: {ex.Message}", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var auctionStatePath = $"{path}.{timestamp}.state";
+            var auction = Auction.Deserialize(path);
+            AuctionState.FromAuction(auction).Serialize(auctionStatePath);
+            return auctionStatePath;
         }
     }
 }
