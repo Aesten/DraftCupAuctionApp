@@ -103,7 +103,7 @@ namespace AuctionApp
                 Name = AuctionStateAccess.Teams[teamIndex].Members[playerIndex].Name,
                 Classes = AuctionStateAccess.Teams[teamIndex].Members[playerIndex].Classes
             };
-            AuctionStateAccess.Skipped.Add(player);
+            AuctionStateAccess.PlayerQueue.Insert(0, player);
             AuctionStateAccess.Teams[teamIndex].Members.RemoveAt(playerIndex);
             
             _teamFormElements[teamIndex].Players.Items.RemoveAt(playerIndex);
