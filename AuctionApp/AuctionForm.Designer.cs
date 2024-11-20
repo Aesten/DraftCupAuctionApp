@@ -83,7 +83,7 @@
             this.team8_money = new System.Windows.Forms.TextBox();
             this.team8_captain = new System.Windows.Forms.TextBox();
             this.team8_players = new System.Windows.Forms.ListBox();
-            this.label7 = new System.Windows.Forms.Label();
+            this.title_display = new System.Windows.Forms.Label();
             this.label8 = new System.Windows.Forms.Label();
             this.remove_button = new System.Windows.Forms.Button();
             this.manage_skipped_button = new System.Windows.Forms.Button();
@@ -652,15 +652,15 @@
             this.team8_players.TabStop = false;
             this.team8_players.SelectedIndexChanged += new System.EventHandler(this.players_SelectedIndexChanged);
             // 
-            // label7
+            // title_display
             // 
-            this.label7.Font = new System.Drawing.Font("Microsoft Sans Serif", 30F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label7.Location = new System.Drawing.Point(12, 30);
-            this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(1095, 53);
-            this.label7.TabIndex = 72;
-            this.label7.Text = "Draftcup Auction";
-            this.label7.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.title_display.Font = new System.Drawing.Font("Microsoft Sans Serif", 30F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.title_display.Location = new System.Drawing.Point(12, 30);
+            this.title_display.Name = "title_display";
+            this.title_display.Size = new System.Drawing.Size(1095, 53);
+            this.title_display.TabIndex = 72;
+            this.title_display.Text = "Draftcup Auction";
+            this.title_display.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // label8
             // 
@@ -702,7 +702,7 @@
             this.Controls.Add(this.manage_skipped_button);
             this.Controls.Add(this.remove_button);
             this.Controls.Add(this.label8);
-            this.Controls.Add(this.label7);
+            this.Controls.Add(this.title_display);
             this.Controls.Add(this.team8_expenses);
             this.Controls.Add(this.team8_money);
             this.Controls.Add(this.team8_captain);
@@ -775,7 +775,7 @@
 
         private System.Windows.Forms.Label label8;
 
-        private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.Label title_display;
 
         private System.Windows.Forms.TextBox team7_captain;
         private System.Windows.Forms.ListBox team7_players;

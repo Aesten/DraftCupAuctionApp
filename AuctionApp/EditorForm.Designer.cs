@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Drawing;
 
 namespace AuctionApp
 {
@@ -32,10 +33,6 @@ namespace AuctionApp
         private void InitializeComponent()
         {
             this.player_grid = new System.Windows.Forms.DataGridView();
-            this.nickname = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.class_inf = new System.Windows.Forms.DataGridViewCheckBoxColumn();
-            this.class_arc = new System.Windows.Forms.DataGridViewCheckBoxColumn();
-            this.class_cav = new System.Windows.Forms.DataGridViewCheckBoxColumn();
             this.budget1 = new System.Windows.Forms.NumericUpDown();
             this.label2 = new System.Windows.Forms.Label();
             this.captain1 = new System.Windows.Forms.TextBox();
@@ -65,6 +62,10 @@ namespace AuctionApp
             this.label9 = new System.Windows.Forms.Label();
             this.export_csv_button = new System.Windows.Forms.Button();
             this.save_button = new System.Windows.Forms.Button();
+            this.nickname = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.class_inf = new System.Windows.Forms.DataGridViewCheckBoxColumn();
+            this.class_arc = new System.Windows.Forms.DataGridViewCheckBoxColumn();
+            this.class_cav = new System.Windows.Forms.DataGridViewCheckBoxColumn();
             ((System.ComponentModel.ISupportInitialize)(this.player_grid)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.budget1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.budget2)).BeginInit();
@@ -81,39 +82,16 @@ namespace AuctionApp
             // 
             this.player_grid.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.player_grid.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] { this.nickname, this.class_inf, this.class_arc, this.class_cav });
+            this.player_grid.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
             this.player_grid.Location = new System.Drawing.Point(36, 156);
             this.player_grid.Name = "player_grid";
+            this.player_grid.RowHeadersVisible = false;
             this.player_grid.Size = new System.Drawing.Size(502, 626);
             this.player_grid.TabIndex = 0;
-            // 
-            // nickname
-            // 
-            this.nickname.HeaderText = "Nickname";
-            this.nickname.Name = "nickname";
-            this.nickname.Width = 250;
-            // 
-            // class_inf
-            // 
-            this.class_inf.HeaderText = "Infantry";
-            this.class_inf.Name = "class_inf";
-            this.class_inf.Width = 70;
-            // 
-            // class_arc
-            // 
-            this.class_arc.HeaderText = "Archer";
-            this.class_arc.Name = "class_arc";
-            this.class_arc.Width = 70;
-            // 
-            // class_cav
-            // 
-            this.class_cav.HeaderText = "Cavalry";
-            this.class_cav.Name = "class_cav";
-            this.class_cav.Width = 70;
             // 
             // budget1
             // 
             this.budget1.DecimalPlaces = 1;
-            this.budget1.Enabled = false;
             this.budget1.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.budget1.Increment = new decimal(new int[] { 1, 0, 0, 65536 });
             this.budget1.Location = new System.Drawing.Point(923, 230);
@@ -135,7 +113,6 @@ namespace AuctionApp
             // 
             // captain1
             // 
-            this.captain1.Enabled = false;
             this.captain1.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.captain1.Location = new System.Drawing.Point(621, 230);
             this.captain1.Name = "captain1";
@@ -185,7 +162,6 @@ namespace AuctionApp
             // budget2
             // 
             this.budget2.DecimalPlaces = 1;
-            this.budget2.Enabled = false;
             this.budget2.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.budget2.Increment = new decimal(new int[] { 1, 0, 0, 65536 });
             this.budget2.Location = new System.Drawing.Point(923, 280);
@@ -197,7 +173,6 @@ namespace AuctionApp
             // 
             // captain2
             // 
-            this.captain2.Enabled = false;
             this.captain2.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.captain2.Location = new System.Drawing.Point(621, 280);
             this.captain2.Name = "captain2";
@@ -207,7 +182,6 @@ namespace AuctionApp
             // budget3
             // 
             this.budget3.DecimalPlaces = 1;
-            this.budget3.Enabled = false;
             this.budget3.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.budget3.Increment = new decimal(new int[] { 1, 0, 0, 65536 });
             this.budget3.Location = new System.Drawing.Point(923, 330);
@@ -219,7 +193,6 @@ namespace AuctionApp
             // 
             // captain3
             // 
-            this.captain3.Enabled = false;
             this.captain3.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.captain3.Location = new System.Drawing.Point(621, 330);
             this.captain3.Name = "captain3";
@@ -229,7 +202,6 @@ namespace AuctionApp
             // budget4
             // 
             this.budget4.DecimalPlaces = 1;
-            this.budget4.Enabled = false;
             this.budget4.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.budget4.Increment = new decimal(new int[] { 1, 0, 0, 65536 });
             this.budget4.Location = new System.Drawing.Point(923, 380);
@@ -241,7 +213,6 @@ namespace AuctionApp
             // 
             // captain4
             // 
-            this.captain4.Enabled = false;
             this.captain4.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.captain4.Location = new System.Drawing.Point(621, 380);
             this.captain4.Name = "captain4";
@@ -251,7 +222,6 @@ namespace AuctionApp
             // budget5
             // 
             this.budget5.DecimalPlaces = 1;
-            this.budget5.Enabled = false;
             this.budget5.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.budget5.Increment = new decimal(new int[] { 1, 0, 0, 65536 });
             this.budget5.Location = new System.Drawing.Point(923, 430);
@@ -263,7 +233,6 @@ namespace AuctionApp
             // 
             // captain5
             // 
-            this.captain5.Enabled = false;
             this.captain5.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.captain5.Location = new System.Drawing.Point(621, 430);
             this.captain5.Name = "captain5";
@@ -273,7 +242,6 @@ namespace AuctionApp
             // budget6
             // 
             this.budget6.DecimalPlaces = 1;
-            this.budget6.Enabled = false;
             this.budget6.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.budget6.Increment = new decimal(new int[] { 1, 0, 0, 65536 });
             this.budget6.Location = new System.Drawing.Point(923, 480);
@@ -285,7 +253,6 @@ namespace AuctionApp
             // 
             // captain6
             // 
-            this.captain6.Enabled = false;
             this.captain6.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.captain6.Location = new System.Drawing.Point(621, 480);
             this.captain6.Name = "captain6";
@@ -295,7 +262,6 @@ namespace AuctionApp
             // budget7
             // 
             this.budget7.DecimalPlaces = 1;
-            this.budget7.Enabled = false;
             this.budget7.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.budget7.Increment = new decimal(new int[] { 1, 0, 0, 65536 });
             this.budget7.Location = new System.Drawing.Point(923, 530);
@@ -307,7 +273,6 @@ namespace AuctionApp
             // 
             // captain7
             // 
-            this.captain7.Enabled = false;
             this.captain7.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.captain7.Location = new System.Drawing.Point(621, 530);
             this.captain7.Name = "captain7";
@@ -317,7 +282,6 @@ namespace AuctionApp
             // budget8
             // 
             this.budget8.DecimalPlaces = 1;
-            this.budget8.Enabled = false;
             this.budget8.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.budget8.Increment = new decimal(new int[] { 1, 0, 0, 65536 });
             this.budget8.Location = new System.Drawing.Point(923, 580);
@@ -329,7 +293,6 @@ namespace AuctionApp
             // 
             // captain8
             // 
-            this.captain8.Enabled = false;
             this.captain8.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.captain8.Location = new System.Drawing.Point(621, 580);
             this.captain8.Name = "captain8";
@@ -348,7 +311,6 @@ namespace AuctionApp
             // 
             // title_box
             // 
-            this.title_box.Enabled = false;
             this.title_box.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.title_box.Location = new System.Drawing.Point(697, 711);
             this.title_box.Name = "title_box";
@@ -377,7 +339,6 @@ namespace AuctionApp
             // 
             // team_size
             // 
-            this.team_size.Enabled = false;
             this.team_size.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.team_size.Location = new System.Drawing.Point(847, 760);
             this.team_size.Maximum = new decimal(new int[] { 10, 0, 0, 0 });
@@ -416,6 +377,30 @@ namespace AuctionApp
             this.save_button.Text = "Save";
             this.save_button.UseVisualStyleBackColor = true;
             this.save_button.Click += new System.EventHandler(this.save_button_Click);
+            // 
+            // nickname
+            // 
+            this.nickname.HeaderText = "Nickname";
+            this.nickname.Name = "nickname";
+            this.nickname.Width = 286;
+            // 
+            // class_inf
+            // 
+            this.class_inf.HeaderText = "Infantry";
+            this.class_inf.Name = "class_inf";
+            this.class_inf.Width = 70;
+            // 
+            // class_arc
+            // 
+            this.class_arc.HeaderText = "Archer";
+            this.class_arc.Name = "class_arc";
+            this.class_arc.Width = 70;
+            // 
+            // class_cav
+            // 
+            this.class_cav.HeaderText = "Cavalry";
+            this.class_cav.Name = "class_cav";
+            this.class_cav.Width = 70;
             // 
             // EditorForm
             // 

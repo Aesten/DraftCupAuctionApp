@@ -28,10 +28,11 @@ namespace AuctionApp
         {
             var player = _parentForm.AuctionStateAccess.Skipped[skipped_player_list.SelectedIndex];
             _parentForm.AuctionStateAccess.Skipped.RemoveAt(skipped_player_list.SelectedIndex);
-            _parentForm.AuctionStateAccess.PlayerQueue.Add(player);
+            _parentForm.AuctionStateAccess.PlayerQueue.Insert(0, player);
             
             _parentForm.UpdateQueueDisplayElements();
             _parentForm.Cache();
+            Close();
         }
 
         private void refill_button_Click(object sender, EventArgs e)
@@ -42,6 +43,10 @@ namespace AuctionApp
             }
             
             _parentForm.AuctionStateAccess.Skipped = new List<Auction.Player>();
+            
+            _parentForm.UpdateQueueDisplayElements();
+            _parentForm.Cache();
+            Close();
         }
     }
 }

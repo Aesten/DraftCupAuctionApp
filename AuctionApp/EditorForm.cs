@@ -87,7 +87,7 @@ namespace AuctionApp
                 if (row.IsNewRow) continue;
                 var player = new Auction.Player
                 {
-                    Name = row.Cells[0]?.ToString(),
+                    Name = row.Cells[0]?.Value.ToString(),
                     Classes = new List<string>()
                 };
                 if (Convert.ToBoolean(row.Cells[1].Value)) player.Classes.Add("inf");
@@ -110,6 +110,7 @@ namespace AuctionApp
         private void save_button_Click(object sender, EventArgs e)
         {
             Save();
+            MessageBox.Show($@"Modifications have been saved!", @"Saved", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void export_csv_button_Click(object sender, EventArgs e)
@@ -118,7 +119,7 @@ namespace AuctionApp
             
             using (var writer = new StreamWriter($@"{_path}.csv"))
             {
-                writer.WriteLine("player name,inf,arc,cav");
+                writer.WriteLine("Player,INF,ARC,CAV");
                 
                 foreach (var player in _auction.Players)
                 {
@@ -129,6 +130,8 @@ namespace AuctionApp
                     writer.WriteLine($"{player.Name},{inf},{arc},{cav}");
                 }
             }
+            
+            MessageBox.Show($@"Successfully exported to {_path}.csv!", @"Exported", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 }

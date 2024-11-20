@@ -60,7 +60,7 @@ namespace AuctionApp.JsonObjects
             public decimal Cost { get; set; }
 
             [JsonProperty("classes")] 
-            public List<string> Classes { get; set; } = new List<string> { "inf" };
+            public List<string> Classes { get; set; } = new List<string>();
         }
         
         public static AuctionState Deserialize(string path)

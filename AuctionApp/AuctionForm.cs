@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Reflection;
 using System.Windows.Forms;
 using AuctionApp.JsonObjects;
 
@@ -24,6 +25,9 @@ namespace AuctionApp
             _parentForm = parentForm;
             AuctionStateAccess = auctionState;
             _path = path;
+
+            half_budget_display.Checked = auctionState.HalfBudgetDisplay;
+            title_display.Text = auctionState.Title;
             
             // Create data structures to manage form items in groups
             _upcomingTextBoxes = new List<TextBox> { player_main_display, queue1, queue2, queue3 };
@@ -72,6 +76,7 @@ namespace AuctionApp
                     _teamFormElements[i].Players.Items.Add(t.Name);
                     _teamFormElements[i].Costs.Items.Add(t.Cost.ToString("0.0"));
                 }
+                UpdateBudgetDisplay(i);
             }
         }
 
@@ -108,8 +113,8 @@ namespace AuctionApp
 
         public void UpdateQueueDisplayElements()
         {
-            var remainder = AuctionStateAccess.InitialNumber - AuctionStateAccess.AuctionedNumber - AuctionStateAccess.SkippedNumber;
-            player_counter.Text = $@"{Math.Min(AuctionStateAccess.AuctionedNumber + AuctionStateAccess.SkippedNumber, AuctionStateAccess.InitialNumber)} (/{AuctionStateAccess.InitialNumber})";
+            var remainder = AuctionStateAccess.QueueNumber;
+            player_counter.Text = $@"{AuctionStateAccess.InitialNumber - AuctionStateAccess.QueueNumber} (/{AuctionStateAccess.InitialNumber})";
             auction_counter.Text = AuctionStateAccess.AuctionedNumber.ToString();
             for (var i = 0 ; i < 4 ; i++)
             {
@@ -120,6 +125,20 @@ namespace AuctionApp
             {
                 DisplayClassIcons(AuctionStateAccess.PlayerQueue[0]);
             }
+            else
+            {
+                foreach (var iconPictureBox in _iconPictureBoxes)
+                {
+                    iconPictureBox.Image = null;
+                }
+            }
+        }
+        
+        private static Image LoadImage(string resourceName)
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            var stream = assembly.GetManifestResourceStream(resourceName);
+            return stream != null ? Image.FromStream(stream) : null;
         }
 
         private void DisplayClassIcons(Auction.Player player)
@@ -129,30 +148,30 @@ namespace AuctionApp
                 case 0:
                     _iconPictureBoxes[0].Image = null;
                     _iconPictureBoxes[1].Image = null;
-                    _iconPictureBoxes[2].Image = Image.FromFile("icons\\inf.png");
+                    _iconPictureBoxes[2].Image = LoadImage("AuctionApp.Icons.inf.png");
                     _iconPictureBoxes[3].Image = null;
                     _iconPictureBoxes[4].Image = null;
                     break;
                 case 1:
                     _iconPictureBoxes[0].Image = null;
                     _iconPictureBoxes[1].Image = null;
-                    _iconPictureBoxes[2].Image = Image.FromFile($"icons\\{player.Classes[0]}.png");
+                    _iconPictureBoxes[2].Image = LoadImage($"AuctionApp.Icons.{player.Classes[0]}.png");
                     _iconPictureBoxes[3].Image = null;
                     _iconPictureBoxes[4].Image = null;
                     break;
                 case 2:
                     _iconPictureBoxes[0].Image = null;
-                    _iconPictureBoxes[1].Image = Image.FromFile($"icons\\{player.Classes[0]}.png");
+                    _iconPictureBoxes[1].Image = LoadImage($"AuctionApp.Icons.{player.Classes[0]}.png");
                     _iconPictureBoxes[2].Image = null;
-                    _iconPictureBoxes[3].Image = Image.FromFile($"icons\\{player.Classes[1]}.png");
+                    _iconPictureBoxes[3].Image = LoadImage($"AuctionApp.Icons.{player.Classes[1]}.png");
                     _iconPictureBoxes[4].Image = null;
                     break;
                 default:
-                    _iconPictureBoxes[0].Image = Image.FromFile($"icons\\{player.Classes[0]}.png");
+                    _iconPictureBoxes[0].Image = LoadImage($"AuctionApp.Icons.{player.Classes[0]}.png");
                     _iconPictureBoxes[1].Image = null;
-                    _iconPictureBoxes[2].Image = Image.FromFile($"icons\\{player.Classes[1]}.png");
+                    _iconPictureBoxes[2].Image = LoadImage($"AuctionApp.Icons.{player.Classes[1]}.png");
                     _iconPictureBoxes[3].Image = null;
-                    _iconPictureBoxes[4].Image = Image.FromFile($"icons\\{player.Classes[2]}.png");
+                    _iconPictureBoxes[4].Image = LoadImage($"AuctionApp.Icons.{player.Classes[2]}.png");
                     break;
             }
         }
@@ -184,11 +203,17 @@ namespace AuctionApp
                 MessageBox.Show(@"The selected captain cannot afford this player!", @"Invalid Value", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+
+            if (AuctionStateAccess.Teams[index].Members.Count >= AuctionStateAccess.TeamSize)
+            {
+                MessageBox.Show(@"The selected captain's team is full!", @"Limit Reached", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             
             UpdateTeamMember_Addition(index, cost, price.Text);
             UpdateQueueDisplayElements();
 
-            price.Text = @"0.0";
+            price.Text = @"0.1";
             team_selector.SelectedIndex = -1;
             
             Cache();
@@ -224,6 +249,9 @@ namespace AuctionApp
         
         private void half_budget_display_CheckedChanged(object sender, EventArgs e)
         {
+            AuctionStateAccess.HalfBudgetDisplay = half_budget_display.Checked;
+            if (_teamFormElements == null) return; // Check for the initial configuration of the checkbox
+            
             for (var i = 0; i < AuctionStateAccess.Teams.Count; i++)
             {
                 UpdateBudgetDisplay(i);

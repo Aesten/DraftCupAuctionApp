@@ -112,5 +112,10 @@
     <ItemGroup>
         <None Include="App.config" />
     </ItemGroup>
+    <ItemGroup>
+      <EmbeddedResource Include="Icons\arc.png" />
+      <EmbeddedResource Include="Icons\cav.png" />
+      <EmbeddedResource Include="Icons\inf.png" />
+    </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
 </Project>

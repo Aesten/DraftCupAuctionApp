@@ -36,14 +36,7 @@ namespace AuctionApp.JsonObjects
             [JsonProperty("name")]
             public string Name { get; set; } = string.Empty;
 
-            private List<string> _classes = new List<string> { "inf" };
-
-            [JsonProperty("classes")]
-            public List<string> Classes
-            {
-                get => _classes;
-                set => _classes = value ?? new List<string> { "inf" };
-            }
+            [JsonProperty("classes")] public List<string> Classes { get; set; } = new List<string>();
         }
 
         public static Auction Deserialize(string path)

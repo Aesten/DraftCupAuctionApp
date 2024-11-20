@@ -94,8 +94,8 @@ namespace AuctionApp
 
         private static string GenerateAuctionStateFile(string path)
         {
-            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            var auctionStatePath = $"{path}.{timestamp}.state";
+            var timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
+            var auctionStatePath = $"{Path.ChangeExtension(path, null)}.{timestamp}.state.json";
             var auction = Auction.Deserialize(path);
             AuctionState.FromAuction(auction).Serialize(auctionStatePath);
             return auctionStatePath;
