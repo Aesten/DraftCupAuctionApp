@@ -36,6 +36,7 @@ namespace AuctionApp
         
         private void AuctionEditorForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            Save();
             _parentForm.Show();
         }
 
@@ -84,10 +85,10 @@ namespace AuctionApp
             
             foreach (DataGridViewRow row in player_grid.Rows)
             {
-                if (row.IsNewRow) continue;
+                if (string.IsNullOrEmpty(row.Cells[0]?.Value?.ToString())) continue;
                 var player = new Auction.Player
                 {
-                    Name = row.Cells[0]?.Value.ToString(),
+                    Name = row.Cells[0].Value.ToString(),
                     Classes = new List<string>()
                 };
                 if (Convert.ToBoolean(row.Cells[1].Value)) player.Classes.Add("inf");
@@ -106,12 +107,6 @@ namespace AuctionApp
         }
 
         // Events
-
-        private void save_button_Click(object sender, EventArgs e)
-        {
-            Save();
-            MessageBox.Show($@"Modifications have been saved!", @"Saved", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
 
         private void export_csv_button_Click(object sender, EventArgs e)
         {
@@ -132,6 +127,11 @@ namespace AuctionApp
             }
             
             MessageBox.Show($@"Successfully exported to {_path}.csv!", @"Exported", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void player_grid_RowStateChanged(object sender, DataGridViewRowStateChangedEventArgs e)
+        {
+            entry_count.Text = (player_grid.Rows.Count - 1).ToString();
         }
     }
 }

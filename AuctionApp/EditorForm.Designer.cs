@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Drawing;
+using System.Windows.Forms;
 
 namespace AuctionApp
 {
@@ -33,6 +34,10 @@ namespace AuctionApp
         private void InitializeComponent()
         {
             this.player_grid = new System.Windows.Forms.DataGridView();
+            this.nickname = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.class_inf = new System.Windows.Forms.DataGridViewCheckBoxColumn();
+            this.class_arc = new System.Windows.Forms.DataGridViewCheckBoxColumn();
+            this.class_cav = new System.Windows.Forms.DataGridViewCheckBoxColumn();
             this.budget1 = new System.Windows.Forms.NumericUpDown();
             this.label2 = new System.Windows.Forms.Label();
             this.captain1 = new System.Windows.Forms.TextBox();
@@ -61,11 +66,8 @@ namespace AuctionApp
             this.team_size = new System.Windows.Forms.NumericUpDown();
             this.label9 = new System.Windows.Forms.Label();
             this.export_csv_button = new System.Windows.Forms.Button();
-            this.save_button = new System.Windows.Forms.Button();
-            this.nickname = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.class_inf = new System.Windows.Forms.DataGridViewCheckBoxColumn();
-            this.class_arc = new System.Windows.Forms.DataGridViewCheckBoxColumn();
-            this.class_cav = new System.Windows.Forms.DataGridViewCheckBoxColumn();
+            this.label10 = new System.Windows.Forms.Label();
+            this.entry_count = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.player_grid)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.budget1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.budget2)).BeginInit();
@@ -85,9 +87,33 @@ namespace AuctionApp
             this.player_grid.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
             this.player_grid.Location = new System.Drawing.Point(36, 156);
             this.player_grid.Name = "player_grid";
-            this.player_grid.RowHeadersVisible = false;
             this.player_grid.Size = new System.Drawing.Size(502, 626);
             this.player_grid.TabIndex = 0;
+            this.player_grid.RowStateChanged += new System.Windows.Forms.DataGridViewRowStateChangedEventHandler(this.player_grid_RowStateChanged);
+            // 
+            // nickname
+            // 
+            this.nickname.HeaderText = "Nickname";
+            this.nickname.Name = "nickname";
+            this.nickname.Width = 240;
+            // 
+            // class_inf
+            // 
+            this.class_inf.HeaderText = "Infantry";
+            this.class_inf.Name = "class_inf";
+            this.class_inf.Width = 70;
+            // 
+            // class_arc
+            // 
+            this.class_arc.HeaderText = "Archer";
+            this.class_arc.Name = "class_arc";
+            this.class_arc.Width = 70;
+            // 
+            // class_cav
+            // 
+            this.class_cav.HeaderText = "Cavalry";
+            this.class_cav.Name = "class_cav";
+            this.class_cav.Width = 70;
             // 
             // budget1
             // 
@@ -363,51 +389,35 @@ namespace AuctionApp
             this.export_csv_button.Name = "export_csv_button";
             this.export_csv_button.Size = new System.Drawing.Size(142, 29);
             this.export_csv_button.TabIndex = 103;
-            this.export_csv_button.Text = "Export in CSV";
+            this.export_csv_button.Text = "Save and Export";
             this.export_csv_button.UseVisualStyleBackColor = true;
             this.export_csv_button.Click += new System.EventHandler(this.export_csv_button_Click);
             // 
-            // save_button
+            // label10
             // 
-            this.save_button.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.save_button.Location = new System.Drawing.Point(12, 12);
-            this.save_button.Name = "save_button";
-            this.save_button.Size = new System.Drawing.Size(94, 29);
-            this.save_button.TabIndex = 104;
-            this.save_button.Text = "Save";
-            this.save_button.UseVisualStyleBackColor = true;
-            this.save_button.Click += new System.EventHandler(this.save_button_Click);
+            this.label10.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label10.Location = new System.Drawing.Point(36, 785);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(59, 18);
+            this.label10.TabIndex = 104;
+            this.label10.Text = "Entries:";
             // 
-            // nickname
+            // entry_count
             // 
-            this.nickname.HeaderText = "Nickname";
-            this.nickname.Name = "nickname";
-            this.nickname.Width = 286;
-            // 
-            // class_inf
-            // 
-            this.class_inf.HeaderText = "Infantry";
-            this.class_inf.Name = "class_inf";
-            this.class_inf.Width = 70;
-            // 
-            // class_arc
-            // 
-            this.class_arc.HeaderText = "Archer";
-            this.class_arc.Name = "class_arc";
-            this.class_arc.Width = 70;
-            // 
-            // class_cav
-            // 
-            this.class_cav.HeaderText = "Cavalry";
-            this.class_cav.Name = "class_cav";
-            this.class_cav.Width = 70;
+            this.entry_count.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.entry_count.Location = new System.Drawing.Point(89, 785);
+            this.entry_count.Name = "entry_count";
+            this.entry_count.Size = new System.Drawing.Size(59, 18);
+            this.entry_count.TabIndex = 105;
+            this.entry_count.Text = "0";
             // 
             // EditorForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1064, 859);
-            this.Controls.Add(this.save_button);
+            this.Controls.Add(this.entry_count);
+            this.Controls.Add(this.label10);
             this.Controls.Add(this.export_csv_button);
             this.Controls.Add(this.label9);
             this.Controls.Add(this.team_size);
@@ -453,7 +463,8 @@ namespace AuctionApp
             this.PerformLayout();
         }
 
-        private System.Windows.Forms.Button save_button;
+        private System.Windows.Forms.Label label10;
+        private System.Windows.Forms.Label entry_count;
 
         private System.Windows.Forms.Button export_csv_button;
 
