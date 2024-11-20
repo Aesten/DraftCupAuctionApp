@@ -28,10 +28,10 @@ namespace AuctionApp.JsonObjects
         public int InitialNumber { get; set; }
 
         [JsonProperty("playerQueue")]
-        public List<Auction.Player> PlayerQueue { get; set; } = new List<Auction.Player>();
+        public List<Player> PlayerQueue { get; set; } = new List<Player>();
 
         [JsonProperty("skipped")]
-        public List<Auction.Player> Skipped { get; set; } = new List<Auction.Player>();
+        public List<Player> Skipped { get; set; } = new List<Player>();
 
         [JsonProperty("teams")]
         public List<Team> Teams { get; set; } = new List<Team>();
@@ -49,6 +49,15 @@ namespace AuctionApp.JsonObjects
 
             [JsonProperty("members")]
             public List<PlayerMember> Members { get; set; } = new List<PlayerMember>();
+        }
+        
+        public class Player
+        {
+            [JsonProperty("name")]
+            public string Name { get; set; } = string.Empty;
+
+            [JsonProperty("classes")] 
+            public List<string> Classes { get; set; } = new List<string>();
         }
 
         public class PlayerMember
@@ -96,7 +105,16 @@ namespace AuctionApp.JsonObjects
                 Title = auction.Title,
                 TeamSize = auction.TeamSize,
                 InitialNumber = auction.Players.Count,
-                PlayerQueue = auction.Players
+                PlayerQueue = auction.Players.Where(priority => priority.HasPriority).Select(priority => new Player()
+                {
+                   Name = priority.Name,
+                   Classes = priority.Classes
+                }).ToList(),
+                Skipped = auction.Players.Where(priority => !priority.HasPriority).Select(priority => new Player()
+                {
+                    Name = priority.Name,
+                    Classes = priority.Classes
+                }).ToList()
             };
             
             foreach (var captain in auction.Captains)

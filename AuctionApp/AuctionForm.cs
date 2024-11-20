@@ -98,7 +98,7 @@ namespace AuctionApp
 
         private void UpdateTeamMember_Removal(int teamIndex, int playerIndex)
         {
-            var player = new Auction.Player
+            var player = new AuctionState.Player
             {
                 Name = AuctionStateAccess.Teams[teamIndex].Members[playerIndex].Name,
                 Classes = AuctionStateAccess.Teams[teamIndex].Members[playerIndex].Classes
@@ -141,7 +141,7 @@ namespace AuctionApp
             return stream != null ? Image.FromStream(stream) : null;
         }
 
-        private void DisplayClassIcons(Auction.Player player)
+        private void DisplayClassIcons(AuctionState.Player player)
         {
             switch (player.Classes.Count)
             {

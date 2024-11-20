@@ -17,7 +17,7 @@ namespace AuctionApp.JsonObjects
         public int TeamSize { get; set; } = 6;
 
         [JsonProperty("players")]
-        public List<Player> Players { get; set; } = new List<Player>();
+        public List<PlayerWithPriority> Players { get; set; } = new List<PlayerWithPriority>();
 
         [JsonProperty("captains")]
         public List<Captain> Captains { get; set; } = new List<Captain>();
@@ -31,12 +31,16 @@ namespace AuctionApp.JsonObjects
             public decimal Budget { get; set; } = 20;
         }
         
-        public class Player
+        public class PlayerWithPriority
         {
             [JsonProperty("name")]
             public string Name { get; set; } = string.Empty;
 
-            [JsonProperty("classes")] public List<string> Classes { get; set; } = new List<string>();
+            [JsonProperty("classes")] 
+            public List<string> Classes { get; set; } = new List<string>();
+            
+            [JsonProperty("hasPriority")]
+            public bool HasPriority { get; set; }
         }
 
         public static Auction Deserialize(string path)

@@ -42,7 +42,7 @@ namespace AuctionApp
                 _parentForm.AuctionStateAccess.PlayerQueue.Add(player);
             }
             
-            _parentForm.AuctionStateAccess.Skipped = new List<Auction.Player>();
+            _parentForm.AuctionStateAccess.Skipped = new List<AuctionState.Player>();
             
             _parentForm.UpdateQueueDisplayElements();
             _parentForm.Cache();

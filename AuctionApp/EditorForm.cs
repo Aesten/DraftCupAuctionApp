@@ -57,7 +57,8 @@ namespace AuctionApp
                     player.Name,
                     player.Classes.Contains("inf"),
                     player.Classes.Contains("arc"),
-                    player.Classes.Contains("cav"));
+                    player.Classes.Contains("cav"),
+                    player.HasPriority);
             }
         }
 
@@ -81,15 +82,16 @@ namespace AuctionApp
 
             _auction.Captains = captains;
             
-            var players = new List<Auction.Player>();
+            var players = new List<Auction.PlayerWithPriority>();
             
             foreach (DataGridViewRow row in player_grid.Rows)
             {
                 if (string.IsNullOrEmpty(row.Cells[0]?.Value?.ToString())) continue;
-                var player = new Auction.Player
+                var player = new Auction.PlayerWithPriority
                 {
                     Name = row.Cells[0].Value.ToString(),
-                    Classes = new List<string>()
+                    Classes = new List<string>(),
+                    HasPriority = Convert.ToBoolean(row.Cells[4].Value)
                 };
                 if (Convert.ToBoolean(row.Cells[1].Value)) player.Classes.Add("inf");
                 if (Convert.ToBoolean(row.Cells[2].Value)) player.Classes.Add("arc");
@@ -122,7 +124,7 @@ namespace AuctionApp
                     var arc = player.Classes.Contains("arc") ? "x" : "";
                     var cav = player.Classes.Contains("cav") ? "x" : "";
 
-                    writer.WriteLine($"{player.Name},{inf},{arc},{cav}");
+                    writer.WriteLine($"{player.Name},{inf},{arc},{cav},{player.HasPriority}");
                 }
             }
             

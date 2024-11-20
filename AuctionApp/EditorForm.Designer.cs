@@ -34,10 +34,6 @@ namespace AuctionApp
         private void InitializeComponent()
         {
             this.player_grid = new System.Windows.Forms.DataGridView();
-            this.nickname = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.class_inf = new System.Windows.Forms.DataGridViewCheckBoxColumn();
-            this.class_arc = new System.Windows.Forms.DataGridViewCheckBoxColumn();
-            this.class_cav = new System.Windows.Forms.DataGridViewCheckBoxColumn();
             this.budget1 = new System.Windows.Forms.NumericUpDown();
             this.label2 = new System.Windows.Forms.Label();
             this.captain1 = new System.Windows.Forms.TextBox();
@@ -68,6 +64,11 @@ namespace AuctionApp
             this.export_csv_button = new System.Windows.Forms.Button();
             this.label10 = new System.Windows.Forms.Label();
             this.entry_count = new System.Windows.Forms.Label();
+            this.nickname = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.class_inf = new System.Windows.Forms.DataGridViewCheckBoxColumn();
+            this.class_arc = new System.Windows.Forms.DataGridViewCheckBoxColumn();
+            this.class_cav = new System.Windows.Forms.DataGridViewCheckBoxColumn();
+            this.priority = new System.Windows.Forms.DataGridViewCheckBoxColumn();
             ((System.ComponentModel.ISupportInitialize)(this.player_grid)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.budget1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.budget2)).BeginInit();
@@ -83,37 +84,13 @@ namespace AuctionApp
             // player_grid
             // 
             this.player_grid.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.player_grid.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] { this.nickname, this.class_inf, this.class_arc, this.class_cav });
+            this.player_grid.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] { this.nickname, this.class_inf, this.class_arc, this.class_cav, this.priority });
             this.player_grid.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
-            this.player_grid.Location = new System.Drawing.Point(36, 156);
+            this.player_grid.Location = new System.Drawing.Point(12, 156);
             this.player_grid.Name = "player_grid";
-            this.player_grid.Size = new System.Drawing.Size(502, 626);
+            this.player_grid.Size = new System.Drawing.Size(542, 626);
             this.player_grid.TabIndex = 0;
             this.player_grid.RowStateChanged += new System.Windows.Forms.DataGridViewRowStateChangedEventHandler(this.player_grid_RowStateChanged);
-            // 
-            // nickname
-            // 
-            this.nickname.HeaderText = "Nickname";
-            this.nickname.Name = "nickname";
-            this.nickname.Width = 240;
-            // 
-            // class_inf
-            // 
-            this.class_inf.HeaderText = "Infantry";
-            this.class_inf.Name = "class_inf";
-            this.class_inf.Width = 70;
-            // 
-            // class_arc
-            // 
-            this.class_arc.HeaderText = "Archer";
-            this.class_arc.Name = "class_arc";
-            this.class_arc.Width = 70;
-            // 
-            // class_cav
-            // 
-            this.class_cav.HeaderText = "Cavalry";
-            this.class_cav.Name = "class_cav";
-            this.class_cav.Width = 70;
             // 
             // budget1
             // 
@@ -396,7 +373,7 @@ namespace AuctionApp
             // label10
             // 
             this.label10.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label10.Location = new System.Drawing.Point(36, 785);
+            this.label10.Location = new System.Drawing.Point(12, 785);
             this.label10.Name = "label10";
             this.label10.Size = new System.Drawing.Size(59, 18);
             this.label10.TabIndex = 104;
@@ -405,17 +382,46 @@ namespace AuctionApp
             // entry_count
             // 
             this.entry_count.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.entry_count.Location = new System.Drawing.Point(89, 785);
+            this.entry_count.Location = new System.Drawing.Point(65, 785);
             this.entry_count.Name = "entry_count";
             this.entry_count.Size = new System.Drawing.Size(59, 18);
             this.entry_count.TabIndex = 105;
             this.entry_count.Text = "0";
             // 
+            // nickname
+            // 
+            this.nickname.HeaderText = "Nickname";
+            this.nickname.Name = "nickname";
+            this.nickname.Width = 180;
+            // 
+            // class_inf
+            // 
+            this.class_inf.HeaderText = "Infantry";
+            this.class_inf.Name = "class_inf";
+            this.class_inf.Width = 70;
+            // 
+            // class_arc
+            // 
+            this.class_arc.HeaderText = "Archer";
+            this.class_arc.Name = "class_arc";
+            this.class_arc.Width = 70;
+            // 
+            // class_cav
+            // 
+            this.class_cav.HeaderText = "Cavalry";
+            this.class_cav.Name = "class_cav";
+            this.class_cav.Width = 70;
+            // 
+            // priority
+            // 
+            this.priority.HeaderText = "Has Priority";
+            this.priority.Name = "priority";
+            // 
             // EditorForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1064, 859);
+            this.ClientSize = new System.Drawing.Size(1026, 859);
             this.Controls.Add(this.entry_count);
             this.Controls.Add(this.label10);
             this.Controls.Add(this.export_csv_button);
@@ -462,6 +468,8 @@ namespace AuctionApp
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+
+        private System.Windows.Forms.DataGridViewCheckBoxColumn priority;
 
         private System.Windows.Forms.Label label10;
         private System.Windows.Forms.Label entry_count;
