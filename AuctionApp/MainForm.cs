@@ -68,6 +68,11 @@ namespace AuctionApp
 
         private void OpenAuctionEditor(string path)
         {
+            if (path == null)
+            {
+                MessageBox.Show(@"No file was selected", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
             var auction = Auction.Deserialize(path);
             if (auction == null)
             {
@@ -81,6 +86,11 @@ namespace AuctionApp
 
         private void OpenAuctionScreen(string path)
         {
+            if (path == null)
+            {
+                MessageBox.Show(@"No file was selected", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
             var auctionState = AuctionState.Deserialize(path);
             if (auctionState == null)
             {
@@ -94,6 +104,10 @@ namespace AuctionApp
 
         private static string GenerateAuctionStateFile(string path)
         {
+            if (path == null)
+            {
+                return null;
+            }
             var timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
             var auctionStatePath = $"{Path.ChangeExtension(path, null)}.{timestamp}.state.json";
             var auction = Auction.Deserialize(path);
