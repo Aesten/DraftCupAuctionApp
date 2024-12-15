@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
 using AuctionApp.JsonObjects;
@@ -21,6 +22,7 @@ namespace AuctionApp
         {
             InitializeComponent();
             FormClosing += AuctionForm_FormClosing;
+            MouseClick += Form_MouseClick;
             
             _parentForm = parentForm;
             AuctionStateAccess = auctionState;
@@ -265,14 +267,8 @@ namespace AuctionApp
 
         private void players_SelectedIndexChanged(object sender, EventArgs e)
         {
-            remove_button.Enabled = team1_players.SelectedIndex != -1 ||
-                                    team2_players.SelectedIndex != -1 ||
-                                    team3_players.SelectedIndex != -1 ||
-                                    team4_players.SelectedIndex != -1 ||
-                                    team5_players.SelectedIndex != -1 ||
-                                    team6_players.SelectedIndex != -1 ||
-                                    team7_players.SelectedIndex != -1 ||
-                                    team8_players.SelectedIndex != -1;
+            var selectedCount = _teamFormElements.Count(team => team.Players.SelectedIndex != -1);
+            remove_button.Enabled = selectedCount == 1;
         }
 
         private void team_selector_SelectedIndexChanged(object sender, EventArgs e)
@@ -283,6 +279,16 @@ namespace AuctionApp
         private void manage_skipped_button_Click(object sender, EventArgs e)
         {
             new SkippedPlayersPopup(this).Show();
+        }
+        
+        // Deselection handling
+        
+        private void Form_MouseClick(object sender, MouseEventArgs e)
+        {
+            foreach (var team in _teamFormElements.Where(team => !team.Players.ClientRectangle.Contains(e.Location)))
+            {
+                team.Players.ClearSelected();
+            }
         }
     }
 }

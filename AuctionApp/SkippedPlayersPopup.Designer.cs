@@ -44,7 +44,7 @@ namespace AuctionApp
             this.skipped_player_list.ItemHeight = 24;
             this.skipped_player_list.Location = new System.Drawing.Point(51, 50);
             this.skipped_player_list.Name = "skipped_player_list";
-            this.skipped_player_list.Size = new System.Drawing.Size(251, 364);
+            this.skipped_player_list.Size = new System.Drawing.Size(251, 724);
             this.skipped_player_list.TabIndex = 0;
             this.skipped_player_list.SelectedIndexChanged += new System.EventHandler(this.skipped_player_list_SelectedIndexChanged);
             // 
@@ -62,7 +62,7 @@ namespace AuctionApp
             // 
             this.pick_button.Enabled = false;
             this.pick_button.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.pick_button.Location = new System.Drawing.Point(51, 437);
+            this.pick_button.Location = new System.Drawing.Point(51, 788);
             this.pick_button.Name = "pick_button";
             this.pick_button.Size = new System.Drawing.Size(77, 29);
             this.pick_button.TabIndex = 14;
@@ -73,7 +73,7 @@ namespace AuctionApp
             // refill_button
             // 
             this.refill_button.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.refill_button.Location = new System.Drawing.Point(156, 437);
+            this.refill_button.Location = new System.Drawing.Point(156, 788);
             this.refill_button.Name = "refill_button";
             this.refill_button.Size = new System.Drawing.Size(146, 29);
             this.refill_button.TabIndex = 15;
@@ -85,7 +85,7 @@ namespace AuctionApp
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(358, 495);
+            this.ClientSize = new System.Drawing.Size(361, 829);
             this.Controls.Add(this.refill_button);
             this.Controls.Add(this.pick_button);
             this.Controls.Add(this.title);
