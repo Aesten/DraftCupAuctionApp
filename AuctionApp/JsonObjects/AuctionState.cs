@@ -45,7 +45,7 @@ namespace AuctionApp.JsonObjects
             public decimal InitialBudget { get; set; }
 
             public decimal CurrentBudget => InitialBudget - Members.Sum(member => member.Cost);
-            public decimal CurrentBudgetHalf => InitialBudget/2 - Members.Sum(member => member.Cost);
+            public decimal CurrentBudgetHalf => CurrentBudget - Math.Ceiling(10*InitialBudget/2)/10;
 
             [JsonProperty("members")]
             public List<PlayerMember> Members { get; set; } = new List<PlayerMember>();

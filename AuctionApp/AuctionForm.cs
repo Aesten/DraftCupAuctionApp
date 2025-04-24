@@ -182,7 +182,7 @@ namespace AuctionApp
         {
             var team = AuctionStateAccess.Teams[index];
             _teamFormElements[index].Budget.Text = AuctionStateAccess.HalfBudgetDisplay
-                ? (team.CurrentBudget - team.InitialBudget / 2).ToString("0.0")
+                ? (team.CurrentBudgetHalf).ToString("0.0")
                 : team.CurrentBudget.ToString("0.0");
         }
         
