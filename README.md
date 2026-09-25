@@ -2,11 +2,19 @@
 
 A Windows app for hosting draft cup auctions offline: captains bid on players with their own budget until every team is full. It's built to be shown on stream.
 
-## Running it
+- **Made for streaming**: the auction screen shows the player on the block, the next players and every team's roster and budget at once, without scrolling.
+- **Tournaments with several divisions** sharing one player pool: players bought in one division are out of the next.
+- **Nothing to save**: every change is saved automatically. A tournament can be exported to a file, run on another PC, and merged back.
+- **Player lists** in CSV or JSON, to bring in a sign-up sheet.
+- **Mistakes are easy to fix**: undo, or refund, reprice, move or swap any sold player.
+- A native Windows 11 look, in light or dark.
 
-Download `DraftCupAuction.exe` (from the latest run of the **Build** workflow on GitHub, or from a release) and run it. It's a single file of under 1 MB, for 64-bit Windows 10 or 11. It uses the Windows accent color, and starts in light or dark like Windows; **Theme** (on the start page and in the menu) switches between light and dark, and the choice is remembered on this PC.
+## Download
 
-It needs the **.NET 10 Desktop Runtime**, a one-time install per PC (a newer version works too). If it's missing, the app says so when started and offers to open the download page: pick the **Desktop Runtime** for **x64**, install it, and start the app again. It can also be installed ahead of time from [dotnet.microsoft.com](https://dotnet.microsoft.com/download/dotnet/10.0), or from a terminal:
+1. Get `DraftCupAuction.exe` from the latest successful run of the [**Build** workflow](https://github.com/Aesten/DraftCupAuctionApp/actions/workflows/build.yml?query=branch%3Amaster+is%3Asuccess) (open the run, then **Artifacts › DraftCupAuction**; this needs a GitHub account and comes as a zip), or from a release when there is one.
+2. Run it. It's a single file of about 1 MB, for 64-bit Windows 10 or 11, and needs no setup of its own.
+
+The app needs the **.NET 10 Desktop Runtime**, a one-time install per PC (a newer version works too). If it's missing, the app says so when started and offers to open the download page: pick the **Desktop Runtime** for **x64**, install it, and start the app again. It can also be installed ahead of time from [dotnet.microsoft.com](https://dotnet.microsoft.com/download/dotnet/10.0), or from a terminal:
 
 ```sh
 winget install Microsoft.DotNet.DesktopRuntime.10
@@ -14,7 +22,15 @@ winget install Microsoft.DotNet.DesktopRuntime.10
 
 ## How it's organized
 
-The app works like a document editor: you open one **tournament** at a time. The start page lists the tournaments on this PC, and lets you create a new one or import one. The ☰ menu (top left) floats over the page: the open tournament (export, duplicate, close, delete), the recent tournaments, and at the bottom new tournament, import, the data folder and the theme. Click ☰ again (or press Esc) to close it.
+The app works like a document editor: you open one **tournament** at a time. The start page lists the tournaments on this PC, and lets you create a new one or import one.
+
+Once a tournament is open, the ☰ menu (top left) has:
+
+- the open tournament: export, duplicate for a new event, close, delete;
+- the recent tournaments, to switch between them;
+- new tournament, import, the data folder, and the **Light / Dark** theme.
+
+Click ☰ again (or press Esc) to close it. The theme starts like Windows' own setting and follows it until you pick one; the choice is remembered on this PC. The app also uses the Windows accent color.
 
 A tournament holds:
 
@@ -74,6 +90,7 @@ When a division is done, share its teams from **Teams**: **Copy as text** (forma
 | --- | --- |
 | Enter (in a text box) | Confirm and leave the box (in the price box: confirm the price, it doesn't sell) |
 | Up / Down (in the price box) | Price ±0.1 |
+| Delete (in the player pool) | Remove the selected players |
 | Ctrl+Z | Undo the last auction action |
 | F11 | Full screen on / off |
 | Escape | Close the menu, or leave full screen |
@@ -133,5 +150,5 @@ The app only runs on Windows, but it also builds on Linux and macOS, so CI and c
 | Project | Contents |
 | --- | --- |
 | `AuctionApp.Core` | Everything that isn't UI: the data model (`Tournament`, `Division`, `AuctionSession`), the auction rules (`AuctionEngine`), how the pool is shared (`TournamentRules`), validation, saving, importing, merging and exporting. Plain .NET, no Windows dependency. |
-| `AuctionApp` | The WPF app (XAML views + view models, [CommunityToolkit.Mvvm](https://learn.microsoft.com/dotnet/communitytoolkit/mvvm/)). The look comes from WPF's built-in Fluent theme (`ThemeMode="System"` in `App.xaml`) plus shared styles in `Themes/Styles.xaml`. |
+| `AuctionApp` | The WPF app (XAML views + view models, [CommunityToolkit.Mvvm](https://learn.microsoft.com/dotnet/communitytoolkit/mvvm/)). The look comes from WPF's built-in Fluent theme (`ThemeMode` in `App.xaml`, switched to light or dark by `Services/AppSettings.cs`) plus shared styles in `Themes/Styles.xaml`. |
 | `AuctionApp.Tests` | xUnit tests for `AuctionApp.Core`. |
