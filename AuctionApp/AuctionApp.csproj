@@ -24,6 +24,8 @@
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <!-- The app is in English: leave out the .NET/WPF resources translated to other languages (about 3 MB). -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <DebugType>embedded</DebugType>
   </PropertyGroup>
 

@@ -85,8 +85,8 @@
                                 <controls:IconLabel Glyph="&#xE710;" Text="New tournament" />
                             </Button>
                             <Button Margin="8,0,0,0" Command="{Binding ImportCommand}"
-                                    ToolTip="A tournament file exported from this app (on this PC or another one), or a .json file from the old version. You can also drop files on the window.">
-                                <controls:IconLabel Glyph="&#xE8B5;" Text="Import a file…" />
+                                    ToolTip="A tournament exported from this app (.draftcup.json), on this PC or another one. You can also drop the file on the window.">
+                                <controls:IconLabel Glyph="&#xE8B5;" Text="Import a tournament…" />
                             </Button>
                         </StackPanel>
                         <TextBlock Margin="0,28,0,8" Style="{StaticResource Caption}" FontWeight="SemiBold" Text="TOURNAMENTS ON THIS PC"
@@ -134,7 +134,7 @@
                             <TextBlock Margin="12,0,0,6" FontSize="15" Style="{StaticResource Strong}" Text="{Binding Current.Title}" />
                             <Button Command="{Binding Current.ExportCommand}" Style="{StaticResource MenuButton}"
                                     ToolTip="Save the whole tournament to a file, to run a division on another PC. Import it back afterwards to merge the results.">
-                                <controls:IconLabel Glyph="&#xEDE1;" Text="Export to a file…" />
+                                <controls:IconLabel Glyph="&#xEDE1;" Text="Export the tournament…" />
                             </Button>
                             <Button Command="{Binding Current.DuplicateCommand}" Style="{StaticResource MenuButton}"
                                     ToolTip="New tournament with the same pool and divisions, without any auction results">
@@ -153,8 +153,8 @@
                             <controls:IconLabel Glyph="&#xE710;" Text="New tournament" />
                         </Button>
                         <Button Command="{Binding ImportCommand}" Style="{StaticResource MenuButton}"
-                                ToolTip="A tournament file exported from this app (on this PC or another one), or a .json file from the old version. You can also drop files on the window.">
-                            <controls:IconLabel Glyph="&#xE8B5;" Text="Import a file…" />
+                                ToolTip="A tournament exported from this app (.draftcup.json), on this PC or another one. You can also drop the file on the window.">
+                            <controls:IconLabel Glyph="&#xE8B5;" Text="Import a tournament…" />
                         </Button>
                         <TextBlock Style="{StaticResource MenuHeading}" Text="ON THIS PC" Visibility="{Binding HasRecent, Converter={StaticResource BoolToVisibility}}" />
                     </StackPanel>

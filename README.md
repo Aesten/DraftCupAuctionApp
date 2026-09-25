@@ -4,17 +4,17 @@ A Windows app for hosting draft cup auctions offline: captains bid on players wi
 
 ## Running it
 
-Download `DraftCupAuction.exe` (from the latest run of the **Build** workflow on GitHub, or from a release) and run it. It's a single self-contained file for 64-bit Windows 10 or 11, with nothing else to install. It follows the Windows light/dark setting and accent color.
+Download `DraftCupAuction.exe` (from the latest run of the **Build** workflow on GitHub, or from a release) and run it. It's a single self-contained file for 64-bit Windows 10 or 11, with nothing else to install. It's about 60 MB because it carries the .NET runtime and WPF with it; the app itself is under 1 MB. It follows the Windows light/dark setting and accent color.
 
 ## How it's organized
 
-The app works like a document editor: you open one **tournament** at a time. The start page lists the tournaments on this PC, and lets you create a new one or import a file. The ☰ menu (top left) floats over the page, and has the same list plus export, duplicate, close and delete.
+The app works like a document editor: you open one **tournament** at a time. The start page lists the tournaments on this PC, and lets you create a new one or import one. The ☰ menu (top left) floats over the page, and has the same list plus export, duplicate, close and delete.
 
 A tournament holds:
 
 - **Player pool**: shared by the whole tournament. Players have classes (INF / ARC / CAV).
   - Add players from the first row of the list: type the name, tick the classes (or type them: `Alice, inf cav`) and press Enter.
-  - **Import…** adds the players of a player list (CSV, e.g. from Excel) or an auction plan (see [Player lists](#player-lists)). **Export…** saves the pool as a spreadsheet in the same format, so it can be imported again.
+  - **Import…** adds the players of a player list, for example from a sign-up sheet, and **Export…** saves the pool as one (see [Player lists](#player-lists)).
   - The pool is shown **A–Z** by default, so opening it during an auction doesn't reveal who comes next.
   - Filter it with the search box (it narrows the list as you type), the class buttons, and **All / Available / Unavailable** (not bought yet / already bought). Click a player's class icons to switch those classes on or off.
   - **Auction order** shows the order used by divisions that don't shuffle. Drag the handles (or press Alt+↑/↓) to rearrange it.
@@ -76,19 +76,19 @@ When a division is done, share its teams from **Teams**: **Copy as text** (forma
 
 Tournaments are saved automatically after every change in `%LOCALAPPDATA%\DraftCupAuction` (**Open the data folder** in the menu). To hand one over:
 
-1. **Export to a file…** from the menu. This gives you a `.draftcup.json` file (plain JSON).
-2. On the other computer, **Import** it: use the start page or the menu, drop the file on the window, or open the file with the app.
+1. **Export the tournament…** from the menu. This gives you a `.draftcup.json` file holding everything: the pool, the divisions, and their auctions as they stand (sales, queue order, skipped players, undo aside).
+2. On the other computer, **Import a tournament…**: use the start page or the menu, drop the file on the window, or open the file with the app.
 3. Run a division there, export again, and import the file back on the first computer.
 
 When you import a copy of a tournament you already have, the two are **merged**. For each division, and for the pool, whichever copy changed it last wins. The app lists what will change before applying it. If two copies auctioned at the same time bought the same player, you're warned. Players bought elsewhere are also taken out of any auction still running.
 
-**Import** also accepts the `.json` files of the previous version of the app: an auction plan or an auction state (including an auction in progress) becomes a tournament with one division.
+Each save keeps the previous version as a backup. Deleted tournaments, and tournaments before a reset or an import, are copied to the `Deleted` folder rather than erased.
 
-### Player lists
+## Player lists
 
-**Import** (start page or menu) turns a player list or an auction plan into a new tournament, and **Import…** in the player pool adds its players to the current pool. Both show the expected formats before asking for the file. They are the formats of the previous version of the app:
+A player list is only players, names and classes: the link between a sign-up sheet and the app. In the player pool, **Import…** adds the players of a list (names already in the pool are skipped) and shows the format first. **Export…** saves the pool as a list. There are two layouts, both from the previous version of the app:
 
-- **CSV** (e.g. from Excel: **File › Save As › CSV**): the player list the previous version exported, one column per class marked `x`. The pool's **Export…** file has the same columns (plus where each player ended up) and can be imported as it is.
+- **CSV**, the layout it exported: one column per class, marked `x`. From Excel: **File › Save As › CSV**. A column of classes written out (`inf cav`) is read too.
 
   ```csv
   Player,INF,ARC,CAV
@@ -96,24 +96,16 @@ When you import a copy of a tournament you already have, the two are **merged**.
   Bob,,x,x
   ```
 
-- **JSON**: an auction plan of the previous version. Captains can also have a `"class"` (the previous version didn't have one).
+- **JSON**, players the way its files stored them. Classes are `inf`, `arc` and `cav`.
 
   ```json
   {
-    "type": "Auction",
-    "title": "Spring Cup",
-    "teamSize": 6,
     "players": [
       { "name": "Alice", "classes": ["inf"] },
       { "name": "Bob", "classes": ["arc", "cav"] }
-    ],
-    "captains": [
-      { "name": "Dave", "budget": 20, "class": "cav" }
     ]
   }
   ```
-
-Each save keeps the previous version as a backup. Deleted tournaments, and tournaments before a reset or an import, are copied to the `Deleted` folder rather than erased.
 
 ## Building from source
 

@@ -88,12 +88,18 @@
                     <controls:IconLabel Glyph="&#xE74D;" Text="Remove" />
                 </Button>
                 <Button Margin="8,0,0,0" Command="{Binding ImportPlayersCommand}" Style="{StaticResource SubtleButton}"
-                        ToolTip="Add players from a file, e.g. a list kept in Excel (CSV)">
+                        ToolTip="Add players from a player list (CSV or JSON), e.g. a sign-up sheet">
                     <controls:IconLabel Glyph="&#xE8B5;" Text="Import…" />
                 </Button>
-                <Button Margin="4,0,0,0" Command="{Binding ExportPlayersCommand}" Style="{StaticResource SubtleButton}"
-                        ToolTip="Export the pool as a spreadsheet (CSV), with where each player ended up">
+                <Button x:Name="ExportButton" Margin="4,0,0,0" Click="ExportButton_Click" Style="{StaticResource SubtleButton}"
+                        ToolTip="Save the player list (names and classes) as CSV or JSON">
                     <controls:IconLabel Glyph="&#xEDE1;" Text="Export…" />
+                    <Button.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Command="{Binding ExportPlayersCommand}" CommandParameter="csv" Header="CSV (Excel)…" />
+                            <MenuItem Command="{Binding ExportPlayersCommand}" CommandParameter="json" Header="JSON…" />
+                        </ContextMenu>
+                    </Button.ContextMenu>
                 </Button>
             </StackPanel>
         </Grid>

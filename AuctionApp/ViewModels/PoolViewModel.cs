@@ -335,15 +335,12 @@ public sealed partial class PoolViewModel : ObservableObject
         PlayerAdded?.Invoke(row);
     }
 
-    /// <summary>
-    /// Adds the players of a file: a player list (CSV or text, e.g. saved from Excel), or the pool of a tournament file.
-    /// Names already in the pool are skipped.
-    /// </summary>
+    /// <summary>Adds the players of a player list file (CSV or JSON, e.g. from a sign-up sheet). Names already in the pool are skipped.</summary>
     [RelayCommand]
     private void ImportPlayers()
     {
         EndPendingEdits();
-        if (Dialogs.PickImportFile(ImportKind.Players) is not { } path)
+        if (Dialogs.PickPlayerListToImport() is not { } path)
         {
             return;
         }
@@ -351,11 +348,9 @@ public sealed partial class PoolViewModel : ObservableObject
         List<ParsedPlayer> parsed;
         try
         {
-            parsed = TournamentImporter.Import(File.ReadAllText(path), string.Empty).Players
-                .Select(player => new ParsedPlayer(player.Name, player.Classes))
-                .ToList();
+            parsed = PlayerList.Parse(File.ReadAllText(path));
         }
-        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or System.Text.Json.JsonException)
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
         {
             Dialogs.ShowError("Couldn't import this file", ex.Message);
             return;
@@ -461,14 +456,23 @@ public sealed partial class PoolViewModel : ObservableObject
         Changed();
     }
 
+    /// <summary>Saves the pool as a player list (names and classes only), in the pool's order. Format: "csv" or "json".</summary>
     [RelayCommand]
-    private void ExportPlayers()
+    private void ExportPlayers(string format)
     {
-        var path = Dialogs.PickFileToSave("Export the player pool", "CSV spreadsheet (*.csv)|*.csv", $"{Tournament.Title} players.csv");
-        if (path != null)
+        EndPendingEdits();
+        var isJson = format == "json";
+        var path = Dialogs.PickFileToSave(
+            "Export the player list",
+            isJson ? "JSON player list (*.json)|*.json" : "CSV spreadsheet (*.csv)|*.csv",
+            $"{Tournament.Title} players{(isJson ? ".json" : ".csv")}");
+        if (path == null)
         {
-            Dialogs.TryWriteFile(path, TournamentExporter.PlayersToCsv(Tournament));
+            return;
         }
+
+        var players = Tournament.Players.Where(player => !string.IsNullOrWhiteSpace(player.Name));
+        Dialogs.TryWriteFile(path, isJson ? PlayerList.ToJson(players) : PlayerList.ToCsv(players));
     }
 }
 

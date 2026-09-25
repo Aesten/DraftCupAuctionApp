@@ -44,6 +44,17 @@ public partial class PoolView : UserControl
 
     private PoolViewModel? ViewModel => DataContext as PoolViewModel;
 
+    /// <summary>Export… asks for the format (CSV or JSON) with a small menu.</summary>
+    private void ExportButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ExportButton.ContextMenu is { } menu)
+        {
+            menu.PlacementTarget = ExportButton;
+            menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+            menu.IsOpen = true;
+        }
+    }
+
     // Drag and drop reordering, started from the handle column.
 
     private void Handle_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)

@@ -17,13 +17,6 @@ public enum DialogChoice
 }
 
 /// <summary>A player offered in <see cref="IDialogService.PickPlayer"/>; <paramref name="Where"/> says where they are now.</summary>
-/// <summary>What a file is imported as: a whole tournament (or a new one from a player list), or players for the pool.</summary>
-public enum ImportKind
-{
-    Tournament,
-    Players,
-}
-
 public sealed record PlayerChoice(Guid Id, string Name, IReadOnlyList<string> Classes, string Where);
 
 /// <summary>Everything that talks to the user outside of the main window: dialogs, file pickers, clipboard.</summary>
@@ -43,14 +36,17 @@ public interface IDialogService
 
     string? PickFileToSave(string title, string filter, string suggestedName);
 
-    /// <summary>Shows the expected format, then the file picker. Returns the chosen file, or null.</summary>
-    string? PickImportFile(ImportKind kind);
+    /// <summary>Shows the player list formats, then the file picker. Returns the chosen file, or null.</summary>
+    string? PickPlayerListToImport();
 
     bool CopyToClipboard(string text);
 
     void OpenFolder(string path);
 
-    /// <summary>Writes a text file (UTF-8 with BOM so Excel reads accents correctly). Returns false and tells the user on failure.</summary>
+    /// <summary>
+    /// Writes a text file in UTF-8, with a BOM for CSV files so Excel reads accents correctly (other tools, e.g. JSON
+    /// readers, may not expect one). Returns false and tells the user on failure.
+    /// </summary>
     bool TryWriteFile(string path, string contents);
 }
 
@@ -93,17 +89,10 @@ public sealed class DialogService : IDialogService
         return dialog.ShowDialog(Owner) == true ? dialog.FileName : null;
     }
 
-    public string? PickImportFile(ImportKind kind)
-    {
-        if (new ImportDialog(kind) { Owner = Owner }.ShowDialog() != true)
-        {
-            return null;
-        }
-
-        return kind == ImportKind.Players
-            ? PickFileToOpen("Import players", "Player lists and auction plans (*.csv;*.json;*.txt)|*.csv;*.json;*.txt|All files (*.*)|*.*")
-            : PickFileToOpen("Import a tournament", "Tournaments, player lists and auction plans (*.json;*.csv;*.txt)|*.json;*.csv;*.txt|All files (*.*)|*.*");
-    }
+    public string? PickPlayerListToImport() =>
+        new PlayerListImportDialog { Owner = Owner }.ShowDialog() == true
+            ? PickFileToOpen("Import a player list", "Player lists (*.csv;*.json)|*.csv;*.json|All files (*.*)|*.*")
+            : null;
 
     public bool CopyToClipboard(string text)
     {
@@ -131,7 +120,8 @@ public sealed class DialogService : IDialogService
     {
         try
         {
-            File.WriteAllText(path, contents, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+            var bom = string.Equals(Path.GetExtension(path), ".csv", StringComparison.OrdinalIgnoreCase);
+            File.WriteAllText(path, contents, new UTF8Encoding(encoderShouldEmitUTF8Identifier: bom));
             return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)

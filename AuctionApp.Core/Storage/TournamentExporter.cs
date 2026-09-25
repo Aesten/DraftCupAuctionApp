@@ -11,29 +11,6 @@ public static class TournamentExporter
     /// <summary>The whole tournament, to hand over to another computer and merge back later.</summary>
     public static string ToFile(Tournament tournament) => TournamentJson.Serialize(tournament);
 
-    /// <summary>The player pool as a spreadsheet: name, one column per class, and where each player ended up.</summary>
-    public static string PlayersToCsv(Tournament tournament)
-    {
-        var statuses = TournamentRules.PoolStatuses(tournament);
-        var csv = new StringBuilder();
-        AppendRow(csv, ["Player", .. PlayerClasses.All.Select(PlayerClasses.ShortName), "Division", "Team", "Price"]);
-        foreach (var player in tournament.Players)
-        {
-            var status = statuses[player.Id];
-            var picked = status.Kind == PoolStatusKind.Picked;
-            AppendRow(csv,
-            [
-                player.Name,
-                .. PlayerClasses.All.Select(c => player.Classes.Contains(c) ? "x" : string.Empty),
-                picked ? status.Division!.Name : string.Empty,
-                picked ? status.CaptainName! : string.Empty,
-                picked ? status.Price.ToString("0.0", CultureInfo.InvariantCulture) : string.Empty,
-            ]);
-        }
-
-        return csv.ToString();
-    }
-
     /// <summary>Every sale of a division, team by team, as a spreadsheet.</summary>
     public static string ResultsToCsv(Division division)
     {

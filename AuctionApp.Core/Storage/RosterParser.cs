@@ -5,9 +5,9 @@ namespace AuctionApp.Core.Storage;
 public sealed record ParsedPlayer(string Name, List<string> Classes);
 
 /// <summary>
-/// Reads a list of players pasted from a spreadsheet, a CSV file or a chat message. Accepted lines look like
-/// <c>Name</c>, <c>Name, inf cav</c>, <c>Name;archer</c> or spreadsheet rows in the exported layout
-/// (<c>Name | x |  | x</c>).
+/// Reads the CSV (and plain text) layouts of a <see cref="PlayerList"/>: rows in the exported layout
+/// (<c>Name,x,,x</c>, one column per class), and also looser lines like <c>Name</c>, <c>Name, inf cav</c> or
+/// <c>Name;archer</c>, with commas, semicolons or tabs between columns.
 /// </summary>
 public static class RosterParser
 {
@@ -55,6 +55,25 @@ public static class RosterParser
     private static bool IsHeader(string firstCell, int parsedSoFar) =>
         parsedSoFar == 0 && (firstCell.Equals("player", StringComparison.OrdinalIgnoreCase) || firstCell.Equals("name", StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>The first comma or semicolon outside quotes (a quoted name may contain either).</summary>
+    private static char UnquotedSeparator(string line)
+    {
+        var quoted = false;
+        foreach (var c in line)
+        {
+            if (c == '"')
+            {
+                quoted = !quoted;
+            }
+            else if (!quoted && c is ',' or ';')
+            {
+                return c;
+            }
+        }
+
+        return ',';
+    }
+
     private static List<string> SplitCells(string line)
     {
         if (line.Contains('\t'))
@@ -62,7 +81,7 @@ public static class RosterParser
             return [.. line.Split('\t')];
         }
 
-        var separator = line.Contains(';') ? ';' : ',';
+        var separator = UnquotedSeparator(line);
         var cells = new List<string>();
         var current = new System.Text.StringBuilder();
         var quoted = false;
