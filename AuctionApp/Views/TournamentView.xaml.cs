@@ -2,9 +2,9 @@ using System.Windows.Controls;
 
 namespace AuctionApp.Views;
 
-public partial class DraftView : UserControl
+public partial class TournamentView : UserControl
 {
-    public DraftView()
+    public TournamentView()
     {
         InitializeComponent();
     }

@@ -43,23 +43,6 @@ public class ParsingTests
     }
 
     [Fact]
-    public void Roster_ParsesTheExportedSpreadsheetLayout()
-    {
-        var draft = new Draft();
-        draft.Stages[0].Name = "Tier 1";
-        draft.Players.Add(new Player { Name = "Smith, John", Classes = ["arc"], StageId = draft.Stages[0].Id });
-        draft.Players.Add(new Player { Name = "Eve", Classes = ["inf", "cav"], StageId = draft.Stages[0].Id });
-
-        var players = RosterParser.Parse(DraftExporter.PlayersToCsv(draft));
-
-        Assert.Equal(2, players.Count);
-        Assert.Equal("Smith, John", players[0].Name);
-        Assert.Equal(["arc"], players[0].Classes);
-        Assert.Equal(["inf", "cav"], players[1].Classes);
-        Assert.Equal("Tier 1", players[1].StageName);
-    }
-
-    [Fact]
     public void Roster_ParsesTabSeparatedSpreadsheetRows()
     {
         var players = RosterParser.Parse("Player\tINF\tARC\tCAV\nAlice\tx\t\tx\nBob\t\tx\t");

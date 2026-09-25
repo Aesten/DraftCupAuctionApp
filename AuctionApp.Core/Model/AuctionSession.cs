@@ -3,7 +3,8 @@ using System.Text.Json.Serialization;
 namespace AuctionApp.Core.Model;
 
 /// <summary>
-/// The live state of an auction. It holds its own copies of players and captains, so the setup is locked while it exists.
+/// The live state of a division's auction. Teams are created from the division's captains when it starts, and
+/// players are copied from the pool, so the division's settings are locked while it exists.
 /// </summary>
 public sealed class AuctionSession
 {
@@ -14,22 +15,16 @@ public sealed class AuctionSession
     [JsonIgnore]
     public bool IsFinished => FinishedAt.HasValue;
 
-    /// <summary>Index into <see cref="Draft.Stages"/> of the stage currently running.</summary>
-    public int StageIndex { get; set; }
-
     /// <summary>When on, a team may only spend down to half of its initial budget (the other half stays reserved).</summary>
     public bool HalfBudgetCap { get; set; } = true;
 
-    /// <summary>Players still to be auctioned in the current stage, the first one being on the block.</summary>
+    /// <summary>Players still to be auctioned, the first one being on the block.</summary>
     public List<SessionPlayer> Queue { get; set; } = [];
 
-    /// <summary>Players of the current stage nobody bought (yet).</summary>
+    /// <summary>Players nobody bought (yet).</summary>
     public List<SessionPlayer> Skipped { get; set; } = [];
 
-    /// <summary>Players of later stages that were not auctioned yet.</summary>
-    public List<SessionPlayer> Waiting { get; set; } = [];
-
-    /// <summary>Players left unsold when the auction finished.</summary>
+    /// <summary>Players left unsold when the auction finished. They stay available to later divisions.</summary>
     public List<SessionPlayer> Unsold { get; set; } = [];
 
     public List<SessionTeam> Teams { get; set; } = [];
@@ -43,11 +38,14 @@ public sealed class AuctionSession
     [JsonIgnore]
     public int SoldCount => Teams.Sum(team => team.Picks.Count);
 
+    /// <summary>Every player this auction knows about, sold or not.</summary>
+    public IEnumerable<SessionPlayer> AllPlayers() =>
+        Queue.Concat(Skipped).Concat(Unsold).Concat(Teams.SelectMany(team => team.Picks).Select(pick => pick.Player));
+
     public void Normalize()
     {
         Queue ??= [];
         Skipped ??= [];
-        Waiting ??= [];
         Unsold ??= [];
         Teams ??= [];
         Activity ??= [];
@@ -57,7 +55,7 @@ public sealed class AuctionSession
             team.CaptainName ??= string.Empty;
         }
 
-        foreach (var player in Queue.Concat(Skipped).Concat(Waiting).Concat(Unsold).Concat(Teams.SelectMany(t => t.Picks).Select(p => p.Player)))
+        foreach (var player in AllPlayers())
         {
             player.Name ??= string.Empty;
             player.Classes ??= [];
@@ -65,22 +63,20 @@ public sealed class AuctionSession
     }
 }
 
-public sealed record SessionPlayer
+/// <summary>A player as the auction sees them; the id links back to the pool.</summary>
+public sealed class SessionPlayer
 {
-    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     public string Name { get; set; } = string.Empty;
 
     public List<string> Classes { get; set; } = [];
-
-    public Guid StageId { get; set; }
 
     public static SessionPlayer From(Player player) => new()
     {
         Id = player.Id,
         Name = player.Name,
         Classes = [.. player.Classes],
-        StageId = player.StageId,
     };
 }
 
@@ -106,8 +102,6 @@ public sealed class SessionTeam
 
     /// <summary>What the team can still spend, taking the half budget rule into account when it's on.</summary>
     public decimal Spendable(bool halfBudgetCap) => halfBudgetCap ? Remaining - HalfBudgetReserve : Remaining;
-
-    public int PicksInStage(Guid stageId) => Picks.Count(pick => pick.StageId == stageId);
 }
 
 public sealed class Pick
@@ -115,9 +109,6 @@ public sealed class Pick
     public SessionPlayer Player { get; set; } = new();
 
     public decimal Price { get; set; }
-
-    /// <summary>The stage during which the player was bought.</summary>
-    public Guid StageId { get; set; }
 
     public DateTimeOffset At { get; set; } = DateTimeOffset.Now;
 }
@@ -137,5 +128,4 @@ public enum ActivityKind
     Sold,
     Skipped,
     Returned,
-    Stage,
 }

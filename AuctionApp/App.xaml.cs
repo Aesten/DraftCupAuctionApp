@@ -16,19 +16,23 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        // Two copies of the app editing the same draft would overwrite each other's saves.
+        // Two copies of the app editing the same tournament would overwrite each other's saves.
         _singleInstance = new Mutex(true, @"Local\DraftCupAuction.SingleInstance", out var isFirstInstance);
         if (!isFirstInstance)
         {
-            MessageBox.Show("Draft Cup Auction is already open.", "Draft Cup Auction", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(
+                "Draft Cup Auction is already open. To import a file, drop it on its window.",
+                "Draft Cup Auction",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
             Shutdown();
             return;
         }
 
-        DraftStore store;
+        TournamentStore store;
         try
         {
-            store = new DraftStore(DraftStore.DefaultRootDirectory);
+            store = new TournamentStore(TournamentStore.DefaultRootDirectory);
         }
         catch (Exception ex)
         {
@@ -40,13 +44,20 @@ public partial class App : Application
         DispatcherUnhandledException += (_, args) =>
         {
             LogError(store, args.Exception);
-            new DialogService().ShowError("Something went wrong", args.Exception.Message + "\n\nYour drafts are saved after every change, so nothing should be lost.");
+            new DialogService().ShowError("Something went wrong", args.Exception.Message + "\n\nYour tournaments are saved after every change, so nothing should be lost.");
             args.Handled = true;
         };
 
-        var window = new MainWindow { DataContext = new MainViewModel(store, new DialogService()) };
+        var viewModel = new MainViewModel(store, new DialogService());
+        var window = new MainWindow { DataContext = viewModel };
         MainWindow = window;
         window.Show();
+
+        // A tournament file opened with the app ("Open with", or dropped on the exe).
+        foreach (var file in e.Args.Where(File.Exists))
+        {
+            viewModel.ImportFile(file);
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -55,7 +66,7 @@ public partial class App : Application
         base.OnExit(e);
     }
 
-    private static void LogError(DraftStore store, Exception exception)
+    private static void LogError(TournamentStore store, Exception exception)
     {
         try
         {

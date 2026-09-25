@@ -1,4 +1,3 @@
-using AuctionApp.Core.Engine;
 using AuctionApp.Core.Model;
 using AuctionApp.Core.Storage;
 
@@ -19,67 +18,77 @@ public sealed class StorageTests : IDisposable
     [Fact]
     public void SaveAndLoad_RoundTripsARunningAuction()
     {
-        var store = new DraftStore(_root);
-        var draft = TestDrafts.Create();
-        var engine = TestDrafts.Started(draft);
+        var store = new TournamentStore(_root);
+        var tournament = TestData.Tournament();
+        var engine = TestData.Start(tournament);
         engine.Sell(engine.Session.Teams[0].CaptainId, 2.5m);
         engine.Skip();
 
-        store.Save(draft);
-        var loaded = store.Load(draft.Id);
+        store.Save(tournament);
+        var loaded = store.Load(tournament.Id);
 
-        Assert.Equal(draft.Title, loaded.Title);
-        Assert.Equal(DraftStatus.InProgress, loaded.Status);
-        Assert.Equal(2.5m, loaded.Session!.Teams[0].Picks[0].Price);
-        Assert.Single(loaded.Session.Skipped);
-        Assert.Equal(draft.Session!.Queue.Select(p => p.Id), loaded.Session.Queue.Select(p => p.Id));
+        var division = loaded.Divisions[0];
+        Assert.Equal(DivisionStatus.InProgress, division.Status);
+        Assert.Equal(2.5m, division.Session!.Teams[0].Picks[0].Price);
+        Assert.Single(division.Session.Skipped);
+        Assert.Equal(tournament.Players.Select(p => p.Id), loaded.Players.Select(p => p.Id));
     }
 
     [Fact]
     public void List_ReturnsSummariesNewestFirst()
     {
-        var store = new DraftStore(_root);
-        var older = TestDrafts.Create();
+        var store = new TournamentStore(_root);
+        var older = TestData.Tournament();
         older.Title = "Older";
+        older.UpdatedAt = DateTimeOffset.Now.AddHours(-1);
         store.Save(older);
-        Thread.Sleep(20);
-        var newer = TestDrafts.Create();
+        var newer = TestData.Tournament();
         newer.Title = "Newer";
         store.Save(newer);
 
         var list = store.List();
 
         Assert.Equal(["Newer", "Older"], list.Select(s => s.Title));
-        Assert.Equal(6, list[0].PlayerCount);
+        Assert.Equal(12, list[0].PlayerCount);
     }
 
     [Fact]
     public void Load_FallsBackToTheBackupWhenTheFileIsDamaged()
     {
-        var store = new DraftStore(_root);
-        var draft = TestDrafts.Create();
-        store.Save(draft);
-        draft.Title = "Second save";
-        store.Save(draft);
+        var store = new TournamentStore(_root);
+        var tournament = TestData.Tournament();
+        store.Save(tournament);
+        tournament.Title = "Second save";
+        store.Save(tournament);
 
-        var path = Directory.GetFiles(store.DraftsDirectory, "*.draft.json").Single();
-        File.WriteAllText(path, "{ broken");
+        File.WriteAllText(Directory.GetFiles(store.TournamentsDirectory, "*.draftcup.json").Single(), "{ broken");
 
-        Assert.Equal("Test Cup", store.Load(draft.Id).Title);
-        Assert.Single(store.List());
+        Assert.Equal("Test Cup", store.Load(tournament.Id).Title);
     }
 
     [Fact]
-    public void Delete_MovesTheDraftAside()
+    public void Delete_MovesTheTournamentAside()
     {
-        var store = new DraftStore(_root);
-        var draft = TestDrafts.Create();
-        store.Save(draft);
+        var store = new TournamentStore(_root);
+        var tournament = TestData.Tournament();
+        store.Save(tournament);
 
-        store.Delete(draft.Id);
+        store.Delete(tournament.Id);
 
         Assert.Empty(store.List());
         Assert.Single(Directory.GetFiles(store.DeletedDirectory));
+    }
+
+    [Fact]
+    public void Import_ReadsExportedTournamentsAndKeepsTheirId()
+    {
+        var tournament = TestData.Tournament();
+        TestData.Start(tournament);
+
+        var imported = TournamentImporter.Import(TournamentExporter.ToFile(tournament), "fallback");
+
+        Assert.Equal(tournament.Id, imported.Id);
+        Assert.Equal(tournament.Divisions[0].Session!.Queue.Count, imported.Divisions[0].Session!.Queue.Count);
     }
 
     [Fact]
@@ -89,20 +98,20 @@ public sealed class StorageTests : IDisposable
             {
               "type": "Auction",
               "title": "Winter Cup",
-              "teamSize": 5,
+              "teamSize": 6,
               "players": [ { "name": "Alice", "classes": ["cav", "inf"] }, { "name": "Bob", "classes": [] } ],
               "captains": [ { "name": "Cap A", "budget": 20.0 }, { "name": "Cap B", "budget": 21.5 } ]
             }
             """;
 
-        var draft = DraftImporter.Import(json, "fallback");
+        var tournament = TournamentImporter.Import(json, "fallback");
 
-        Assert.Equal("Winter Cup", draft.Title);
-        Assert.Equal(5, draft.TeamSize);
-        Assert.Null(draft.Session);
-        Assert.Equal(["inf", "cav"], draft.Players[0].Classes);
-        Assert.Equal(21.5m, draft.Captains[1].Budget);
-        Assert.All(draft.Players, p => Assert.Equal(draft.Stages[0].Id, p.StageId));
+        Assert.Equal("Winter Cup", tournament.Title);
+        Assert.Equal(["inf", "cav"], tournament.Players[0].Classes);
+        var division = Assert.Single(tournament.Divisions);
+        Assert.Equal(6, division.TeamSize);
+        Assert.Equal(21.5m, division.Captains[1].Budget);
+        Assert.Null(division.Session);
     }
 
     [Fact]
@@ -112,7 +121,7 @@ public sealed class StorageTests : IDisposable
             {
               "type": "AuctionState",
               "title": "Winter Cup",
-              "teamSize": 2,
+              "teamSize": 6,
               "halfBudgetDisplay": false,
               "initialNumber": 3,
               "playerQueue": [ { "name": "Carol", "classes": ["arc"] } ],
@@ -124,64 +133,101 @@ public sealed class StorageTests : IDisposable
             }
             """;
 
-        var draft = DraftImporter.Import(json, "fallback");
-        var engine = new AuctionEngine(draft);
+        var tournament = TournamentImporter.Import(json, "fallback");
+        var engine = new AuctionApp.Core.Engine.AuctionEngine(tournament, tournament.Divisions[0]);
 
-        Assert.Equal(DraftStatus.InProgress, draft.Status);
+        Assert.Equal(DivisionStatus.InProgress, tournament.Divisions[0].Status);
         Assert.False(engine.Session.HalfBudgetCap);
         Assert.Equal(16.5m, engine.Session.Teams[0].Remaining);
         Assert.Equal("Carol", engine.Session.CurrentPlayer!.Name);
-        Assert.Equal(3, draft.Players.Count);
+        Assert.Equal(3, tournament.Players.Count);
+        Assert.Empty(AuctionApp.Core.Engine.TournamentRules.NewlyAvailable(tournament, tournament.Divisions[0]));
 
         engine.Sell(engine.Session.Teams[1].CaptainId, 4m);
         Assert.Equal(16m, engine.Session.Teams[1].Remaining);
     }
 
     [Fact]
-    public void Import_ReadsBackupsWithANewId()
+    public void Import_RejectsUnrelatedJson()
     {
-        var draft = TestDrafts.Create();
-        TestDrafts.Started(draft);
-
-        var imported = DraftImporter.Import(DraftExporter.ToBackupJson(draft), "fallback");
-
-        Assert.NotEqual(draft.Id, imported.Id);
-        Assert.Equal(draft.Session!.Queue.Count, imported.Session!.Queue.Count);
+        Assert.Throws<InvalidDataException>(() => TournamentImporter.Import("""{ "hello": 1 }""", "x"));
+        Assert.Throws<InvalidDataException>(() => TournamentImporter.Import("not json", "x"));
     }
 
     [Fact]
-    public void Import_RejectsUnrelatedJson()
+    public void Merge_TakesEachDivisionFromTheCopyThatChangedItLast()
     {
-        Assert.Throws<InvalidDataException>(() => DraftImporter.Import("""{ "hello": 1 }""", "x"));
-        Assert.Throws<InvalidDataException>(() => DraftImporter.Import("not json", "x"));
+        var original = TestData.Tournament(players: 20);
+        var second = TestData.AddDivision(original);
+        original.Divisions[0].UpdatedAt = original.Divisions[1].UpdatedAt = DateTimeOffset.Now.AddHours(-1);
+
+        // An auctioneer runs Division 1 on another computer...
+        var copy = TournamentJson.Clone(original);
+        var engine = TestData.Start(copy);
+        engine.Sell(engine.Session.Teams[0].CaptainId, 3m);
+        copy.Divisions[0].Touch();
+
+        // ...while the organizer renames Division 2 at home.
+        second.Name = "Division B";
+        second.Touch();
+
+        var result = TournamentMerger.Merge(original, copy);
+
+        Assert.True(result.HasChanges);
+        Assert.Equal(DivisionStatus.InProgress, result.Tournament.Divisions[0].Status);
+        Assert.Equal("Division B", result.Tournament.Divisions[1].Name);
+        Assert.Contains(result.Changes, change => change.StartsWith("Division 1 updated"));
+    }
+
+    [Fact]
+    public void Merge_TakesTheNewerPoolAndAddsUnknownDivisions()
+    {
+        var original = TestData.Tournament(players: 5);
+        original.PoolUpdatedAt = DateTimeOffset.Now.AddHours(-1);
+        var copy = TournamentJson.Clone(original);
+        copy.Players.Add(new Player { Name = "Late signup" });
+        copy.TouchPool();
+        copy.AddDivision();
+
+        var result = TournamentMerger.Merge(original, copy);
+
+        Assert.Equal(6, result.Tournament.Players.Count);
+        Assert.Equal(2, result.Tournament.Divisions.Count);
+        Assert.Equal(2, result.Changes.Count);
+    }
+
+    [Fact]
+    public void Merge_OfIdenticalCopiesChangesNothing()
+    {
+        var original = TestData.Tournament();
+
+        Assert.False(TournamentMerger.Merge(original, TournamentJson.Clone(original)).HasChanges);
     }
 
     [Fact]
     public void ResultsCsv_QuotesNamesWithCommas()
     {
-        var draft = TestDrafts.Create();
-        draft.Players[0].Name = "Smith, John";
-        var engine = TestDrafts.Started(draft);
+        var tournament = TestData.Tournament();
+        tournament.Players[0].Name = "Smith, John";
+        var engine = TestData.Start(tournament);
         engine.Sell(engine.Session.Teams[0].CaptainId, 1.5m);
 
-        var csv = DraftExporter.ResultsToCsv(draft);
+        var csv = TournamentExporter.ResultsToCsv(tournament.Divisions[0]);
 
-        Assert.Contains("Captain 1,\"Smith, John\",INF,1.5,Main auction", csv);
+        Assert.Contains("Division 1 Captain 1,\"Smith, John\",INF,1.5", csv);
     }
 
     [Fact]
-    public void CloneSetup_CopiesRosterWithoutTheSession()
+    public void CloneWithoutResults_KeepsPoolAndDivisionsButNotAuctions()
     {
-        var draft = TestDrafts.Create();
-        draft.Stages.Add(new Stage { Name = "Low" });
-        draft.Players[0].StageId = draft.Stages[1].Id;
-        TestDrafts.Started(draft);
+        var tournament = TestData.Tournament();
+        TestData.Start(tournament);
 
-        var copy = draft.CloneSetup("Copy");
+        var copy = tournament.CloneWithoutResults("Next cup");
 
-        Assert.Null(copy.Session);
-        Assert.Equal(draft.Players.Count, copy.Players.Count);
-        Assert.Equal(copy.Stages[1].Id, copy.Players[0].StageId);
-        Assert.DoesNotContain(copy.Stages, stage => draft.Stages.Any(s => s.Id == stage.Id));
+        Assert.NotEqual(tournament.Id, copy.Id);
+        Assert.Equal(tournament.Players.Count, copy.Players.Count);
+        Assert.Null(copy.Divisions[0].Session);
+        Assert.Equal(2, copy.Divisions[0].Captains.Count);
     }
 }

@@ -1,83 +1,66 @@
+using System.Runtime.InteropServices;
 using AuctionApp.Core.Model;
 
 namespace AuctionApp.Core.Engine;
 
 public sealed class AuctionException(string message) : Exception(message);
 
-/// <summary>All the rules of a running auction. Every change to a session goes through here.</summary>
+/// <summary>All the rules of a division's auction. Every change to a session goes through here.</summary>
 public sealed class AuctionEngine
 {
     private readonly Random _random;
 
-    public AuctionEngine(Draft draft, Random? random = null)
+    public AuctionEngine(Tournament tournament, Division division, Random? random = null)
     {
-        Draft = draft;
+        Tournament = tournament;
+        Division = division;
         _random = random ?? Random.Shared;
     }
 
-    public Draft Draft { get; }
+    public Tournament Tournament { get; }
 
-    public AuctionSession Session => Draft.Session ?? throw new AuctionException("The auction hasn't started.");
+    public Division Division { get; }
 
-    public Stage CurrentStage => Draft.Stages[Math.Clamp(Session.StageIndex, 0, Draft.Stages.Count - 1)];
+    public AuctionSession Session => Division.Session ?? throw new AuctionException("The auction hasn't started.");
 
-    public bool HasNextStage => Session.StageIndex < Draft.Stages.Count - 1;
-
-    public Stage? NextStage => HasNextStage ? Draft.Stages[Session.StageIndex + 1] : null;
-
-    /// <summary>Players of the current stage that are neither sold nor waiting: the queue and the skipped list.</summary>
-    public int UnsoldInStage => Session.Queue.Count + Session.Skipped.Count;
-
-    /// <summary>Validates the setup and creates the auction session.</summary>
+    /// <summary>Validates the division and creates its auction from the players still available in the pool.</summary>
     public void Start()
     {
-        if (Draft.Session != null)
+        if (Division.Session != null)
         {
             throw new AuctionException("The auction has already started.");
         }
 
-        var errors = DraftValidator.Validate(Draft).Where(issue => issue.Severity == IssueSeverity.Error).ToList();
+        var errors = DivisionValidator.Validate(Tournament, Division).Where(issue => issue.Severity == IssueSeverity.Error).ToList();
         if (errors.Count > 0)
         {
             throw new AuctionException(errors[0].Message);
         }
 
-        Draft.Normalize();
-        Draft.Session = new AuctionSession
+        var players = TournamentRules.AvailablePlayers(Tournament, Division).Select(SessionPlayer.From).ToList();
+        Shuffle(players);
+        Division.Session = new AuctionSession
         {
-            Teams = Draft.Captains.Select(captain => new SessionTeam
+            HalfBudgetCap = Division.HalfBudgetCapAtStart,
+            Queue = players,
+            Teams = Division.Captains.Select(captain => new SessionTeam
             {
                 CaptainId = captain.Id,
                 CaptainName = captain.Name.Trim(),
                 InitialBudget = captain.Budget,
             }).ToList(),
-            Waiting = Draft.Players.Select(SessionPlayer.From).ToList(),
         };
-
-        Log(ActivityKind.Info, "Auction started");
-        LoadStage(0, []);
+        Log(ActivityKind.Info, $"Auction started with {players.Count} players");
     }
 
     public SessionTeam GetTeam(Guid captainId) =>
         Session.Teams.FirstOrDefault(team => team.CaptainId == captainId) ?? throw new AuctionException("Unknown team.");
 
-    public int SlotsLeft(SessionTeam team) => Math.Max(0, Draft.TeamSize - team.Picks.Count);
-
-    /// <summary>How many more players the team may buy in the current stage (team size and stage limit combined).</summary>
-    public int PicksLeftThisStage(SessionTeam team)
-    {
-        var left = SlotsLeft(team);
-        if (CurrentStage.MaxPicksPerTeam is { } max)
-        {
-            left = Math.Min(left, Math.Max(0, max - team.PicksInStage(CurrentStage.Id)));
-        }
-
-        return left;
-    }
+    public int SlotsLeft(SessionTeam team) => Math.Max(0, Division.TeamSize - team.Picks.Count);
 
     /// <summary>The highest price this team may pay right now, or 0 when it can't buy at all.</summary>
     public decimal MaxBid(SessionTeam team) =>
-        PicksLeftThisStage(team) > 0 ? Math.Max(0, team.Spendable(Session.HalfBudgetCap)) : 0;
+        SlotsLeft(team) > 0 ? Math.Max(0, team.Spendable(Session.HalfBudgetCap)) : 0;
 
     /// <summary>Returns why the current player can't be sold to this team at this price, or null if the sale is allowed.</summary>
     public string? CheckSale(Guid captainId, decimal price)
@@ -113,11 +96,6 @@ public sealed class AuctionEngine
             return $"{team.CaptainName}'s team is already full.";
         }
 
-        if (PicksLeftThisStage(team) == 0)
-        {
-            return $"{team.CaptainName} already bought {CurrentStage.MaxPicksPerTeam} player(s) in {CurrentStage.Name}, the most allowed.";
-        }
-
         var spendable = team.Spendable(Session.HalfBudgetCap);
         if (price > spendable)
         {
@@ -140,7 +118,7 @@ public sealed class AuctionEngine
         var team = GetTeam(captainId);
         var player = Session.Queue[0];
         Session.Queue.RemoveAt(0);
-        var pick = new Pick { Player = player, Price = price, StageId = CurrentStage.Id };
+        var pick = new Pick { Player = player, Price = price };
         team.Picks.Add(pick);
         Log(ActivityKind.Sold, $"{player.Name} sold to {team.CaptainName} for {Money.Format(price)}");
         return pick;
@@ -176,11 +154,7 @@ public sealed class AuctionEngine
         }
 
         var players = Session.Skipped.ToList();
-        if (Draft.ShuffleOrder)
-        {
-            _random.Shuffle(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(players));
-        }
-
+        Shuffle(players);
         Session.Queue.AddRange(players);
         Session.Skipped.Clear();
         Log(ActivityKind.Returned, $"{players.Count} skipped player(s) sent back to the queue");
@@ -197,44 +171,35 @@ public sealed class AuctionEngine
         Log(ActivityKind.Returned, $"{pick.Player.Name} taken back from {team.CaptainName} (refunded {Money.Format(pick.Price)})");
     }
 
-    /// <summary>
-    /// Ends the current stage and starts the next one. Players of the current stage that weren't sold are either
-    /// carried into the next stage or set aside as unsold.
-    /// </summary>
-    public void AdvanceStage(bool carryUnsold)
+    /// <summary>Adds pool players that became available after the auction started to the end of the queue.</summary>
+    public void AddToQueue(IReadOnlyCollection<Player> players)
     {
         EnsureRunning();
-        if (!HasNextStage)
+        var known = Session.AllPlayers().Select(p => p.Id).ToHashSet();
+        var added = players.Where(player => !known.Contains(player.Id)).Select(SessionPlayer.From).ToList();
+        if (added.Count == 0)
         {
-            throw new AuctionException("This is the last stage.");
+            return;
         }
 
-        var leftovers = Session.Queue.Concat(Session.Skipped).ToList();
-        Session.Queue.Clear();
-        Session.Skipped.Clear();
-        if (!carryUnsold)
-        {
-            Session.Unsold.AddRange(leftovers);
-        }
-
-        LoadStage(Session.StageIndex + 1, carryUnsold ? leftovers : []);
+        Shuffle(added);
+        Session.Queue.AddRange(added);
+        Log(ActivityKind.Info, $"{added.Count} new player(s) added to the queue");
     }
 
-    /// <summary>Closes the auction. Whoever wasn't sold is listed as unsold.</summary>
+    /// <summary>Closes the auction. Whoever wasn't sold is listed as unsold and stays available to other divisions.</summary>
     public void Finish()
     {
         EnsureRunning();
         Session.Unsold.AddRange(Session.Queue);
         Session.Unsold.AddRange(Session.Skipped);
-        Session.Unsold.AddRange(Session.Waiting);
         Session.Queue.Clear();
         Session.Skipped.Clear();
-        Session.Waiting.Clear();
         Session.FinishedAt = DateTimeOffset.Now;
         Log(ActivityKind.Info, "Auction finished");
     }
 
-    /// <summary>Reopens a finished auction on its last stage; the unsold players go to the skipped list.</summary>
+    /// <summary>Reopens a finished auction; the unsold players go to the skipped list.</summary>
     public void Reopen()
     {
         if (!Session.IsFinished)
@@ -259,24 +224,12 @@ public sealed class AuctionEngine
         Log(ActivityKind.Info, enabled ? "Half budget cap turned on" : "Half budget cap turned off");
     }
 
-    private void LoadStage(int index, List<SessionPlayer> carried)
+    private void Shuffle(List<SessionPlayer> players)
     {
-        var stage = Draft.Stages[index];
-        Session.StageIndex = index;
-
-        var incoming = Session.Waiting.Where(player => player.StageId == stage.Id).ToList();
-        Session.Waiting.RemoveAll(player => player.StageId == stage.Id);
-
-        var pool = incoming.Concat(carried).ToList();
-        if (Draft.ShuffleOrder)
+        if (Division.ShuffleOrder)
         {
-            _random.Shuffle(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(pool));
+            _random.Shuffle(CollectionsMarshal.AsSpan(players));
         }
-
-        Session.Queue.AddRange(pool);
-
-        var detail = carried.Count > 0 ? $"{incoming.Count} player(s) + {carried.Count} carried over" : $"{incoming.Count} player(s)";
-        Log(ActivityKind.Stage, $"{stage.Name} started ({detail})");
     }
 
     private void EnsureRunning()

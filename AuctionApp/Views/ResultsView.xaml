@@ -9,14 +9,14 @@
              d:DesignHeight="800"
              d:DesignWidth="1300"
              mc:Ignorable="d">
-    <Grid Margin="8,16,8,8">
+    <Grid Margin="32,16,32,8">
         <Border MaxWidth="560" Margin="0,48,0,0" Padding="32" HorizontalAlignment="Center" VerticalAlignment="Top" Style="{StaticResource Card}"
                 Visibility="{Binding HasSession, Converter={StaticResource InverseBoolToVisibility}}">
             <StackPanel>
                 <TextBlock HorizontalAlignment="Center" FontSize="36" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Style="{StaticResource Glyph}" Text="&#xE9D2;" />
                 <TextBlock Margin="0,16,0,0" HorizontalAlignment="Center" Style="{StaticResource SectionTitle}" Text="No results yet" />
                 <TextBlock Margin="0,8,0,0" HorizontalAlignment="Center" FontSize="14" Style="{StaticResource Caption}" TextAlignment="Center"
-                           Text="The teams show up here once the auction has started." />
+                           Text="The teams show up here once this division's auction has started." />
             </StackPanel>
         </Border>
 
@@ -43,9 +43,6 @@
                     <Button Margin="8,0,0,0" Command="{Binding ExportCsvCommand}" ToolTip="Every sale in a spreadsheet (CSV, opens in Excel)">
                         <controls:IconLabel Glyph="&#xE9F9;" Text="Export spreadsheet…" />
                     </Button>
-                    <Button Margin="8,0,0,0" Command="{Binding ExportBackupCommand}" ToolTip="A complete copy of this draft, to keep or to open on another PC">
-                        <controls:IconLabel Glyph="&#xEDE1;" Text="Export backup…" />
-                    </Button>
                 </StackPanel>
             </Grid>
 
@@ -54,12 +51,12 @@
                     <ItemsControl Focusable="False" ItemsSource="{Binding Teams}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <UniformGrid VerticalAlignment="Top" Columns="{Binding Columns}" />
+                                <controls:FitGrid VerticalAlignment="Top" MinItemWidth="220" Spacing="12" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type vm:TeamResultViewModel}">
-                                <Border Margin="0,0,12,12" Style="{StaticResource Card}">
+                                <Border Style="{StaticResource Card}">
                                     <StackPanel>
                                         <Grid>
                                             <TextBlock FontSize="16" Style="{StaticResource Strong}" Text="{Binding Name}" />
@@ -69,7 +66,7 @@
                                         <ItemsControl Focusable="False" ItemsSource="{Binding Picks}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate DataType="{x:Type vm:ResultPickViewModel}">
-                                                    <Grid Height="26" ToolTip="{Binding StageName}">
+                                                    <Grid Height="26">
                                                         <Grid.ColumnDefinitions>
                                                             <ColumnDefinition Width="*" />
                                                             <ColumnDefinition Width="Auto" />
@@ -91,7 +88,7 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <Border Margin="0,0,12,12" Style="{StaticResource Card}" Visibility="{Binding HasUnsold, Converter={StaticResource BoolToVisibility}}">
+                    <Border Margin="0,12,0,12" Style="{StaticResource Card}" Visibility="{Binding HasUnsold, Converter={StaticResource BoolToVisibility}}">
                         <StackPanel>
                             <TextBlock Style="{StaticResource SectionTitle}" Text="Not sold" />
                             <ItemsControl Margin="0,8,0,0" Focusable="False" ItemsSource="{Binding Unsold}">

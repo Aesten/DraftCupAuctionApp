@@ -27,7 +27,7 @@ public interface IDialogService
 
     string? PickFileToSave(string title, string filter, string suggestedName);
 
-    (List<ParsedPlayer> Players, Guid StageId)? AskForRoster(IReadOnlyList<StageChoice> stages);
+    List<ParsedPlayer>? AskForRoster();
 
     bool CopyToClipboard(string text);
 
@@ -64,10 +64,10 @@ public sealed class DialogService : IDialogService
         return dialog.ShowDialog(Owner) == true ? dialog.FileName : null;
     }
 
-    public (List<ParsedPlayer> Players, Guid StageId)? AskForRoster(IReadOnlyList<StageChoice> stages)
+    public List<ParsedPlayer>? AskForRoster()
     {
-        var dialog = new PasteRosterDialog(stages) { Owner = Owner };
-        return dialog.ShowDialog() == true ? (dialog.Players, dialog.StageId) : null;
+        var dialog = new PasteRosterDialog { Owner = Owner };
+        return dialog.ShowDialog() == true ? dialog.Players : null;
     }
 
     public bool CopyToClipboard(string text)

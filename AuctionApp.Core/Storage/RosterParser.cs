@@ -2,12 +2,12 @@ using AuctionApp.Core.Model;
 
 namespace AuctionApp.Core.Storage;
 
-public sealed record ParsedPlayer(string Name, List<string> Classes, string? StageName);
+public sealed record ParsedPlayer(string Name, List<string> Classes);
 
 /// <summary>
 /// Reads a list of players pasted from a spreadsheet, a CSV file or a chat message. Accepted lines look like
 /// <c>Name</c>, <c>Name, inf cav</c>, <c>Name;archer</c> or spreadsheet rows in the exported layout
-/// (<c>Name | x |  | x | Stage</c>).
+/// (<c>Name | x |  | x</c>).
 /// </summary>
 public static class RosterParser
 {
@@ -45,12 +45,10 @@ public static class RosterParser
 
             var rest = cells.Skip(1).Select(cell => cell.Trim()).ToList();
             List<string> classes;
-            string? stage = null;
             if (rest.Count >= PlayerClasses.All.Count && rest.Take(PlayerClasses.All.Count).All(cell => cell.Length == 0 || Marks.Contains(cell)))
             {
-                // Spreadsheet layout: one column per class, then optionally the stage.
+                // Spreadsheet layout: one column per class; anything after that is ignored.
                 classes = PlayerClasses.All.Where((_, i) => Marks.Contains(rest[i])).ToList();
-                stage = rest.Skip(PlayerClasses.All.Count).FirstOrDefault(cell => cell.Length > 0);
             }
             else
             {
@@ -60,7 +58,7 @@ public static class RosterParser
                     .ToList();
             }
 
-            players.Add(new ParsedPlayer(name, PlayerClasses.Normalize(classes), stage));
+            players.Add(new ParsedPlayer(name, PlayerClasses.Normalize(classes)));
         }
 
         return players;

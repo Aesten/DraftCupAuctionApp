@@ -149,3 +149,12 @@ public sealed class IsNewItemPlaceholderConverter : IValueConverter
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
 }
+
+/// <summary>Visible when the bound number equals the converter parameter (to show one page out of several).</summary>
+public sealed class IndexToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+        value is int index && int.TryParse(parameter?.ToString(), out var expected) && index == expected ? Visibility.Visible : Visibility.Collapsed;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
+}

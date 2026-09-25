@@ -5,12 +5,16 @@
 
     <!-- Which view shows which page. -->
 
-    <DataTemplate DataType="{x:Type vm:HomeViewModel}">
-        <views:HomeView />
+    <DataTemplate DataType="{x:Type vm:TournamentViewModel}">
+        <views:TournamentView />
     </DataTemplate>
 
-    <DataTemplate DataType="{x:Type vm:DraftViewModel}">
-        <views:DraftView />
+    <DataTemplate DataType="{x:Type vm:PoolViewModel}">
+        <views:PoolView />
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:DivisionViewModel}">
+        <views:DivisionView />
     </DataTemplate>
 
 </ResourceDictionary>

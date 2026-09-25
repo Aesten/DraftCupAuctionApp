@@ -7,10 +7,10 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace AuctionApp.ViewModels;
 
-/// <summary>The final (or current) teams, with ways to share them.</summary>
-public sealed partial class ResultsViewModel(DraftViewModel owner) : ObservableObject
+/// <summary>A division's teams (final or so far), with ways to share them.</summary>
+public sealed partial class ResultsViewModel(DivisionViewModel owner) : ObservableObject
 {
-    private Draft Draft => owner.Draft;
+    private Division Division => owner.Division;
 
     public ObservableCollection<TeamResultViewModel> Teams { get; } = [];
 
@@ -23,9 +23,6 @@ public sealed partial class ResultsViewModel(DraftViewModel owner) : ObservableO
     public partial bool HasUnsold { get; set; }
 
     [ObservableProperty]
-    public partial int Columns { get; set; } = 4;
-
-    [ObservableProperty]
     public partial string Headline { get; set; } = string.Empty;
 
     [ObservableProperty]
@@ -36,7 +33,7 @@ public sealed partial class ResultsViewModel(DraftViewModel owner) : ObservableO
         Teams.Clear();
         Unsold.Clear();
         CopyConfirmation = null;
-        var session = Draft.Session;
+        var session = Division.Session;
         HasSession = session != null;
         if (session == null)
         {
@@ -46,7 +43,7 @@ public sealed partial class ResultsViewModel(DraftViewModel owner) : ObservableO
 
         foreach (var team in session.Teams)
         {
-            Teams.Add(new TeamResultViewModel(team, Draft));
+            Teams.Add(new TeamResultViewModel(team, Division));
         }
 
         var unsold = session.IsFinished ? session.Unsold : session.Unsold.Concat(session.Skipped).ToList();
@@ -56,16 +53,15 @@ public sealed partial class ResultsViewModel(DraftViewModel owner) : ObservableO
         }
 
         HasUnsold = Unsold.Count > 0;
-        Columns = Math.Clamp(Teams.Count, 1, 4);
         Headline = session.IsFinished
-            ? $"Final teams · {session.SoldCount} players sold"
-            : $"Teams so far · {session.SoldCount} players sold (the auction is still running)";
+            ? $"Team compositions · {session.SoldCount} players sold"
+            : $"Team compositions so far · {session.SoldCount} players sold (the auction is still running)";
     }
 
     [RelayCommand]
     private void CopyText()
     {
-        if (Draft.Session != null && owner.Dialogs.CopyToClipboard(DraftExporter.ResultsToText(Draft)))
+        if (Division.Session != null && owner.Dialogs.CopyToClipboard(TournamentExporter.ResultsToText(owner.Tournament, Division)))
         {
             CopyConfirmation = "Copied! Paste it in Discord or anywhere else.";
         }
@@ -74,42 +70,30 @@ public sealed partial class ResultsViewModel(DraftViewModel owner) : ObservableO
     [RelayCommand]
     private void ExportCsv()
     {
-        if (Draft.Session == null)
+        if (Division.Session == null)
         {
             return;
         }
 
-        var path = owner.Dialogs.PickFileToSave("Export the results", "CSV spreadsheet (*.csv)|*.csv", $"{Draft.Title} results.csv");
+        var path = owner.Dialogs.PickFileToSave("Export the teams", "CSV spreadsheet (*.csv)|*.csv", $"{owner.Tournament.Title} {Division.Name}.csv");
         if (path != null)
         {
-            owner.Dialogs.TryWriteFile(path, DraftExporter.ResultsToCsv(Draft));
-        }
-    }
-
-    [RelayCommand]
-    private void ExportBackup()
-    {
-        owner.SaveNow();
-        var path = owner.Dialogs.PickFileToSave("Export a backup of this draft", "Draft files (*.json)|*.json", $"{Draft.Title}.json");
-        if (path != null)
-        {
-            owner.Dialogs.TryWriteFile(path, DraftExporter.ToBackupJson(Draft));
+            owner.Dialogs.TryWriteFile(path, TournamentExporter.ResultsToCsv(Division));
         }
     }
 }
 
 public sealed class TeamResultViewModel
 {
-    public TeamResultViewModel(SessionTeam team, Draft draft)
+    public TeamResultViewModel(SessionTeam team, Division division)
     {
         Name = team.CaptainName;
         SpentText = $"Spent {Money.Format(team.Spent)} of {Money.Format(team.InitialBudget)}";
-        SlotsText = $"{team.Picks.Count}/{draft.TeamSize}";
+        SlotsText = $"{team.Picks.Count}/{division.TeamSize}";
         Picks = team.Picks.Select(pick => new ResultPickViewModel(
             pick.Player.Name,
             AuctionViewModel.KnownClasses(pick.Player.Classes),
-            Money.Format(pick.Price),
-            draft.Stages.Count > 1 ? draft.FindStage(pick.StageId)?.Name : null)).ToList();
+            Money.Format(pick.Price))).ToList();
         CompositionText = AuctionViewModel.Composition(team.Picks);
     }
 
@@ -124,4 +108,4 @@ public sealed class TeamResultViewModel
     public IReadOnlyList<ResultPickViewModel> Picks { get; }
 }
 
-public sealed record ResultPickViewModel(string Name, IReadOnlyList<string> Classes, string PriceText, string? StageName);
+public sealed record ResultPickViewModel(string Name, IReadOnlyList<string> Classes, string PriceText);

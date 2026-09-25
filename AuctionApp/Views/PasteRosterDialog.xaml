@@ -1,7 +1,7 @@
 <Window x:Class="AuctionApp.Views.PasteRosterDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Add players from a list"
+        Title="Add players to the pool"
         Width="620"
         Height="560"
         MinWidth="480"
@@ -17,7 +17,7 @@
         </Grid.RowDefinitions>
 
         <StackPanel Margin="24,20,24,12">
-            <TextBlock Style="{StaticResource SectionTitle}" Text="Add players from a list" />
+            <TextBlock Style="{StaticResource SectionTitle}" Text="Add players to the pool" />
             <TextBlock Margin="0,8,0,0" Style="{StaticResource Caption}">
                 Paste one player per line, straight from a spreadsheet, a sign-up form or a chat message.
                 Classes can follow the name, e.g. <Run FontWeight="SemiBold" Text="Alice, inf cav" />.
@@ -37,16 +37,7 @@
                  VerticalContentAlignment="Top"
                  VerticalScrollBarVisibility="Auto" />
 
-        <Grid Grid.Row="2" Margin="24,12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <TextBlock x:Name="Summary" VerticalAlignment="Center" Style="{StaticResource Caption}" Text="No players yet" />
-            <TextBlock x:Name="StageLabel" Grid.Column="1" Margin="0,0,8,0" VerticalAlignment="Center" Text="Add to" />
-            <ComboBox x:Name="StagePicker" Grid.Column="2" MinWidth="180" DisplayMemberPath="Name" />
-        </Grid>
+        <TextBlock x:Name="Summary" Grid.Row="2" Margin="24,12" Style="{StaticResource Caption}" Text="No players yet" />
 
         <Border Grid.Row="3"
                 Padding="24,16"

@@ -15,7 +15,7 @@ public sealed class UndoHistory(int capacity = 100)
 
     public void Record(string description, AuctionSession session)
     {
-        _entries.AddLast((description, DraftJson.CloneSession(session)));
+        _entries.AddLast((description, TournamentJson.CloneSession(session)));
         while (_entries.Count > capacity)
         {
             _entries.RemoveFirst();

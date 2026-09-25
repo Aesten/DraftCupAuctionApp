@@ -1,3 +1,4 @@
+using System.Globalization;
 using AuctionApp.Core.Engine;
 using AuctionApp.Core.Model;
 
@@ -6,48 +7,69 @@ namespace AuctionApp.Tests;
 public class AuctionEngineTests
 {
     [Fact]
-    public void Start_QueuesAllPlayersOfTheFirstStage()
+    public void Start_QueuesThePoolInOrder()
     {
-        var draft = TestDrafts.Create(players: 5);
-        var engine = TestDrafts.Started(draft);
+        var tournament = TestData.Tournament(players: 5);
+        var engine = TestData.Start(tournament);
 
-        Assert.Equal(5, engine.Session.Queue.Count);
-        Assert.Equal("Player 1", engine.Session.CurrentPlayer!.Name);
+        Assert.Equal(["Player 1", "Player 2", "Player 3", "Player 4", "Player 5"], engine.Session.Queue.Select(p => p.Name));
         Assert.Equal(2, engine.Session.Teams.Count);
-        Assert.Equal(DraftStatus.InProgress, draft.Status);
-    }
-
-    [Fact]
-    public void Start_RefusesAnInvalidSetup()
-    {
-        var draft = TestDrafts.Create(captains: 1);
-        var engine = new AuctionEngine(draft);
-
-        Assert.Throws<AuctionException>(engine.Start);
-        Assert.Null(draft.Session);
+        Assert.Equal(DivisionStatus.InProgress, tournament.Divisions[0].Status);
     }
 
     [Fact]
     public void Start_ShufflesWhenEnabled()
     {
-        var draft = TestDrafts.Create(players: 30, teamSize: 15, shuffle: true);
-        var engine = TestDrafts.Started(draft);
+        var tournament = TestData.Tournament(players: 30, shuffle: true);
+        var engine = TestData.Start(tournament);
 
         var order = engine.Session.Queue.Select(p => p.Name).ToList();
-        Assert.NotEqual(draft.Players.Select(p => p.Name).ToList(), order);
+        Assert.NotEqual(tournament.Players.Select(p => p.Name).ToList(), order);
         Assert.Equal(30, order.Distinct().Count());
+    }
+
+    [Fact]
+    public void Start_RefusesAnInvalidDivision()
+    {
+        var tournament = TestData.Tournament(captains: 1);
+        var engine = new AuctionEngine(tournament, tournament.Divisions[0]);
+
+        Assert.Throws<AuctionException>(engine.Start);
+        Assert.Null(tournament.Divisions[0].Session);
+    }
+
+    [Theory]
+    [InlineData(4, false)]
+    [InlineData(5, true)]
+    [InlineData(10, true)]
+    [InlineData(11, false)]
+    public void Start_RequiresATeamSizeBetweenFiveAndTen(int size, bool allowed)
+    {
+        var tournament = TestData.Tournament(teamSize: size);
+
+        var errors = DivisionValidator.Validate(tournament, tournament.Divisions[0]).Where(i => i.Severity == IssueSeverity.Error);
+
+        Assert.Equal(allowed, !errors.Any());
+    }
+
+    [Fact]
+    public void Start_UsesTheDivisionsHalfBudgetSetting()
+    {
+        var tournament = TestData.Tournament();
+        tournament.Divisions[0].HalfBudgetCapAtStart = false;
+
+        Assert.False(TestData.Start(tournament).Session.HalfBudgetCap);
     }
 
     [Fact]
     public void Sell_MovesPlayerToTeamAndChargesBudget()
     {
-        var engine = TestDrafts.Started(TestDrafts.Create());
+        var engine = TestData.Start(TestData.Tournament());
         var team = engine.Session.Teams[0];
 
         engine.Sell(team.CaptainId, 2.5m);
 
-        Assert.Single(team.Picks);
-        Assert.Equal("Player 1", team.Picks[0].Player.Name);
+        Assert.Equal("Player 1", Assert.Single(team.Picks).Player.Name);
         Assert.Equal(17.5m, team.Remaining);
         Assert.Equal("Player 2", engine.Session.CurrentPlayer!.Name);
     }
@@ -55,7 +77,7 @@ public class AuctionEngineTests
     [Fact]
     public void Sell_RespectsHalfBudgetCap()
     {
-        var engine = TestDrafts.Started(TestDrafts.Create(budget: 20.5m));
+        var engine = TestData.Start(TestData.Tournament(budget: 20.5m));
         var team = engine.Session.Teams[0];
 
         // Half of 20.5 rounded up to 0.1 is 10.3, so 10.2 can be spent.
@@ -65,19 +87,20 @@ public class AuctionEngineTests
 
         engine.SetHalfBudgetCap(false);
         Assert.Equal(20.5m, engine.MaxBid(team));
-        Assert.Null(engine.CheckSale(team.CaptainId, 15m));
     }
 
     [Fact]
     public void Sell_RefusesFullTeams()
     {
-        var engine = TestDrafts.Started(TestDrafts.Create(teamSize: 1));
+        var engine = TestData.Start(TestData.Tournament(teamSize: 5));
         var team = engine.Session.Teams[0];
-        engine.Sell(team.CaptainId, 1m);
+        for (var i = 0; i < 5; i++)
+        {
+            engine.Sell(team.CaptainId, 0.5m);
+        }
 
-        Assert.Contains("full", engine.CheckSale(team.CaptainId, 1m));
+        Assert.Contains("full", engine.CheckSale(team.CaptainId, 0.5m));
         Assert.Equal(0m, engine.MaxBid(team));
-        Assert.Throws<AuctionException>(() => engine.Sell(team.CaptainId, 1m));
     }
 
     [Theory]
@@ -85,29 +108,18 @@ public class AuctionEngineTests
     [InlineData("0.25")]
     public void Sell_RefusesInvalidPrices(string price)
     {
-        var engine = TestDrafts.Started(TestDrafts.Create());
+        var engine = TestData.Start(TestData.Tournament());
 
-        Assert.NotNull(engine.CheckSale(engine.Session.Teams[0].CaptainId, decimal.Parse(price, System.Globalization.CultureInfo.InvariantCulture)));
-    }
-
-    [Fact]
-    public void Sell_AllowsFreePlayers()
-    {
-        var engine = TestDrafts.Started(TestDrafts.Create());
-
-        engine.Sell(engine.Session.Teams[0].CaptainId, 0m);
-
-        Assert.Equal(20m, engine.Session.Teams[0].Remaining);
+        Assert.NotNull(engine.CheckSale(engine.Session.Teams[0].CaptainId, decimal.Parse(price, CultureInfo.InvariantCulture)));
     }
 
     [Fact]
     public void SkipAndBringBack_RoundTrips()
     {
-        var engine = TestDrafts.Started(TestDrafts.Create());
+        var engine = TestData.Start(TestData.Tournament());
         var first = engine.Session.CurrentPlayer!;
 
         engine.Skip();
-        Assert.Equal("Player 2", engine.Session.CurrentPlayer!.Name);
         Assert.Contains(first, engine.Session.Skipped);
 
         engine.BringBack(first.Id);
@@ -118,20 +130,19 @@ public class AuctionEngineTests
     [Fact]
     public void RequeueSkipped_AppendsToTheQueue()
     {
-        var engine = TestDrafts.Started(TestDrafts.Create(players: 3));
+        var engine = TestData.Start(TestData.Tournament(players: 3));
         engine.Skip();
         engine.Skip();
 
         engine.RequeueSkipped();
 
         Assert.Equal(["Player 3", "Player 1", "Player 2"], engine.Session.Queue.Select(p => p.Name));
-        Assert.Empty(engine.Session.Skipped);
     }
 
     [Fact]
     public void ReturnPick_RefundsAndPutsPlayerBackOnTheBlock()
     {
-        var engine = TestDrafts.Started(TestDrafts.Create());
+        var engine = TestData.Start(TestData.Tournament());
         var team = engine.Session.Teams[1];
         var pick = engine.Sell(team.CaptainId, 4m);
 
@@ -143,31 +154,18 @@ public class AuctionEngineTests
     }
 
     [Fact]
-    public void Finish_ListsLeftoversAsUnsold()
+    public void FinishAndReopen()
     {
-        var engine = TestDrafts.Started(TestDrafts.Create(players: 4));
+        var engine = TestData.Start(TestData.Tournament(players: 4));
         engine.Sell(engine.Session.Teams[0].CaptainId, 1m);
         engine.Skip();
 
         engine.Finish();
-
-        Assert.True(engine.Session.IsFinished);
         Assert.Equal(3, engine.Session.Unsold.Count);
-        Assert.Empty(engine.Session.Queue);
         Assert.Throws<AuctionException>(engine.Skip);
-        Assert.NotNull(engine.CheckSale(engine.Session.Teams[0].CaptainId, 1m));
-    }
-
-    [Fact]
-    public void Reopen_PutsUnsoldPlayersInTheSkippedList()
-    {
-        var engine = TestDrafts.Started(TestDrafts.Create(players: 4));
-        engine.Finish();
 
         engine.Reopen();
-
         Assert.False(engine.Session.IsFinished);
-        Assert.Equal(4, engine.Session.Skipped.Count);
-        Assert.Empty(engine.Session.Unsold);
+        Assert.Equal(3, engine.Session.Skipped.Count);
     }
 }

@@ -1,0 +1,176 @@
+<UserControl x:Class="AuctionApp.Views.PoolView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:controls="clr-namespace:AuctionApp.Controls"
+             xmlns:vm="clr-namespace:AuctionApp.ViewModels"
+             d:DataContext="{d:DesignInstance Type=vm:PoolViewModel}"
+             d:DesignHeight="800"
+             d:DesignWidth="1200"
+             mc:Ignorable="d">
+    <UserControl.Resources>
+        <DataTemplate x:Key="ClassHeader">
+            <Rectangle Width="16" Height="16" Fill="{DynamicResource TextFillColorPrimaryBrush}" ToolTip="{Binding Converter={StaticResource ClassName}}">
+                <Rectangle.OpacityMask>
+                    <ImageBrush ImageSource="{Binding Converter={StaticResource ClassIcon}}" Stretch="Uniform" />
+                </Rectangle.OpacityMask>
+            </Rectangle>
+        </DataTemplate>
+
+        <Style x:Key="CellText" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="4,0" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="32,16,32,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Style="{StaticResource Strong}" FontSize="15" Text="{Binding Summary}" />
+                <TextBlock Margin="0,2,0,0" MaxWidth="720" HorizontalAlignment="Left" Style="{StaticResource Caption}"
+                           Text="Shared by every division: a division auctions whoever hasn't been bought by another one when it starts. Divisions that don't shuffle use this order: drag the handles or press Alt+↑/↓ to rearrange." />
+            </StackPanel>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal">
+                <Grid Width="220">
+                    <TextBox Padding="32,5,10,6" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Margin="10,0,0,0" IsHitTestVisible="False" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Style="{StaticResource Glyph}" Text="&#xE721;" />
+                    <TextBlock Margin="33,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" Text="Search players"
+                               Visibility="{Binding SearchText, Converter={StaticResource EmptyToVisibility}}" />
+                </Grid>
+                <Button Margin="8,0,0,0" Command="{Binding PastePlayersCommand}" ToolTip="Add many players at once from a spreadsheet, a form or a chat message">
+                    <controls:IconLabel Glyph="&#xE77F;" Text="Paste a list…" />
+                </Button>
+                <Button Margin="8,0,0,0" Command="{Binding RemovePlayersCommand}" CommandParameter="{Binding SelectedItems, ElementName=PlayersGrid}">
+                    <controls:IconLabel Glyph="&#xE74D;" Text="Remove" />
+                </Button>
+                <Button Margin="8,0,0,0" Command="{Binding SortByNameCommand}" Style="{StaticResource SubtleButton}" ToolTip="Sort the pool by name">
+                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE8CB;" />
+                </Button>
+                <Button Margin="4,0,0,0" Command="{Binding ExportPlayersCommand}" Style="{StaticResource SubtleButton}"
+                        ToolTip="Export the pool as a spreadsheet (CSV), with where each player ended up">
+                    <TextBlock Style="{StaticResource Glyph}" Text="&#xEDE1;" />
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <Border Grid.Row="1" Padding="8" Style="{StaticResource Card}">
+            <DataGrid x:Name="PlayersGrid"
+                      AllowDrop="True"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="True"
+                      CanUserDeleteRows="True"
+                      CanUserReorderColumns="False"
+                      CanUserResizeRows="False"
+                      CanUserSortColumns="False"
+                      DragLeave="PlayersGrid_DragLeave"
+                      DragOver="PlayersGrid_DragOver"
+                      Drop="PlayersGrid_Drop"
+                      HeadersVisibility="Column"
+                      IsKeyboardFocusWithinChanged="PlayersGrid_IsKeyboardFocusWithinChanged"
+                      ItemsSource="{Binding PlayersView}"
+                      PreviewKeyDown="PlayersGrid_PreviewKeyDown"
+                      PreviewMouseLeftButtonUp="PlayersGrid_PreviewMouseLeftButtonUp"
+                      PreviewMouseMove="PlayersGrid_PreviewMouseMove"
+                      SelectionMode="Extended"
+                      SelectionUnit="FullRow"
+                      Unloaded="PlayersGrid_Unloaded">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Width="34" CanUserResize="False">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border x:Name="Handle" Background="Transparent" Cursor="SizeAll" PreviewMouseLeftButtonDown="Handle_PreviewMouseLeftButtonDown"
+                                        ToolTip="Drag to move">
+                                    <TextBlock HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorTertiaryBrush}" Style="{StaticResource Glyph}" Text="&#xE76F;" />
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Converter={x:Static controls:IsNewItemPlaceholderConverter.Instance}}" Value="True">
+                                        <Setter TargetName="Handle" Property="Visibility" Value="Hidden" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Width="44" Binding="{Binding Position}" ElementStyle="{StaticResource CellText}" Header="#" IsReadOnly="True" />
+                    <DataGridTextColumn Width="*" MinWidth="160" Binding="{Binding Name}" ElementStyle="{StaticResource CellText}" Header="Player" />
+
+                    <DataGridTemplateColumn Width="56" Header="inf" HeaderTemplate="{StaticResource ClassHeader}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox x:Name="Box" MinWidth="0" HorizontalAlignment="Center" IsChecked="{Binding Infantry, UpdateSourceTrigger=PropertyChanged}" />
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Converter={x:Static controls:IsNewItemPlaceholderConverter.Instance}}" Value="True">
+                                        <Setter TargetName="Box" Property="Visibility" Value="Hidden" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Width="56" Header="arc" HeaderTemplate="{StaticResource ClassHeader}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox x:Name="Box" MinWidth="0" HorizontalAlignment="Center" IsChecked="{Binding Archer, UpdateSourceTrigger=PropertyChanged}" />
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Converter={x:Static controls:IsNewItemPlaceholderConverter.Instance}}" Value="True">
+                                        <Setter TargetName="Box" Property="Visibility" Value="Hidden" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Width="56" Header="cav" HeaderTemplate="{StaticResource ClassHeader}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox x:Name="Box" MinWidth="0" HorizontalAlignment="Center" IsChecked="{Binding Cavalry, UpdateSourceTrigger=PropertyChanged}" />
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Converter={x:Static controls:IsNewItemPlaceholderConverter.Instance}}" Value="True">
+                                        <Setter TargetName="Box" Property="Visibility" Value="Hidden" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Width="300" Header="Status">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel x:Name="Status" Margin="4,0" VerticalAlignment="Center" Orientation="Horizontal">
+                                    <Ellipse x:Name="Dot" Width="8" Height="8" Fill="{DynamicResource SystemFillColorSuccessBrush}" />
+                                    <TextBlock x:Name="Text" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                               Text="{Binding StatusText}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding StatusKind}" Value="Picked">
+                                        <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                        <Setter TargetName="Text" Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding StatusKind}" Value="InAuction">
+                                        <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding StatusKind}" Value="Captain">
+                                        <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource SystemFillColorNeutralBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Converter={x:Static controls:IsNewItemPlaceholderConverter.Instance}}" Value="True">
+                                        <Setter TargetName="Status" Property="Visibility" Value="Hidden" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+    </Grid>
+</UserControl>

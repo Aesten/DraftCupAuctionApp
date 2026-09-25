@@ -5,36 +5,41 @@ using AuctionApp.Core.Model;
 
 namespace AuctionApp.Core.Storage;
 
-/// <summary>Turns a draft into files or text meant for people: backups, spreadsheets and chat messages.</summary>
-public static class DraftExporter
+/// <summary>Turns a tournament into files or text meant for people: tournament files, spreadsheets and chat messages.</summary>
+public static class TournamentExporter
 {
-    /// <summary>A complete copy of the draft that can be imported again, on this computer or another one.</summary>
-    public static string ToBackupJson(Draft draft) => DraftJson.Serialize(draft);
+    /// <summary>The whole tournament, to hand over to another computer and merge back later.</summary>
+    public static string ToFile(Tournament tournament) => TournamentJson.Serialize(tournament);
 
-    /// <summary>The player list as a spreadsheet: name, one column per class and the stage.</summary>
-    public static string PlayersToCsv(Draft draft)
+    /// <summary>The player pool as a spreadsheet: name, one column per class, and where each player ended up.</summary>
+    public static string PlayersToCsv(Tournament tournament)
     {
+        var statuses = TournamentRules.PoolStatuses(tournament);
         var csv = new StringBuilder();
-        AppendRow(csv, ["Player", .. PlayerClasses.All.Select(PlayerClasses.ShortName), "Stage"]);
-        foreach (var player in draft.Players)
+        AppendRow(csv, ["Player", .. PlayerClasses.All.Select(PlayerClasses.ShortName), "Division", "Team", "Price"]);
+        foreach (var player in tournament.Players)
         {
+            var status = statuses[player.Id];
+            var picked = status.Kind == PoolStatusKind.Picked;
             AppendRow(csv,
             [
                 player.Name,
                 .. PlayerClasses.All.Select(c => player.Classes.Contains(c) ? "x" : string.Empty),
-                draft.FindStage(player.StageId)?.Name ?? string.Empty,
+                picked ? status.Division!.Name : string.Empty,
+                picked ? status.CaptainName! : string.Empty,
+                picked ? status.Price.ToString("0.0", CultureInfo.InvariantCulture) : string.Empty,
             ]);
         }
 
         return csv.ToString();
     }
 
-    /// <summary>Every sale, team by team, as a spreadsheet.</summary>
-    public static string ResultsToCsv(Draft draft)
+    /// <summary>Every sale of a division, team by team, as a spreadsheet.</summary>
+    public static string ResultsToCsv(Division division)
     {
-        var session = draft.Session ?? throw new InvalidOperationException("The auction hasn't started.");
+        var session = division.Session ?? throw new InvalidOperationException("The auction hasn't started.");
         var csv = new StringBuilder();
-        AppendRow(csv, ["Captain", "Player", "Classes", "Price", "Stage"]);
+        AppendRow(csv, ["Captain", "Player", "Classes", "Price"]);
         foreach (var team in session.Teams)
         {
             foreach (var pick in team.Picks)
@@ -45,25 +50,19 @@ public static class DraftExporter
                     pick.Player.Name,
                     string.Join(" ", pick.Player.Classes.Select(PlayerClasses.ShortName)),
                     pick.Price.ToString("0.0", CultureInfo.InvariantCulture),
-                    draft.FindStage(pick.StageId)?.Name ?? string.Empty,
                 ]);
             }
-        }
-
-        foreach (var player in session.Unsold.Concat(session.Skipped).Concat(session.Queue).Concat(session.Waiting))
-        {
-            AppendRow(csv, [string.Empty, player.Name, string.Join(" ", player.Classes.Select(PlayerClasses.ShortName)), string.Empty, "Unsold"]);
         }
 
         return csv.ToString();
     }
 
-    /// <summary>A readable summary of the teams, formatted to paste in Discord or similar.</summary>
-    public static string ResultsToText(Draft draft)
+    /// <summary>A readable summary of a division's teams, formatted to paste in Discord or similar.</summary>
+    public static string ResultsToText(Tournament tournament, Division division)
     {
-        var session = draft.Session ?? throw new InvalidOperationException("The auction hasn't started.");
+        var session = division.Session ?? throw new InvalidOperationException("The auction hasn't started.");
         var text = new StringBuilder();
-        text.AppendLine($"**{draft.Title}**");
+        text.AppendLine($"**{tournament.Title} — {division.Name}**");
         foreach (var team in session.Teams)
         {
             text.AppendLine();
