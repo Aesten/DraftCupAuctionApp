@@ -51,6 +51,13 @@
             </DataTemplate.Triggers>
         </DataTemplate>
 
+        <!-- A large action button on the start page: icon, title and one line of explanation. -->
+        <Style x:Key="StartTile" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="16,14" />
+        </Style>
+
         <Style x:Key="MenuHeading" TargetType="TextBlock" BasedOn="{StaticResource Caption}">
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Margin" Value="12,16,0,6" />
@@ -68,38 +75,78 @@
         <!-- The open tournament -->
         <ContentControl Content="{Binding Current}" Focusable="False" />
 
-        <!-- Start page: no tournament open -->
+        <!-- Start page: no tournament open. A centered welcome layout: actions on the left, known tournaments on the right. -->
         <Grid Visibility="{Binding HasProject, Converter={StaticResource InverseBoolToVisibility}}">
-            <Border Width="560" Margin="0,64,0,32" Padding="32,28" HorizontalAlignment="Center" VerticalAlignment="Top" Style="{StaticResource Card}">
-                <DockPanel>
-                    <StackPanel DockPanel.Dock="Top">
-                        <StackPanel Orientation="Horizontal">
-                            <Image Width="48" Height="48" Source="/Assets/app.ico" />
-                            <StackPanel Margin="16,0,0,0" VerticalAlignment="Center">
-                                <TextBlock Style="{StaticResource PageTitle}" FontSize="24" Text="Draft Cup Auction" />
-                                <TextBlock Style="{StaticResource Caption}" FontSize="13" Text="Open a tournament, or start a new one." />
-                            </StackPanel>
-                        </StackPanel>
-                        <StackPanel Margin="0,24,0,0" Orientation="Horizontal">
-                            <Button Command="{Binding NewTournamentCommand}" Style="{DynamicResource AccentButtonStyle}">
-                                <controls:IconLabel Glyph="&#xE710;" Text="New tournament" />
-                            </Button>
-                            <Button Margin="8,0,0,0" Command="{Binding ImportCommand}"
-                                    ToolTip="A tournament exported from this app (.draftcup.json), on this PC or another one. You can also drop the file on the window.">
-                                <controls:IconLabel Glyph="&#xE8B5;" Text="Import a tournament…" />
-                            </Button>
-                        </StackPanel>
-                        <TextBlock Margin="0,28,0,8" Style="{StaticResource Caption}" FontWeight="SemiBold" Text="TOURNAMENTS ON THIS PC"
-                                   Visibility="{Binding HasRecent, Converter={StaticResource BoolToVisibility}}" />
+            <Grid MaxWidth="980" Margin="48,32" VerticalAlignment="Center">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="320" />
+                    <ColumnDefinition Width="56" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.ColumnSpan="3" Margin="0,0,0,40" Orientation="Horizontal">
+                    <Image Width="72" Height="72" RenderOptions.BitmapScalingMode="HighQuality" Source="/Assets/app.png" />
+                    <StackPanel Margin="20,0,0,0" VerticalAlignment="Center">
+                        <TextBlock FontSize="32" Style="{StaticResource PageTitle}" Text="Draft Cup Auction" />
+                        <TextBlock Margin="0,2,0,0" FontSize="15" Style="{StaticResource Caption}" Text="Player auctions for draft cups, run on stream." />
                     </StackPanel>
-                    <Button DockPanel.Dock="Bottom" Margin="0,16,0,0" Command="{Binding OpenDataFolderCommand}" Style="{StaticResource SubtleButton}" ToolTip="{Binding DataFolder}">
+                </StackPanel>
+
+                <!-- Get started -->
+                <StackPanel Grid.Row="1">
+                    <TextBlock Margin="0,0,0,10" Style="{StaticResource Overline}" Text="GET STARTED" />
+                    <Button Command="{Binding NewTournamentCommand}" Style="{StaticResource StartTile}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="40" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock FontSize="22" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Style="{StaticResource Glyph}" Text="&#xE710;" />
+                            <StackPanel Grid.Column="1">
+                                <TextBlock FontSize="15" Style="{StaticResource Strong}" Text="New tournament" />
+                                <TextBlock Style="{StaticResource Caption}" Text="An empty player pool and a first division" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Grid>
+                    </Button>
+                    <Button Margin="0,8,0,0" Command="{Binding ImportCommand}" Style="{StaticResource StartTile}"
+                            ToolTip="You can also drop the file on the window, or open it with the app">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="40" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock FontSize="22" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Style="{StaticResource Glyph}" Text="&#xE8B5;" />
+                            <StackPanel Grid.Column="1">
+                                <TextBlock FontSize="15" Style="{StaticResource Strong}" Text="Import a tournament…" />
+                                <TextBlock Style="{StaticResource Caption}" Text="A .draftcup.json file exported on this PC or another one" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Grid>
+                    </Button>
+                    <Button Margin="0,16,0,0" HorizontalAlignment="Left" Command="{Binding OpenDataFolderCommand}" Style="{StaticResource SubtleButton}" ToolTip="{Binding DataFolder}">
                         <controls:IconLabel Glyph="&#xE8B7;" Text="Open the data folder" />
                     </Button>
-                    <ScrollViewer MaxHeight="420" VerticalScrollBarVisibility="Auto">
+                </StackPanel>
+
+                <!-- Known tournaments -->
+                <DockPanel Grid.Row="1" Grid.Column="2">
+                    <TextBlock DockPanel.Dock="Top" Margin="0,0,0,10" Style="{StaticResource Overline}" Text="TOURNAMENTS ON THIS PC" />
+                    <Border Padding="24,20" VerticalAlignment="Top" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8"
+                            Visibility="{Binding HasRecent, Converter={StaticResource InverseBoolToVisibility}}">
+                        <StackPanel>
+                            <TextBlock FontSize="15" Style="{StaticResource Strong}" Text="No tournaments yet" />
+                            <TextBlock Margin="0,4,0,0" Style="{StaticResource Caption}" TextWrapping="Wrap"
+                                       Text="Tournaments you create or import show up here. They're saved automatically after every change." />
+                        </StackPanel>
+                    </Border>
+                    <ScrollViewer MaxHeight="440" VerticalScrollBarVisibility="Auto" Visibility="{Binding HasRecent, Converter={StaticResource BoolToVisibility}}">
                         <ItemsControl Margin="-12,0,0,0" Focusable="False" ItemTemplate="{StaticResource RecentItem}" ItemsSource="{Binding Recent}" />
                     </ScrollViewer>
                 </DockPanel>
-            </Border>
+            </Grid>
         </Grid>
 
         <!-- Floating menu: over the page, never pushing it -->
@@ -120,7 +167,7 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <Image Width="28" Height="28" Margin="8,0,0,0" Source="/Assets/app.ico" />
+                        <Image Width="28" Height="28" Margin="8,0,0,0" RenderOptions.BitmapScalingMode="HighQuality" Source="/Assets/app.png" />
                         <TextBlock Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="15" Style="{StaticResource Strong}" Text="Draft Cup Auction" />
                         <Button Grid.Column="2" Command="{Binding ToggleMenuCommand}" Style="{StaticResource SubtleButton}" ToolTip="Close the menu (Esc)">
                             <TextBlock Style="{StaticResource Glyph}" Text="&#xE711;" />
