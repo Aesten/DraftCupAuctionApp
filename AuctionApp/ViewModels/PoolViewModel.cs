@@ -32,7 +32,7 @@ public sealed partial class PoolViewModel : ObservableObject
 
         Players.CollectionChanged += OnPlayersCollectionChanged;
         PlayersView = CollectionViewSource.GetDefaultView(Players);
-        PlayersView.Filter = item => item is PoolPlayerRowViewModel row && MatchesSearch(row);
+        PlayersView.Filter = item => item is PoolPlayerRowViewModel row && MatchesFilters(row);
         ApplySort();
         RefreshStatuses();
     }
@@ -93,15 +93,65 @@ public sealed partial class PoolViewModel : ObservableObject
         RefreshStatuses();
     }
 
-    partial void OnSearchTextChanged(string value)
+    // Filters: search by name, by class, and by availability.
+
+    [ObservableProperty]
+    public partial bool FilterInfantry { get; set; }
+
+    [ObservableProperty]
+    public partial bool FilterArcher { get; set; }
+
+    [ObservableProperty]
+    public partial bool FilterCavalry { get; set; }
+
+    /// <summary>0: everyone, 1: available (not bought yet), 2: unavailable (bought).</summary>
+    [ObservableProperty]
+    public partial int AvailabilityFilter { get; set; }
+
+    [ObservableProperty]
+    public partial string ShownCount { get; set; } = string.Empty;
+
+    partial void OnSearchTextChanged(string value) => ApplyFilters();
+
+    partial void OnFilterInfantryChanged(bool value) => ApplyFilters();
+
+    partial void OnFilterArcherChanged(bool value) => ApplyFilters();
+
+    partial void OnFilterCavalryChanged(bool value) => ApplyFilters();
+
+    partial void OnAvailabilityFilterChanged(int value) => ApplyFilters();
+
+    private void ApplyFilters()
     {
         EndPendingEdits();
-        IsFiltered = !string.IsNullOrWhiteSpace(value);
+        IsFiltered = !string.IsNullOrWhiteSpace(SearchText) || FilterInfantry || FilterArcher || FilterCavalry || AvailabilityFilter != 0;
         PlayersView.Refresh();
+        UpdateShownCount();
     }
 
-    private bool MatchesSearch(PoolPlayerRowViewModel row) =>
-        string.IsNullOrWhiteSpace(SearchText) || row.Name.Contains(SearchText.Trim(), StringComparison.CurrentCultureIgnoreCase);
+    private void UpdateShownCount() => ShownCount = $"{PlayersView.Cast<object>().Count()}/{Players.Count}";
+
+    /// <summary>A player shows when their name contains the search, they have one of the selected classes, and they match the availability.</summary>
+    private bool MatchesFilters(PoolPlayerRowViewModel row)
+    {
+        if (!string.IsNullOrWhiteSpace(SearchText) && !row.Name.Contains(SearchText.Trim(), StringComparison.CurrentCultureIgnoreCase))
+        {
+            return false;
+        }
+
+        if ((FilterInfantry || FilterArcher || FilterCavalry)
+            && !(FilterInfantry && row.Infantry || FilterArcher && row.Archer || FilterCavalry && row.Cavalry))
+        {
+            return false;
+        }
+
+        return AvailabilityFilter switch
+        {
+            1 => row.StatusKind != PoolStatusKind.Picked,
+            2 => row.StatusKind == PoolStatusKind.Picked,
+            _ => true,
+        };
+    }
 
     /// <summary>Updates each player's status (available, bought, captain...) and the summary line.</summary>
     internal void RefreshStatuses()
@@ -117,15 +167,23 @@ public sealed partial class PoolViewModel : ObservableObject
             }
         }
 
-        var available = statuses.Values.Count(status => status.Kind == PoolStatusKind.Available);
+        // "Available" means not bought yet, matching the availability filter; players in a running auction count.
         var picked = statuses.Values.Count(status => status.Kind == PoolStatusKind.Picked);
-        var parts = new List<string> { $"{Players.Count} players", $"{available} available" };
+        var parts = new List<string> { $"{Players.Count} players" };
         if (picked > 0)
         {
             parts.Add($"{picked} bought");
         }
 
+        parts.Add($"{Players.Count - picked} available");
+
         Summary = string.Join("  ·  ", parts);
+        if (IsFiltered && AvailabilityFilter != 0)
+        {
+            PlayersView.Refresh();
+        }
+
+        UpdateShownCount();
     }
 
     /// <summary>A player's name or classes changed.</summary>

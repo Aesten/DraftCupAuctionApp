@@ -6,52 +6,47 @@
              xmlns:controls="clr-namespace:AuctionApp.Controls"
              xmlns:vm="clr-namespace:AuctionApp.ViewModels"
              d:DataContext="{d:DesignInstance Type=vm:PoolViewModel}"
-             d:DesignHeight="800"
-             d:DesignWidth="1200"
+             d:DesignHeight="900"
+             d:DesignWidth="1600"
              mc:Ignorable="d">
     <UserControl.Resources>
         <controls:BindingProxy x:Key="Proxy" Data="{Binding}" />
 
-        <DataTemplate x:Key="ClassHeader">
-            <Border Width="22" Height="22" Padding="3" CornerRadius="4" BorderThickness="1"
-                    Background="{Binding Converter={StaticResource ClassBrush}, ConverterParameter=0.28}"
-                    BorderBrush="{Binding Converter={StaticResource ClassBrush}, ConverterParameter=0.9}"
-                    ToolTip="{Binding Converter={StaticResource ClassName}}">
-                <Rectangle Fill="{DynamicResource TextFillColorPrimaryBrush}">
-                    <Rectangle.OpacityMask>
-                        <ImageBrush ImageSource="{Binding Converter={StaticResource ClassIcon}}" Stretch="Uniform" />
-                    </Rectangle.OpacityMask>
-                </Rectangle>
-            </Border>
-        </DataTemplate>
-
         <Style x:Key="CellText" TargetType="TextBlock">
             <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Margin" Value="4,0" />
+            <Setter Property="Margin" Value="6,0" />
+            <Setter Property="FontSize" Value="15" />
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+
+        <Style x:Key="FilterToggle" TargetType="ToggleButton" BasedOn="{StaticResource ClassToggle}">
+            <Setter Property="Width" Value="34" />
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Margin" Value="0,0,4,0" />
         </Style>
     </UserControl.Resources>
 
-    <Grid Margin="24,16,24,20">
+    <!-- A centered column, like a document: the list doesn't need the full width of the window. -->
+    <Grid MaxWidth="1180" Margin="24,20,24,20" HorizontalAlignment="Stretch">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Grid Margin="0,0,0,12">
+        <!-- Adding players -->
+        <Grid Margin="0,0,0,14">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <StackPanel VerticalAlignment="Center">
-                <TextBlock Style="{StaticResource Strong}" FontSize="15" Text="{Binding Summary}" />
-                <TextBlock Margin="0,2,0,0" MaxWidth="720" HorizontalAlignment="Left" Style="{StaticResource Caption}"
-                           Text="Shared by every division: a division auctions whoever hasn't been bought by another one when it starts. Players added, edited or removed during an auction follow along: new ones go to its skipped list." />
-                <Grid Width="420" Margin="0,10,0,0" HorizontalAlignment="Left">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Style="{StaticResource Strong}" FontSize="16" Text="{Binding Summary}" />
+                <TextBlock Margin="0,2,0,0" Style="{StaticResource Caption}"
+                           Text="Shared by every division. Players added, edited or removed during an auction follow along; new ones go to its skipped list." />
+            </StackPanel>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal">
+                <Grid Width="340">
                     <TextBox x:Name="NewPlayerBox" Text="{Binding NewPlayerText, UpdateSourceTrigger=PropertyChanged}"
                              ToolTip="A name, optionally followed by classes, e.g. Alice, inf cav. Press Enter to add.">
                         <TextBox.InputBindings>
@@ -59,16 +54,58 @@
                         </TextBox.InputBindings>
                     </TextBox>
                     <TextBlock Margin="11,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
-                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" Text="Add a player (e.g. Alice, inf cav) and press Enter"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" Text="Add a player (e.g. Alice, inf cav)"
                                Visibility="{Binding NewPlayerText, Converter={StaticResource EmptyToVisibility}}" />
-                    <Button Grid.Column="1" Margin="8,0,0,0" Command="{Binding AddPlayerCommand}" Style="{DynamicResource AccentButtonStyle}">
-                        <controls:IconLabel Glyph="&#xE710;" Text="Add" />
-                    </Button>
                 </Grid>
+                <Button Margin="6,0,0,0" Command="{Binding AddPlayerCommand}" Style="{DynamicResource AccentButtonStyle}">
+                    <controls:IconLabel Glyph="&#xE710;" Text="Add" />
+                </Button>
+                <Button Margin="6,0,0,0" Command="{Binding PastePlayersCommand}" ToolTip="Add many players at once from a spreadsheet, a form or a chat message">
+                    <controls:IconLabel Glyph="&#xE77F;" Text="Paste a list…" />
+                </Button>
             </StackPanel>
-            <StackPanel Grid.Column="1" VerticalAlignment="Bottom" Orientation="Horizontal">
+        </Grid>
+
+        <!-- Finding players -->
+        <Grid Grid.Row="1" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                <Grid Width="280">
+                    <TextBox Padding="32,5,10,6" VerticalContentAlignment="Center" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Margin="10,0,0,0" IsHitTestVisible="False" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Style="{StaticResource Glyph}" Text="&#xE721;" />
+                    <TextBlock Margin="33,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" Text="Search players"
+                               Visibility="{Binding SearchText, Converter={StaticResource EmptyToVisibility}}" />
+                </Grid>
+
+                <StackPanel Margin="14,0,0,0" Orientation="Horizontal" ToolTip="Show only players with these classes">
+                    <ToggleButton IsChecked="{Binding FilterInfantry}" Style="{StaticResource FilterToggle}" Tag="inf" />
+                    <ToggleButton IsChecked="{Binding FilterArcher}" Style="{StaticResource FilterToggle}" Tag="arc" />
+                    <ToggleButton IsChecked="{Binding FilterCavalry}" Style="{StaticResource FilterToggle}" Tag="cav" />
+                </StackPanel>
+
+                <ListBox Margin="10,0,0,0" SelectedIndex="{Binding AvailabilityFilter}" Style="{StaticResource SegmentedList}">
+                    <ListBoxItem ToolTip="Everyone">
+                        <TextBlock Text="All" />
+                    </ListBoxItem>
+                    <ListBoxItem ToolTip="Not bought yet">
+                        <TextBlock Text="Available" />
+                    </ListBoxItem>
+                    <ListBoxItem ToolTip="Already bought">
+                        <TextBlock Text="Unavailable" />
+                    </ListBoxItem>
+                </ListBox>
+
+                <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" FontFamily="Cascadia Mono, Consolas" Style="{StaticResource Caption}" FontSize="13" Text="{Binding ShownCount}" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal">
                 <!-- Sorted by name unless the auction order is asked for, so the upcoming order isn't shown on stream by accident -->
-                <ListBox Margin="0,0,12,0" Style="{StaticResource SegmentedList}" SelectedIndex="{Binding IsAuctionOrder, Converter={x:Static controls:BoolToIndexConverter.Instance}}">
+                <ListBox Style="{StaticResource SegmentedList}" SelectedIndex="{Binding IsAuctionOrder, Converter={x:Static controls:BoolToIndexConverter.Instance}}">
                     <ListBoxItem ToolTip="Sorted by name">
                         <TextBlock Text="A–Z" />
                     </ListBoxItem>
@@ -76,23 +113,13 @@
                         <TextBlock Text="Auction order" />
                     </ListBoxItem>
                 </ListBox>
-                <Grid Width="200">
-                    <TextBox Padding="32,5,10,6" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
-                    <TextBlock Margin="10,0,0,0" IsHitTestVisible="False" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                               Style="{StaticResource Glyph}" Text="&#xE721;" />
-                    <TextBlock Margin="33,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
-                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" Text="Search players"
-                               Visibility="{Binding SearchText, Converter={StaticResource EmptyToVisibility}}" />
-                </Grid>
-                <Button Margin="8,0,0,0" Command="{Binding PastePlayersCommand}" ToolTip="Add many players at once from a spreadsheet, a form or a chat message">
-                    <controls:IconLabel Glyph="&#xE77F;" Text="Paste a list…" />
-                </Button>
-                <Button Margin="8,0,0,0" Command="{Binding RemovePlayersCommand}" CommandParameter="{Binding SelectedItems, ElementName=PlayersGrid}">
-                    <controls:IconLabel Glyph="&#xE74D;" Text="Remove" />
-                </Button>
-                <Button Margin="8,0,0,0" Command="{Binding SortPoolOrderByNameCommand}" Style="{StaticResource SubtleButton}" ToolTip="Put the auction order in alphabetical order"
+                <Button Margin="4,0,0,0" Command="{Binding SortPoolOrderByNameCommand}" Style="{StaticResource SubtleButton}" ToolTip="Put the auction order in alphabetical order"
                         Visibility="{Binding IsAuctionOrder, Converter={StaticResource BoolToVisibility}}">
                     <TextBlock Style="{StaticResource Glyph}" Text="&#xE8CB;" />
+                </Button>
+                <Button Margin="8,0,0,0" Command="{Binding RemovePlayersCommand}" CommandParameter="{Binding SelectedItems, ElementName=PlayersGrid}" Style="{StaticResource SubtleButton}"
+                        ToolTip="Remove the selected players (Delete). Players already bought are taken off their team, which gets the money back.">
+                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE74D;" />
                 </Button>
                 <Button Margin="4,0,0,0" Command="{Binding ExportPlayersCommand}" Style="{StaticResource SubtleButton}"
                         ToolTip="Export the pool as a spreadsheet (CSV), with where each player ended up">
@@ -101,10 +128,11 @@
             </StackPanel>
         </Grid>
 
-        <Border Grid.Row="1" Padding="8" Style="{StaticResource Card}">
+        <Border Grid.Row="2" Padding="6" Style="{StaticResource Card}">
             <DataGrid x:Name="PlayersGrid"
                       AllowDrop="True"
                       AutoGenerateColumns="False"
+                      Background="Transparent"
                       CanUserAddRows="False"
                       CanUserDeleteRows="True"
                       CanUserReorderColumns="False"
@@ -113,57 +141,53 @@
                       DragLeave="PlayersGrid_DragLeave"
                       DragOver="PlayersGrid_DragOver"
                       Drop="PlayersGrid_Drop"
+                      GridLinesVisibility="Horizontal"
                       HeadersVisibility="Column"
                       IsKeyboardFocusWithinChanged="PlayersGrid_IsKeyboardFocusWithinChanged"
                       ItemsSource="{Binding PlayersView}"
                       PreviewKeyDown="PlayersGrid_PreviewKeyDown"
                       PreviewMouseLeftButtonUp="PlayersGrid_PreviewMouseLeftButtonUp"
                       PreviewMouseMove="PlayersGrid_PreviewMouseMove"
+                      RowHeight="44"
                       SelectionMode="Extended"
                       SelectionUnit="FullRow"
                       Unloaded="PlayersGrid_Unloaded">
+                <DataGrid.Resources>
+                    <!-- A light accent wash instead of the solid accent, so the class icons stay readable on the selected row -->
+                    <SolidColorBrush x:Key="DataGridRowSelectedBackgroundThemeBrush" Opacity="0.22" Color="{DynamicResource {x:Static SystemColors.AccentColorKey}}" />
+                    <SolidColorBrush x:Key="DataGridRowSelectedForegroundThemeBrush" Color="{DynamicResource TextFillColorPrimary}" />
+                </DataGrid.Resources>
                 <DataGrid.Columns>
                     <DataGridTemplateColumn Width="34" CanUserResize="False"
                                             Visibility="{Binding Data.IsAuctionOrder, Source={StaticResource Proxy}, Converter={StaticResource BoolToVisibility}}">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <Border x:Name="Handle" Background="Transparent" Cursor="SizeAll" PreviewMouseLeftButtonDown="Handle_PreviewMouseLeftButtonDown"
-                                        ToolTip="Drag to move">
+                                <Border Background="Transparent" Cursor="SizeAll" PreviewMouseLeftButtonDown="Handle_PreviewMouseLeftButtonDown" ToolTip="Drag to move">
                                     <TextBlock HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorTertiaryBrush}" Style="{StaticResource Glyph}" Text="&#xE76F;" />
                                 </Border>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTextColumn Width="44" Binding="{Binding Position}" ElementStyle="{StaticResource CellText}" Header="#" IsReadOnly="True"
+                    <DataGridTextColumn Width="48" Binding="{Binding Position}" ElementStyle="{StaticResource CellText}" Header="#" IsReadOnly="True"
                                         Visibility="{Binding Data.IsAuctionOrder, Source={StaticResource Proxy}, Converter={StaticResource BoolToVisibility}}" />
-                    <DataGridTextColumn Width="*" MinWidth="160" Binding="{Binding Name}" ElementStyle="{StaticResource CellText}" Header="Player" />
+                    <DataGridTextColumn Width="*" MinWidth="200" Binding="{Binding Name}" ElementStyle="{StaticResource CellText}" Header="NAME" />
 
-                    <DataGridTemplateColumn Width="56" Header="inf" HeaderTemplate="{StaticResource ClassHeader}">
+                    <DataGridTemplateColumn Width="130" Header="CLASSES">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <CheckBox x:Name="Box" MinWidth="0" HorizontalAlignment="Center" IsChecked="{Binding Infantry, UpdateSourceTrigger=PropertyChanged}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Width="56" Header="arc" HeaderTemplate="{StaticResource ClassHeader}">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <CheckBox x:Name="Box" MinWidth="0" HorizontalAlignment="Center" IsChecked="{Binding Archer, UpdateSourceTrigger=PropertyChanged}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Width="56" Header="cav" HeaderTemplate="{StaticResource ClassHeader}">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <CheckBox x:Name="Box" MinWidth="0" HorizontalAlignment="Center" IsChecked="{Binding Cavalry, UpdateSourceTrigger=PropertyChanged}" />
+                                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                                    <ToggleButton Margin="0,0,4,0" IsChecked="{Binding Infantry, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ClassToggle}" Tag="inf" />
+                                    <ToggleButton Margin="0,0,4,0" IsChecked="{Binding Archer, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ClassToggle}" Tag="arc" />
+                                    <ToggleButton IsChecked="{Binding Cavalry, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ClassToggle}" Tag="cav" />
+                                </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn Width="300" Header="Status">
+                    <DataGridTemplateColumn Width="280" Header="STATUS">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <StackPanel x:Name="Status" Margin="4,0" VerticalAlignment="Center" Orientation="Horizontal">
+                                <StackPanel Margin="6,0" VerticalAlignment="Center" Orientation="Horizontal">
                                     <Ellipse x:Name="Dot" Width="8" Height="8" Fill="{DynamicResource SystemFillColorSuccessBrush}" />
                                     <TextBlock x:Name="Text" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                Text="{Binding StatusText}" TextTrimming="CharacterEllipsis" />

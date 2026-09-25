@@ -15,6 +15,7 @@ A tournament holds:
 - **Player pool**: shared by the whole tournament. Players have classes (INF / ARC / CAV).
   - Add players with the **Add a player** box (`Alice, inf cav`, then Enter). Use **Paste a list…** to add many at once from a spreadsheet, a sign-up form or a Discord message.
   - The pool is shown **A–Z** by default, so opening it during an auction doesn't reveal who comes next.
+  - Filter it with the search box (it narrows the list as you type), the class buttons, and **All / Available / Unavailable** (not bought yet / already bought). Click a player's class icons to switch those classes on or off.
   - **Auction order** shows the order used by divisions that don't shuffle. Drag the handles (or press Alt+↑/↓) to rearrange it.
   - Each player shows where they stand: available, in a running auction, or bought (division, team and price).
 - **Divisions**: one auction each, with its own:
@@ -32,12 +33,12 @@ Each division has three pages, switched from the top bar: **Configure**, **Aucti
 
 The auction page is meant to be screen-shared (F11 for full screen). It shows only what viewers need, all at once and without scrolling:
 
-- the player on the block and the next few players (the rest of the queue stays hidden);
-- every team, with its remaining budget, the most it can bid, its roster with prices, and its empty spots.
+- at the top, the auction itself: the player on the block, the auctioneer's controls, and the next few players (the rest of the queue stays hidden);
+- below, every team, with its remaining budget, the most it can bid, its roster with prices, and its empty spots.
 
 The layout is made for 8 teams (4 × 2) and adapts to 4–10 teams and to rosters of 5–10 players, shrinking only if the window is too small.
 
-- Click the winning team's card, type the price and press **Enter** (or click **Sold!**). The price box accepts `2.5` as well as `2,5`.
+- Pick the winning team (click its card, or choose it in the list at the top), type the price and press **Enter** (or click **Sold!**). The price box accepts `2.5` as well as `2,5`, and **−** / **+** change it by 0.1.
 - **Skip** a player nobody wants. **Skipped players** opens the full list: put one back on the block, or send them all back to the queue.
 - **Undo** (Ctrl+Z) reverts the last action. Hovering a bought player also lets you take them back.
 - The pool can be edited mid-auction, and the auction follows along:

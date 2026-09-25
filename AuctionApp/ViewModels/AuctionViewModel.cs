@@ -324,15 +324,6 @@ public sealed partial class AuctionViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void MaxPrice()
-    {
-        if (_engine != null && SelectedTeam != null)
-        {
-            PriceText = Money.Format(_engine.MaxBid(_engine.GetTeam(SelectedTeam.CaptainId)));
-        }
-    }
-
-    [RelayCommand]
     private void Skip()
     {
         if (HasCurrentPlayer)

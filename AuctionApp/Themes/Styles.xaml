@@ -254,6 +254,45 @@
         </Border>
     </DataTemplate>
 
+    <!--
+        A class as an on/off toggle (its code in Tag): the framed, tinted icon when on, a faint icon when off.
+        Used for players' classes in the pool, and for the class filters.
+    -->
+    <Style x:Key="ClassToggle" TargetType="ToggleButton">
+        <Setter Property="Width" Value="30" />
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="ToolTip" Value="{Binding Tag, RelativeSource={RelativeSource Self}, Converter={StaticResource ClassName}}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Frame" Padding="5" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" CornerRadius="5">
+                        <Rectangle x:Name="Icon" Fill="{DynamicResource TextFillColorPrimaryBrush}" Opacity="0.18">
+                            <Rectangle.OpacityMask>
+                                <ImageBrush ImageSource="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource ClassIcon}}" Stretch="Uniform" />
+                            </Rectangle.OpacityMask>
+                        </Rectangle>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                            <Setter TargetName="Icon" Property="Opacity" Value="0.45" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Frame" Property="Background" Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource ClassBrush}, ConverterParameter=0.28}" />
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource ClassBrush}, ConverterParameter=0.9}" />
+                            <Setter TargetName="Icon" Property="Opacity" Value="1" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Cursor" Value="Arrow" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style TargetType="controls:ClassIconStrip">
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
         <Setter Property="IsTabStop" Value="False" />
