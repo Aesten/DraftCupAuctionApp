@@ -17,14 +17,17 @@
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>
 
-  <!-- Release builds for players: one self-contained .exe, nothing to install. -->
+  <!--
+    Release builds: one small .exe (under 1 MB) that uses the .NET Desktop Runtime installed on the PC. When it's
+    missing, the exe itself shows a Windows dialog offering to download it (a one-time install per PC).
+  -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <SelfContained>true</SelfContained>
+    <SelfContained>false</SelfContained>
     <PublishSingleFile>true</PublishSingleFile>
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-    <!-- The app is in English: leave out the .NET/WPF resources translated to other languages (about 3 MB). -->
+    <!-- Also runs on a newer major version (e.g. .NET 11) if that's the only one installed. -->
+    <RollForward>Major</RollForward>
+    <!-- The app is in English: leave out the translated resources of the libraries it uses. -->
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <DebugType>embedded</DebugType>
   </PropertyGroup>

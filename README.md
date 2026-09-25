@@ -4,7 +4,13 @@ A Windows app for hosting draft cup auctions offline: captains bid on players wi
 
 ## Running it
 
-Download `DraftCupAuction.exe` (from the latest run of the **Build** workflow on GitHub, or from a release) and run it. It's a single self-contained file for 64-bit Windows 10 or 11, with nothing else to install. It's about 60 MB because it carries the .NET runtime and WPF with it; the app itself is under 1 MB. It follows the Windows light/dark setting and accent color.
+Download `DraftCupAuction.exe` (from the latest run of the **Build** workflow on GitHub, or from a release) and run it. It's a single file of under 1 MB, for 64-bit Windows 10 or 11. It follows the Windows light/dark setting and accent color.
+
+It needs the **.NET 10 Desktop Runtime**, a one-time install per PC (a newer version works too). If it's missing, the app says so when started and offers to open the download page: pick the **Desktop Runtime** for **x64**, install it, and start the app again. It can also be installed ahead of time from [dotnet.microsoft.com](https://dotnet.microsoft.com/download/dotnet/10.0), or from a terminal:
+
+```sh
+winget install Microsoft.DotNet.DesktopRuntime.10
+```
 
 ## How it's organized
 
@@ -116,7 +122,7 @@ dotnet build                     # everything
 dotnet test                      # auction rules, pool sharing, storage, import and merge tests
 dotnet run --project AuctionApp  # start the app (Windows only)
 
-# Release: one self-contained DraftCupAuction.exe in ./publish
+# Release: one small DraftCupAuction.exe in ./publish (needs the .NET 10 Desktop Runtime to run)
 dotnet publish AuctionApp -c Release -o publish
 ```
 
