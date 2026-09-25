@@ -8,6 +8,9 @@
              d:DataContext="{d:DesignInstance Type=vm:AuctionViewModel}"
              d:DesignHeight="1000"
              d:DesignWidth="1900"
+             Focusable="True"
+             FocusVisualStyle="{x:Null}"
+             IsTabStop="False"
              mc:Ignorable="d">
     <!--
         Designed to be screen-shared: everything viewers need is on screen at once (the player on the block, the next
@@ -98,14 +101,30 @@
                         <TextBlock x:Name="TeamName" Grid.Column="1" VerticalAlignment="Center" FontSize="18" Style="{StaticResource Strong}"
                                    Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
                         <TextBlock Grid.Column="2" Margin="8,0,0,0" FontSize="26" FontWeight="Bold"
-                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding RemainingText}" />
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding BudgetText}" ToolTip="{Binding BudgetToolTip}" />
                     </Grid>
-                    <ProgressBar DockPanel.Dock="Top" Height="4" Margin="0,4,0,4" Maximum="1" Minimum="0" Value="{Binding BudgetLeftRatio, Mode=OneWay}" />
-                    <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
-                        <TextBlock FontSize="13" Style="{StaticResource Caption}" Text="{Binding MaxBidText}" />
-                        <TextBlock HorizontalAlignment="Right" FontSize="13" Style="{StaticResource Caption}" Text="{Binding SlotsText}" />
+
+                    <!-- Budget: 0 on the left, the starting budget on the right; the reserved half is hatched while the cap is on -->
+                    <controls:BudgetBar DockPanel.Dock="Top" Height="8" Margin="0,6,0,2"
+                                        Fill="{DynamicResource AccentFillColorDefaultBrush}"
+                                        Hatch="{DynamicResource AccentFillColorDefaultBrush}"
+                                        Maximum="{Binding InitialBudget}"
+                                        Reserved="{Binding Reserved}"
+                                        ShowReserved="{Binding IsCapped}"
+                                        ToolTip="{Binding BudgetToolTip}"
+                                        Track="{DynamicResource ControlStrongStrokeColorDefaultBrush}"
+                                        Value="{Binding Remaining}" />
+                    <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
+                        <TextBlock FontSize="11" Style="{StaticResource Caption}" Text="0" />
+                        <TextBlock HorizontalAlignment="Right" FontSize="11" Style="{StaticResource Caption}" Text="{Binding InitialBudgetText}" />
                     </Grid>
-                    <ItemsControl DockPanel.Dock="Bottom" Margin="0,8,0,0" ItemsSource="{Binding Composition}" Style="{StaticResource ClassCounts}" />
+
+                    <!-- Bottom: players of each class (captain included), and how full the team is -->
+                    <Grid DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                        <ItemsControl ItemsSource="{Binding Composition}" Style="{StaticResource ClassCounts}" />
+                        <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="15" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{Binding SlotsText}" ToolTip="Players bought / team size" />
+                    </Grid>
 
                     <StackPanel>
                         <ItemsControl Focusable="False" ItemsSource="{Binding Picks}">
@@ -230,13 +249,9 @@
                                     <Grid VerticalAlignment="Center">
                                         <TextBlock FontSize="14" Foreground="{DynamicResource TextFillColorTertiaryBrush}" Text="Click the winning team"
                                                    Visibility="{Binding SelectedTeam, Converter={StaticResource EmptyToVisibility}}" />
-                                        <StackPanel Visibility="{Binding SelectedTeam, Converter={StaticResource NotEmptyToVisibility}}">
-                                            <TextBlock FontSize="18" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Style="{StaticResource Strong}"
-                                                       Text="{Binding SelectedTeam.Name}" TextTrimming="CharacterEllipsis" />
-                                            <TextBlock FontSize="12" Foreground="{DynamicResource SystemFillColorCautionBrush}" Text="{Binding SaleProblem}"
-                                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding SaleProblem}"
-                                                       Visibility="{Binding SaleProblem, Converter={StaticResource NotEmptyToVisibility}}" />
-                                        </StackPanel>
+                                        <TextBlock FontSize="18" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Style="{StaticResource Strong}"
+                                                   Text="{Binding SelectedTeam.Name}" TextTrimming="CharacterEllipsis"
+                                                   Visibility="{Binding SelectedTeam, Converter={StaticResource NotEmptyToVisibility}}" />
                                     </Grid>
                                 </Border>
                                 <Grid Margin="0,8,0,0">
@@ -247,10 +262,10 @@
                                     </Grid.ColumnDefinitions>
                                     <RepeatButton Width="44" Height="44" Command="{Binding ChangePriceCommand}" CommandParameter="-0.1" Content="−" FontSize="18" ToolTip="−0.1 (Down arrow)" />
                                     <TextBox x:Name="PriceBox" Grid.Column="1" Margin="6,0" VerticalContentAlignment="Center" FontSize="24" FontWeight="SemiBold"
-                                             HorizontalContentAlignment="Center" Text="{Binding PriceText, UpdateSourceTrigger=PropertyChanged}"
-                                             ToolTip="Price in millions. Enter sells, Up/Down change it by 0.1.">
+                                             HorizontalContentAlignment="Center" LostKeyboardFocus="PriceBox_LostKeyboardFocus"
+                                             Text="{Binding PriceText, UpdateSourceTrigger=PropertyChanged}"
+                                             ToolTip="Price in millions. Up/Down change it by 0.1, Enter confirms it.">
                                         <TextBox.InputBindings>
-                                            <KeyBinding Key="Enter" Command="{Binding SellCommand}" />
                                             <KeyBinding Key="Up" Command="{Binding ChangePriceCommand}" CommandParameter="0.1" />
                                             <KeyBinding Key="Down" Command="{Binding ChangePriceCommand}" CommandParameter="-0.1" />
                                         </TextBox.InputBindings>
@@ -263,9 +278,31 @@
                                         <ColumnDefinition Width="8" />
                                         <ColumnDefinition Width="110" />
                                     </Grid.ColumnDefinitions>
-                                    <Button Command="{Binding SellCommand}" Style="{StaticResource BigAccentButton}" ToolTip="Sell to the selected team (Enter)">
+                                    <Button x:Name="SoldButton" Command="{Binding SellCommand}" Style="{StaticResource BigAccentButton}" ToolTip="Sell to the selected team">
                                         <controls:IconLabel Glyph="&#xE8FB;" Text="Sold!" />
                                     </Button>
+
+                                    <!-- Why a sale can't go through; going over a budget limit can be confirmed anyway -->
+                                    <Popup AllowsTransparency="True" IsOpen="{Binding IsSaleWarningOpen, Mode=TwoWay}" Placement="Bottom" PlacementTarget="{Binding ElementName=SoldButton}"
+                                           PopupAnimation="Fade" StaysOpen="False" VerticalOffset="6">
+                                        <Border Width="320" Margin="0,0,8,8" Padding="16,14"
+                                                Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                                                BorderBrush="{DynamicResource SurfaceStrokeColorFlyoutBrush}"
+                                                BorderThickness="1" CornerRadius="8">
+                                            <StackPanel>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource SystemFillColorCautionBrush}" Style="{StaticResource Glyph}" Text="&#xE7BA;" />
+                                                    <TextBlock Margin="8,0,0,0" Style="{StaticResource Strong}" Text="Can't sell as is" />
+                                                </StackPanel>
+                                                <TextBlock Margin="0,6,0,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding SaleWarning}" TextWrapping="Wrap" />
+                                                <StackPanel Margin="0,14,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
+                                                    <Button Margin="0,0,8,0" Command="{Binding SellAnywayCommand}" Content="Sell anyway" Style="{DynamicResource AccentButtonStyle}"
+                                                            Visibility="{Binding CanSellAnyway, Converter={StaticResource BoolToVisibility}}" />
+                                                    <Button MinWidth="80" Command="{Binding DismissSaleWarningCommand}" Content="Cancel" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </Popup>
                                     <Button Grid.Column="2" Command="{Binding SkipCommand}" Style="{StaticResource BigButton}" ToolTip="Nobody bids: move to the skipped list">
                                         <controls:IconLabel Glyph="&#xE893;" Text="Skip" />
                                     </Button>

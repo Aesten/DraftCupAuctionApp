@@ -8,6 +8,9 @@
              d:DataContext="{d:DesignInstance Type=vm:ResultsViewModel}"
              d:DesignHeight="900"
              d:DesignWidth="1600"
+             Focusable="True"
+             FocusVisualStyle="{x:Null}"
+             IsTabStop="False"
              mc:Ignorable="d">
     <Grid Margin="16,12,16,16">
         <Border MaxWidth="560" Margin="0,48,0,0" Padding="32" HorizontalAlignment="Center" VerticalAlignment="Top" Style="{StaticResource Card}"

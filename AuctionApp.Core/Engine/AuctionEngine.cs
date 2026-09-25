@@ -5,6 +5,9 @@ namespace AuctionApp.Core.Engine;
 
 public sealed class AuctionException(string message) : Exception(message);
 
+/// <summary>Why a sale can't go through, and whether the auctioneer may confirm it anyway (budget limits only).</summary>
+public sealed record SaleIssue(string Message, bool CanOverride);
+
 /// <summary>All the rules of a division's auction. Every change to a session goes through here.</summary>
 public sealed class AuctionEngine
 {
@@ -62,52 +65,58 @@ public sealed class AuctionEngine
     public decimal MaxBid(SessionTeam team) =>
         SlotsLeft(team) > 0 ? Math.Max(0, team.Spendable(Session.HalfBudgetCap)) : 0;
 
-    /// <summary>Returns why the current player can't be sold to this team at this price, or null if the sale is allowed.</summary>
-    public string? CheckSale(Guid captainId, decimal price)
+    /// <summary>
+    /// Returns why the current player can't be sold to this team at this price, or null if the sale is allowed.
+    /// Going over the budget (or the half budget cap) can be overridden by the auctioneer; the rest can't.
+    /// </summary>
+    public SaleIssue? CheckSale(Guid captainId, decimal price)
     {
         if (Session.IsFinished)
         {
-            return "The auction is finished.";
+            return new("The auction is finished.", CanOverride: false);
         }
 
         if (Session.CurrentPlayer == null)
         {
-            return "There is no player on the block.";
+            return new("There is no player on the block.", CanOverride: false);
         }
 
         var team = Session.Teams.FirstOrDefault(t => t.CaptainId == captainId);
         if (team == null)
         {
-            return "Select the team that won the bid.";
+            return new("Select the team that won the bid.", CanOverride: false);
         }
 
         if (PriceProblem(price) is { } priceProblem)
         {
-            return priceProblem;
+            return new(priceProblem, CanOverride: false);
         }
 
         if (SlotsLeft(team) == 0)
         {
-            return $"{team.CaptainName}'s team is already full.";
+            return new($"{team.CaptainName}'s team is already full.", CanOverride: false);
         }
 
         var spendable = team.Spendable(Session.HalfBudgetCap);
         if (price > spendable)
         {
-            return Session.HalfBudgetCap
-                ? $"{team.CaptainName} can spend at most {Money.Format(Math.Max(0, spendable))} while the half budget cap is on."
-                : $"{team.CaptainName} can't afford this ({Money.Format(team.Remaining)} left).";
+            return new(
+                Session.HalfBudgetCap && price <= team.Remaining
+                    ? $"{team.CaptainName} can only spend {Money.Format(Math.Max(0, spendable))} while the half budget cap is on."
+                    : $"{team.CaptainName} only has {Money.Format(team.Remaining)} left.",
+                CanOverride: true);
         }
 
         return null;
     }
 
-    public Pick Sell(Guid captainId, decimal price)
+    /// <summary>Sells the player on the block. <paramref name="overBudget"/>: the auctioneer allowed going over the budget.</summary>
+    public Pick Sell(Guid captainId, decimal price, bool overBudget = false)
     {
-        var problem = CheckSale(captainId, price);
-        if (problem != null)
+        var issue = CheckSale(captainId, price);
+        if (issue != null && !(overBudget && issue.CanOverride))
         {
-            throw new AuctionException(problem);
+            throw new AuctionException(issue.Message);
         }
 
         var team = GetTeam(captainId);
@@ -115,7 +124,7 @@ public sealed class AuctionEngine
         Session.Queue.RemoveAt(0);
         var pick = new Pick { Player = player, Price = price };
         team.Picks.Add(pick);
-        Log(ActivityKind.Sold, $"{player.Name} sold to {team.CaptainName} for {Money.Format(price)}");
+        Log(ActivityKind.Sold, $"{player.Name} sold to {team.CaptainName} for {Money.Format(price)}" + (issue != null ? " (over the limit, confirmed)" : string.Empty));
         return pick;
     }
 

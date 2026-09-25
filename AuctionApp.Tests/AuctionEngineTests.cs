@@ -99,7 +99,7 @@ public class AuctionEngineTests
             engine.Sell(team.CaptainId, 0.5m);
         }
 
-        Assert.Contains("full", engine.CheckSale(team.CaptainId, 0.5m));
+        Assert.Contains("full", engine.CheckSale(team.CaptainId, 0.5m)!.Message);
         Assert.Equal(0m, engine.MaxBid(team));
     }
 
@@ -167,5 +167,45 @@ public class AuctionEngineTests
         engine.Reopen();
         Assert.False(engine.Session.IsFinished);
         Assert.Equal(3, engine.Session.Skipped.Count);
+    }
+
+    [Fact]
+    public void Sell_OverTheBudgetOnlyWhenConfirmed()
+    {
+        var engine = TestData.Start(TestData.Tournament(budget: 10m));
+        var team = engine.Session.Teams[0];
+
+        var capped = engine.CheckSale(team.CaptainId, 6m)!;
+        Assert.True(capped.CanOverride);
+        Assert.Contains("half budget cap", capped.Message);
+        Assert.Throws<AuctionException>(() => engine.Sell(team.CaptainId, 6m));
+
+        engine.Sell(team.CaptainId, 6m, overBudget: true);
+        Assert.Equal(4m, team.Remaining);
+        Assert.Contains("confirmed", engine.Session.Activity.Last().Text);
+
+        var broke = engine.CheckSale(team.CaptainId, 5m)!;
+        Assert.True(broke.CanOverride);
+        Assert.Contains("only has 4.0", broke.Message);
+        engine.Sell(team.CaptainId, 5m, overBudget: true);
+        Assert.Equal(-1m, team.Remaining);
+    }
+
+    [Fact]
+    public void Sell_CantOverrideAFullTeamOrABadPrice()
+    {
+        var engine = TestData.Start(TestData.Tournament(teamSize: 5));
+        var team = engine.Session.Teams[0];
+
+        Assert.False(engine.CheckSale(team.CaptainId, 1.25m)!.CanOverride);
+        Assert.Throws<AuctionException>(() => engine.Sell(team.CaptainId, 1.25m, overBudget: true));
+
+        for (var i = 0; i < 5; i++)
+        {
+            engine.Sell(team.CaptainId, 0.1m);
+        }
+
+        Assert.False(engine.CheckSale(team.CaptainId, 0.1m)!.CanOverride);
+        Assert.Throws<AuctionException>(() => engine.Sell(team.CaptainId, 0.1m, overBudget: true));
     }
 }

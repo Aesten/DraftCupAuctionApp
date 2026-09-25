@@ -37,6 +37,9 @@ public partial class AuctionView : UserControl
         }
     }
 
+    /// <summary>Leaving the price box (Enter, or a click elsewhere) shows the price as it will be used.</summary>
+    private void PriceBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e) => (DataContext as AuctionViewModel)?.CommitPrice();
+
     private void RemainingButton_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is AuctionViewModel viewModel)

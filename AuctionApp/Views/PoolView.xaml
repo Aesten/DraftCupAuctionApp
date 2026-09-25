@@ -8,6 +8,9 @@
              d:DataContext="{d:DesignInstance Type=vm:PoolViewModel}"
              d:DesignHeight="900"
              d:DesignWidth="1600"
+             Focusable="True"
+             FocusVisualStyle="{x:Null}"
+             IsTabStop="False"
              mc:Ignorable="d">
     <UserControl.Resources>
         <controls:BindingProxy x:Key="Proxy" Data="{Binding}" />

@@ -104,9 +104,16 @@ public sealed partial class AuctionViewModel : ObservableObject
     [ObservableProperty]
     public partial string PriceText { get; set; } = DefaultPrice;
 
-    /// <summary>Why the sale can't happen right now (shown under the price), or null.</summary>
+    /// <summary>Shown in a small popup when Sold! is clicked but the sale breaks a rule.</summary>
     [ObservableProperty]
-    public partial string? SaleProblem { get; set; }
+    public partial string SaleWarning { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial bool IsSaleWarningOpen { get; set; }
+
+    /// <summary>The rule broken is a budget limit, which the auctioneer may override.</summary>
+    [ObservableProperty]
+    public partial bool CanSellAnyway { get; set; }
 
     [ObservableProperty]
     public partial string UndoText { get; set; } = "Nothing to undo";
@@ -197,7 +204,7 @@ public sealed partial class AuctionViewModel : ObservableObject
         }
 
         OnPropertyChanged(nameof(HalfBudgetCap));
-        CheckSale();
+        SellCommand.NotifyCanExecuteChanged();
         UpdateUndo();
     }
 
@@ -287,10 +294,9 @@ public sealed partial class AuctionViewModel : ObservableObject
             team.IsSelected = team == value;
         }
 
-        CheckSale();
+        IsSaleWarningOpen = false;
+        SellCommand.NotifyCanExecuteChanged();
     }
-
-    partial void OnPriceTextChanged(string value) => CheckSale();
 
     internal void Select(TeamCardViewModel team)
     {
@@ -300,40 +306,64 @@ public sealed partial class AuctionViewModel : ObservableObject
         }
     }
 
-    private void CheckSale()
+    /// <summary>The price box was left: shows the price as it will be used (e.g. "2,5" becomes "2.5").</summary>
+    internal void CommitPrice()
     {
-        if (_engine == null || !HasCurrentPlayer)
+        if (Money.TryParse(PriceText, out var price))
         {
-            SaleProblem = null;
+            PriceText = Money.Format(price);
         }
-        else if (!Money.TryParse(PriceText, out var price))
-        {
-            SaleProblem = "Enter a price.";
-        }
-        else if (SelectedTeam == null)
-        {
-            // The team placeholder already says to click the winning team.
-            SaleProblem = null;
-        }
-        else
-        {
-            SaleProblem = _engine.CheckSale(SelectedTeam.CaptainId, price);
-        }
-
-        SellCommand.NotifyCanExecuteChanged();
     }
 
-    private bool CanSell() => HasCurrentPlayer && SelectedTeam != null && SaleProblem == null;
+    private bool CanSell() => HasCurrentPlayer && SelectedTeam != null;
 
+    /// <summary>Sells to the selected team, or explains in a popup why not (offering to go over a budget limit).</summary>
     [RelayCommand(CanExecute = nameof(CanSell))]
     private void Sell()
     {
-        if (SelectedTeam is not { } team || !Money.TryParse(PriceText, out var price))
+        if (_engine == null || SelectedTeam is not { } team)
         {
             return;
         }
 
-        if (Apply($"sell {CurrentPlayerName} to {team.Name}", engine => engine.Sell(team.CaptainId, price)))
+        if (!Money.TryParse(PriceText, out var price))
+        {
+            ShowSaleWarning("Enter a price first.", canOverride: false);
+            return;
+        }
+
+        if (_engine.CheckSale(team.CaptainId, price) is { } issue)
+        {
+            ShowSaleWarning(issue.CanOverride ? $"{issue.Message} Sell anyway for {Money.Format(price)}?" : issue.Message, issue.CanOverride);
+            return;
+        }
+
+        Complete(team, price, overBudget: false);
+    }
+
+    [RelayCommand]
+    private void SellAnyway()
+    {
+        IsSaleWarningOpen = false;
+        if (SelectedTeam is { } team && Money.TryParse(PriceText, out var price))
+        {
+            Complete(team, price, overBudget: true);
+        }
+    }
+
+    [RelayCommand]
+    private void DismissSaleWarning() => IsSaleWarningOpen = false;
+
+    private void ShowSaleWarning(string message, bool canOverride)
+    {
+        SaleWarning = message;
+        CanSellAnyway = canOverride;
+        IsSaleWarningOpen = true;
+    }
+
+    private void Complete(TeamCardViewModel team, decimal price, bool overBudget)
+    {
+        if (Apply($"sell {CurrentPlayerName} to {team.Name}", engine => engine.Sell(team.CaptainId, price, overBudget)))
         {
             PriceText = DefaultPrice;
             SelectedTeam = null;
@@ -492,11 +522,29 @@ public sealed partial class TeamCardViewModel(Guid captainId, AuctionViewModel o
     [ObservableProperty]
     public partial string Name { get; set; } = string.Empty;
 
+    /// <summary>What the team can still spend: its budget left, or, while the half budget cap is on, what's left above the half.</summary>
     [ObservableProperty]
-    public partial string RemainingText { get; set; } = string.Empty;
+    public partial string BudgetText { get; set; } = string.Empty;
 
     [ObservableProperty]
-    public partial string MaxBidText { get; set; } = string.Empty;
+    public partial string BudgetToolTip { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string InitialBudgetText { get; set; } = string.Empty;
+
+    // The budget bar: 0 to the starting budget, filled up to what's left, the reserved half hatched while capped.
+
+    [ObservableProperty]
+    public partial double InitialBudget { get; set; }
+
+    [ObservableProperty]
+    public partial double Remaining { get; set; }
+
+    [ObservableProperty]
+    public partial double Reserved { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsCapped { get; set; }
 
     [ObservableProperty]
     public partial string SlotsText { get; set; } = string.Empty;
@@ -508,9 +556,6 @@ public sealed partial class TeamCardViewModel(Guid captainId, AuctionViewModel o
     public partial IReadOnlyList<string> CaptainClasses { get; set; } = [];
 
     [ObservableProperty]
-    public partial double BudgetLeftRatio { get; set; }
-
-    [ObservableProperty]
     public partial bool CanBuy { get; set; }
 
     [ObservableProperty]
@@ -520,16 +565,21 @@ public sealed partial class TeamCardViewModel(Guid captainId, AuctionViewModel o
     {
         var team = engine.GetTeam(CaptainId);
         Name = team.CaptainName;
-        RemainingText = Money.Format(team.Remaining);
-        BudgetLeftRatio = team.InitialBudget > 0 ? (double)Math.Clamp(team.Remaining / team.InitialBudget, 0, 1) : 0;
         var slotsLeft = engine.SlotsLeft(team);
         CanBuy = !engine.Session.IsFinished && slotsLeft > 0;
         SlotsText = $"{team.Picks.Count}/{engine.Division.TeamSize}";
-        MaxBidText = slotsLeft == 0
-            ? "Team complete"
-            : engine.Session.IsFinished
-                ? $"{slotsLeft} spot(s) left"
-                : $"Max bid {Money.Format(engine.MaxBid(team))}";
+
+        // Like the previous version of the app: while the cap is on, the big number is what can be spent before the half.
+        IsCapped = engine.Session.HalfBudgetCap && !engine.Session.IsFinished;
+        var spendable = IsCapped && team.Remaining >= 0 ? Math.Max(0, team.Spendable(halfBudgetCap: true)) : team.Remaining;
+        BudgetText = Money.Format(spendable);
+        BudgetToolTip = IsCapped
+            ? $"{Money.Format(spendable)} can be spent before the half budget cap ({Money.Format(team.Remaining)} left in total)"
+            : $"{Money.Format(team.Remaining)} left";
+        InitialBudgetText = Money.Format(team.InitialBudget);
+        InitialBudget = (double)team.InitialBudget;
+        Remaining = (double)team.Remaining;
+        Reserved = (double)team.HalfBudgetReserve;
         CaptainClasses = AuctionViewModel.CaptainClasses(engine.Division, CaptainId);
         Composition = AuctionViewModel.Composition(engine.Division.CaptainClass(CaptainId), team.Picks);
 

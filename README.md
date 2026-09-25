@@ -14,7 +14,7 @@ winget install Microsoft.DotNet.DesktopRuntime.10
 
 ## How it's organized
 
-The app works like a document editor: you open one **tournament** at a time. The start page lists the tournaments on this PC, and lets you create a new one or import one. The ☰ menu (top left) floats over the page, and has the same list plus export, duplicate, close and delete.
+The app works like a document editor: you open one **tournament** at a time. The start page lists the tournaments on this PC, and lets you create a new one or import one. The ☰ menu (top left) floats over the page: the open tournament (export, duplicate, close, delete), new tournament and import, and the recent tournaments. Click ☰ again (or press Esc) to close it.
 
 A tournament holds:
 
@@ -41,11 +41,14 @@ Each division has three pages, switched from the top bar: **Configure**, **Aucti
 The auction page is meant to be screen-shared (F11 for full screen). It shows only what viewers need, all at once and without scrolling:
 
 - at the top, in three parts: the auctioneer's controls (left), the player on the block with their classes (center), and the next few players (right; the rest of the queue stays hidden, but **Remaining players** under them lists everyone still in the queue in alphabetical order);
-- below, every team: the captain and their class, the remaining budget, the most it can bid, the roster with prices, the empty spots, and how many players of each class it has (captain included).
+- below, every team: the captain and their class, what the team can still spend (in large), a budget bar, the roster with prices and empty spots, how many players of each class it has (captain included) and how full it is (e.g. 2/6).
+  - The large number is the budget left or, while the half budget cap is on, what's left above the half (the most the team can bid).
+  - The bar goes from 0 (left) to the team's starting budget (right) and is filled up to what's left. While the cap is on, the locked half is striped.
 
 The layout is made for 8 teams (4 × 2) and adapts to 4–10 teams and to rosters of 5–10 players, shrinking only if the window is too small.
 
-- Click the winning team's card, type the price and press **Enter** (or click **Sold!**). The price box accepts `2.5` as well as `2,5`, and **−** / **+** change it by 0.1.
+- Click the winning team's card, type the price (Enter confirms it) and click **Sold!**. The price box accepts `2.5` as well as `2,5`, and **−** / **+** change it by 0.1.
+- If the price is more than the team may spend, **Sold!** says why in a small popup, and offers to **sell anyway**.
 - **Skip** a player nobody wants. **Skipped players** opens the full list: put one back on the block, or send them all back to the queue.
 - Click a bought player to fix the sale:
   - refund and put them back on the block, or send them to the skipped list;
@@ -62,8 +65,8 @@ The layout is made for 8 teams (4 × 2) and adapts to 4–10 teams and to roster
 Rules the app enforces:
 
 - A team can't buy more players than the division's team size.
-- Prices go in steps of 0.1 and can't exceed what the team has left.
-- **Half budget cap**: while it's on, a team can only spend down to half of its starting budget (rounded up to 0.1). It can be switched on and off at any time, and the auction screen shows when it's on. Fixing a sale afterwards only checks that the team stays within its budget.
+- Prices go in steps of 0.1. Going over what the team has left needs the auctioneer's confirmation (**Sell anyway**).
+- **Half budget cap**: while it's on, a team can only spend down to half of its starting budget (rounded up to 0.1), unless the auctioneer confirms a sale anyway. It can be switched on and off at any time, and the auction screen shows when it's on. Fixing a sale afterwards only checks that the team stays within its budget.
 
 When a division is done, share its teams from **Teams**: **Copy as text** (formatted for Discord) or a spreadsheet (CSV).
 
@@ -71,7 +74,7 @@ When a division is done, share its teams from **Teams**: **Copy as text** (forma
 
 | Key | Action |
 | --- | --- |
-| Enter (in the price box) | Sell to the selected team |
+| Enter (in a text box) | Confirm and leave the box (in the price box: confirm the price, it doesn't sell) |
 | Up / Down (in the price box) | Price ±0.1 |
 | Ctrl+Z | Undo the last auction action |
 | Alt+Up / Alt+Down (pool, auction order) | Move the selected player |

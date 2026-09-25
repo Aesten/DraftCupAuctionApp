@@ -9,6 +9,9 @@
              d:DataContext="{d:DesignInstance Type=vm:DivisionSetupViewModel}"
              d:DesignHeight="800"
              d:DesignWidth="1200"
+             Focusable="True"
+             FocusVisualStyle="{x:Null}"
+             IsTabStop="False"
              mc:Ignorable="d">
     <UserControl.Resources>
         <controls:BindingProxy x:Key="Proxy" Data="{Binding}" />
