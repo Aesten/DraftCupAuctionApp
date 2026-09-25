@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.IO;
 using System.ComponentModel;
 using System.Windows.Data;
 using AuctionApp.Core.Engine;
@@ -334,13 +335,29 @@ public sealed partial class PoolViewModel : ObservableObject
         PlayerAdded?.Invoke(row);
     }
 
+    /// <summary>
+    /// Adds the players of a file: a player list (CSV or text, e.g. saved from Excel), or the pool of a tournament file.
+    /// Names already in the pool are skipped.
+    /// </summary>
     [RelayCommand]
-    private void PastePlayers()
+    private void ImportPlayers()
     {
         EndPendingEdits();
-        var parsed = Dialogs.AskForRoster();
-        if (parsed == null)
+        if (Dialogs.PickImportFile(ImportKind.Players) is not { } path)
         {
+            return;
+        }
+
+        List<ParsedPlayer> parsed;
+        try
+        {
+            parsed = TournamentImporter.Import(File.ReadAllText(path), string.Empty).Players
+                .Select(player => new ParsedPlayer(player.Name, player.Classes))
+                .ToList();
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or System.Text.Json.JsonException)
+        {
+            Dialogs.ShowError("Couldn't import this file", ex.Message);
             return;
         }
 
@@ -366,10 +383,10 @@ public sealed partial class PoolViewModel : ObservableObject
         }
 
         Changed();
-        if (skipped > 0)
-        {
-            Dialogs.Ask("Some players were already in the pool", $"{skipped} name(s) were already listed and were not added twice.", "OK", cancel: null);
-        }
+        var added = parsed.Count - skipped;
+        var message = $"{added} player(s) added to the pool."
+            + (skipped > 0 ? $" {skipped} name(s) were already listed and were not added twice." : string.Empty);
+        Dialogs.Ask("Players imported", message, "OK", cancel: null);
     }
 
     /// <summary>Moves a player before or after another one (drag and drop).</summary>

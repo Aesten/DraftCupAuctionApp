@@ -151,7 +151,56 @@ public sealed class StorageTests : IDisposable
     public void Import_RejectsUnrelatedJson()
     {
         Assert.Throws<InvalidDataException>(() => TournamentImporter.Import("""{ "hello": 1 }""", "x"));
-        Assert.Throws<InvalidDataException>(() => TournamentImporter.Import("not json", "x"));
+    }
+
+    [Fact]
+    public void Import_MakesATournamentFromAPlayerList()
+    {
+        var tournament = TournamentImporter.Import("\uFEFFName,Classes\r\nAlice,inf\r\nBob,arc cav\r\n\"Smith, Carol\",Cavalry\r\n", "Spring Cup");
+
+        Assert.Equal("Spring Cup", tournament.Title);
+        Assert.Equal(["Alice", "Bob", "Smith, Carol"], tournament.Players.Select(p => p.Name));
+        Assert.Equal([PlayerClasses.Archer, PlayerClasses.Cavalry], tournament.Players[1].Classes);
+        Assert.Equal([PlayerClasses.Cavalry], tournament.Players[2].Classes);
+        Assert.Single(tournament.Divisions);
+    }
+
+    [Fact]
+    public void Import_ReadsThePoolExportBack()
+    {
+        var original = TestData.Tournament(players: 3);
+        original.Players[0].Classes = [PlayerClasses.Infantry, PlayerClasses.Cavalry];
+
+        var imported = TournamentImporter.Import(TournamentExporter.PlayersToCsv(original), "Copy");
+
+        Assert.Equal(original.Players.Select(p => p.Name), imported.Players.Select(p => p.Name));
+        Assert.Equal([PlayerClasses.Infantry, PlayerClasses.Cavalry], imported.Players[0].Classes);
+    }
+
+    [Fact]
+    public void Import_AcceptsAMinimalHandWrittenFile()
+    {
+        const string json = """
+            {
+              "title": "Winter Cup",
+              "players": [ { "name": "Alice", "classes": ["Infantry", "arc"] } ],
+              "divisions": [ { "name": "Main", "teamSize": 5, "captains": [ { "name": "Bob", "class": "cavalry", "budget": 18.5 } ] } ]
+            }
+            """;
+
+        var tournament = TournamentImporter.Import(json, "fallback");
+
+        Assert.Equal("Winter Cup", tournament.Title);
+        Assert.NotEqual(Guid.Empty, tournament.Id);
+        Assert.Equal([PlayerClasses.Infantry, PlayerClasses.Archer], tournament.Players[0].Classes);
+        Assert.Equal(PlayerClasses.Cavalry, tournament.Divisions[0].Captains[0].Class);
+        Assert.Equal(18.5m, tournament.Divisions[0].Captains[0].Budget);
+    }
+
+    [Fact]
+    public void Import_RejectsFilesWithoutPlayers()
+    {
+        Assert.Throws<InvalidDataException>(() => TournamentImporter.Import("\n\n", "x"));
     }
 
     [Fact]

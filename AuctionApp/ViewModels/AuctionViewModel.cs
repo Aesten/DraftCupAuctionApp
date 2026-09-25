@@ -36,6 +36,9 @@ public sealed partial class AuctionViewModel : ObservableObject
 
     public ObservableCollection<PlayerItemViewModel> Skipped { get; } = [];
 
+    /// <summary>Everyone still in the queue after the player on the block, sorted by name so the order stays hidden.</summary>
+    public ObservableCollection<PlayerItemViewModel> Remaining { get; } = [];
+
     [ObservableProperty]
     public partial bool HasSession { get; set; }
 
@@ -151,6 +154,7 @@ public sealed partial class AuctionViewModel : ObservableObject
             IsRunning = IsFinished = HasCurrentPlayer = IsQueueEmpty = false;
             UpNext.Clear();
             Skipped.Clear();
+            Remaining.Clear();
             LastAction = string.Empty;
             UpdateUndo();
             return;
@@ -171,7 +175,7 @@ public sealed partial class AuctionViewModel : ObservableObject
         StageMessage = IsFinished ? "The auction is finished." : QueueEmptyText;
 
         SoldCount = session.SoldCount;
-        RemainingCount = session.Queue.Count;
+        RemainingCount = Math.Max(0, session.Queue.Count - (current != null ? 1 : 0));
         SkippedCount = session.Skipped.Count;
         HasSkipped = SkippedCount > 0;
 
@@ -182,6 +186,9 @@ public sealed partial class AuctionViewModel : ObservableObject
         UpNextRows = Math.Max(1, shown);
         Replace(UpNext, session.Queue.Skip(1).Take(shown).Select((player, i) => new PlayerItemViewModel(player, i + 1)));
         Replace(Skipped, session.Skipped.Select((player, i) => new PlayerItemViewModel(player, i + 1)));
+        Replace(Remaining, session.Queue.Skip(1)
+            .OrderBy(player => player.Name, StringComparer.CurrentCultureIgnoreCase)
+            .Select((player, i) => new PlayerItemViewModel(player, i + 1)));
         LastAction = session.Activity.LastOrDefault()?.Text ?? string.Empty;
 
         foreach (var team in Teams)

@@ -1,0 +1,49 @@
+<Window x:Class="AuctionApp.Views.ImportDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:AuctionApp.Controls"
+        Width="580"
+        SizeToContent="Height"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+    <!-- Shows what a file to import should look like before picking it, so a list kept in Excel can be prepared. -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="24,20,24,24">
+            <TextBlock x:Name="HeadingText" Style="{StaticResource SectionTitle}" />
+            <TextBlock x:Name="IntroText" Margin="0,10,0,0" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextWrapping="Wrap" />
+
+            <TextBlock Margin="0,16,0,6" Style="{StaticResource Overline}" Text="PLAYER LIST FORMAT (CSV)" />
+            <Border Padding="14,10" Background="{DynamicResource SubtleFillColorSecondaryBrush}" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="6">
+                <Grid>
+                    <TextBox x:Name="ExampleText" Padding="0" Background="Transparent" BorderThickness="0" FontFamily="Cascadia Mono, Consolas" FontSize="14"
+                             IsReadOnly="True" TextWrapping="NoWrap" />
+                    <Button HorizontalAlignment="Right" VerticalAlignment="Top" Click="Copy_Click" Style="{StaticResource SubtleButton}" ToolTip="Copy the example">
+                        <controls:IconLabel x:Name="CopyLabel" Glyph="&#xE8C8;" Text="Copy" />
+                    </Button>
+                </Grid>
+            </Border>
+            <TextBlock Margin="0,8,0,0" Style="{StaticResource Caption}" TextWrapping="Wrap"
+                       Text="One player per line: the name, then the classes (inf, arc, cav, or infantry, archer, cavalry) separated by spaces. Commas, semicolons and tabs all work between columns, and the header line is optional. From Excel: File › Save As › CSV. The pool's Export file can be imported as it is." />
+        </StackPanel>
+
+        <Border Grid.Row="1"
+                Padding="24,16"
+                Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}"
+                BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+                BorderThickness="0,1,0,0">
+            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                <Button MinWidth="120" Click="Open_Click" IsDefault="True" Style="{DynamicResource AccentButtonStyle}">
+                    <controls:IconLabel Glyph="&#xE8E5;" Text="Open file…" />
+                </Button>
+                <Button MinWidth="96" Margin="8,0,0,0" Content="Cancel" IsCancel="True" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

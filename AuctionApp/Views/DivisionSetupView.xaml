@@ -14,7 +14,7 @@
         <controls:BindingProxy x:Key="Proxy" Data="{Binding}" />
 
         <Style x:Key="FieldLabel" TargetType="TextBlock" BasedOn="{StaticResource Caption}">
-            <Setter Property="Margin" Value="0,14,0,4" />
+            <Setter Property="Margin" Value="0,16,0,6" />
         </Style>
 
         <!-- Red border for text boxes holding something that isn't a valid number. -->
@@ -30,7 +30,8 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid Margin="24,16,24,20">
+    <!-- A centered column, like the player pool: the settings don't need the full width of the window. -->
+    <Grid MaxWidth="1040" Margin="24,16,24,20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -38,7 +39,7 @@
         </Grid.RowDefinitions>
 
         <!-- Shown once the auction has started -->
-        <Border Margin="0,0,0,16" Padding="16,12" CornerRadius="8"
+        <Border Margin="0,0,0,12" Padding="16,10" CornerRadius="8"
                 Background="{DynamicResource SystemFillColorAttentionBackgroundBrush}"
                 BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                 BorderThickness="1"
@@ -49,12 +50,13 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <TextBlock FontSize="16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Style="{StaticResource Glyph}" Text="&#xE72E;" />
+                <TextBlock VerticalAlignment="Center" FontSize="16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Style="{StaticResource Glyph}" Text="&#xE72E;" />
                 <StackPanel Grid.Column="1" Margin="12,0">
-                    <TextBlock Style="{StaticResource Strong}" Text="The auction has started, so this division's settings are locked." />
-                    <TextBlock Style="{StaticResource Caption}" Text="Captains' classes can still be changed. To change captains, budgets or the team size, reset the auction. That clears every sale in this division." />
+                    <TextBlock Style="{StaticResource Strong}" Text="The auction has started" />
+                    <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap"
+                               Text="Names and captains' classes can still be edited. Budgets, team size, order and the list of captains are locked until the auction is reset." />
                 </StackPanel>
-                <Button Grid.Column="2" Command="{Binding ResetAuctionCommand}">
+                <Button Grid.Column="2" VerticalAlignment="Center" Command="{Binding ResetAuctionCommand}" ToolTip="Clears every sale of this division and unlocks its settings">
                     <controls:IconLabel Glyph="&#xE72C;" Text="Reset auction…" />
                 </Button>
             </Grid>
@@ -62,73 +64,72 @@
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" MaxWidth="460" />
+                <ColumnDefinition Width="320" />
                 <ColumnDefinition Width="16" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <ScrollViewer Padding="0,0,4,0" VerticalScrollBarVisibility="Auto">
-                <StackPanel IsEnabled="{Binding IsEditable}">
-                    <Border Style="{StaticResource Card}">
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource SectionTitle}" Text="Division" />
-                            <TextBlock Style="{StaticResource FieldLabel}" Text="Name" />
-                            <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
-                            <TextBlock Style="{StaticResource FieldLabel}" Text="Players per team (plus the captain)" />
-                            <ComboBox Width="120" HorizontalAlignment="Left" ItemsSource="{Binding TeamSizeOptions}" SelectedItem="{Binding TeamSize}" />
-                        </StackPanel>
-                    </Border>
+            <!-- Division settings -->
+            <Border VerticalAlignment="Top" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SectionTitle}" Text="Settings" />
 
-                    <Border Margin="0,12,0,0" Style="{StaticResource Card}">
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource SectionTitle}" Text="Auction" />
-                            <TextBlock Style="{StaticResource FieldLabel}" Text="Order of the players" />
-                            <RadioButton Content="Random, shuffled when the auction starts" GroupName="Order" IsChecked="{Binding ShuffleOrder}" />
-                            <RadioButton Content="The order of the player pool" GroupName="Order" IsChecked="{Binding PoolOrder}" />
-                            <Button Margin="28,0,0,0" Command="{Binding ShowPoolCommand}" Style="{StaticResource SubtleButton}"
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Division name" />
+                    <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <StackPanel IsEnabled="{Binding IsEditable}">
+                        <TextBlock Style="{StaticResource FieldLabel}" Text="Team size" />
+                        <ComboBox Width="200" HorizontalAlignment="Left" ItemsSource="{Binding TeamSizeOptions}" SelectedItem="{Binding TeamSize}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding StringFormat='{}{0} players + captain'}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+
+                        <TextBlock Style="{StaticResource FieldLabel}" Text="Player order" />
+                        <RadioButton Content="Shuffled" GroupName="Order" IsChecked="{Binding ShuffleOrder}" ToolTip="Shuffled when the auction starts" />
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton Content="Pool order" GroupName="Order" IsChecked="{Binding PoolOrder}" ToolTip="The auction order set in the player pool" />
+                            <Button Margin="8,0,0,0" VerticalAlignment="Center" Command="{Binding ShowPoolCommand}" Style="{StaticResource SubtleButton}"
+                                    ToolTip="Arrange the auction order in the player pool"
                                     Visibility="{Binding PoolOrder, Converter={StaticResource BoolToVisibility}}">
-                                <controls:IconLabel Glyph="&#xE8CB;" Text="Arrange the order in the player pool" />
+                                <controls:IconLabel Glyph="&#xE8CB;" Text="Arrange…" />
                             </Button>
-
-                            <TextBlock Style="{StaticResource FieldLabel}" Text="Upcoming players shown on screen" />
-                            <StackPanel Orientation="Horizontal">
-                                <ComboBox Width="80" ItemsSource="{Binding UpcomingOptions}" SelectedItem="{Binding UpcomingShown}" />
-                                <TextBlock Margin="12,0,0,0" MaxWidth="260" VerticalAlignment="Center" Style="{StaticResource Caption}"
-                                           Text="The rest of the queue stays hidden, so captains can't plan too far ahead." />
-                            </StackPanel>
-
-                            <CheckBox Margin="0,16,0,0" Content="Half budget cap on when the auction starts" IsChecked="{Binding HalfBudgetCapAtStart}" />
-                            <TextBlock Margin="28,0,0,0" Style="{StaticResource Caption}"
-                                       Text="Captains can only spend down to half of their budget until it is turned off during the auction." />
                         </StackPanel>
-                    </Border>
-                </StackPanel>
-            </ScrollViewer>
 
-            <!-- Captains -->
-            <Border Grid.Column="2" Style="{StaticResource Card}">
+                        <TextBlock Style="{StaticResource FieldLabel}" Text="Upcoming players on screen" />
+                        <ComboBox Width="200" HorizontalAlignment="Left" ItemsSource="{Binding UpcomingOptions}" SelectedItem="{Binding UpcomingShown}"
+                                  ToolTip="The rest of the queue stays hidden, so captains can't plan too far ahead" />
+
+                        <CheckBox Margin="0,20,0,0" Content="Half budget cap at the start" IsChecked="{Binding HalfBudgetCapAtStart}"
+                                  ToolTip="Captains can only spend down to half of their budget until the cap is turned off during the auction" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Captains: one team each, in the order of the team cards -->
+            <Border Grid.Column="2" VerticalAlignment="Top" Style="{StaticResource Card}">
                 <DockPanel>
-                    <Grid DockPanel.Dock="Top">
-                        <TextBlock Style="{StaticResource SectionTitle}" Text="{Binding CaptainsHeader}" />
+                    <Grid DockPanel.Dock="Top" Margin="0,0,0,12">
+                        <TextBlock VerticalAlignment="Center" Style="{StaticResource SectionTitle}" Text="{Binding CaptainsHeader}"
+                                   ToolTip="Each captain leads a team. The order here is the order of the team cards." />
                         <Button HorizontalAlignment="Right" Command="{Binding AddCaptainCommand}" IsEnabled="{Binding IsEditable}">
                             <controls:IconLabel Glyph="&#xE710;" Text="Add captain" />
                         </Button>
                     </Grid>
-                    <TextBlock DockPanel.Dock="Top" Margin="0,4,0,12" Style="{StaticResource Caption}"
-                               Text="Each captain leads a team, with the class they signed up with and their own budget (in millions), balanced against their skill. The order here is the order of the team cards." />
                     <Grid DockPanel.Dock="Top" Margin="0,0,0,4">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="104" />
-                            <ColumnDefinition Width="100" />
-                            <ColumnDefinition Width="110" />
+                            <ColumnDefinition Width="90" />
+                            <ColumnDefinition Width="104" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Style="{StaticResource Caption}" Text="Name" />
                         <TextBlock Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource Caption}" Text="Class" />
-                        <TextBlock Grid.Column="2" Margin="8,0,0,0" Style="{StaticResource Caption}" Text="Budget" />
+                        <TextBlock Grid.Column="2" Margin="8,0,0,0" Style="{StaticResource Caption}" Text="Budget" ToolTip="In millions, balanced against the captain's skill" />
                     </Grid>
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <!-- Captains' classes stay editable during the auction; the rest is locked. -->
                         <ItemsControl Margin="0,0,8,0" Focusable="False" ItemsSource="{Binding Captains}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type vm:CaptainRowViewModel}">
@@ -136,11 +137,10 @@
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="104" />
-                                            <ColumnDefinition Width="100" />
-                                            <ColumnDefinition Width="110" />
+                                            <ColumnDefinition Width="90" />
+                                            <ColumnDefinition Width="104" />
                                         </Grid.ColumnDefinitions>
-                                        <TextBox IsEnabled="{Binding Data.IsEditable, Source={StaticResource Proxy}}" Loaded="CaptainName_Loaded"
-                                                 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox Loaded="CaptainName_Loaded" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
                                         <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" Orientation="Horizontal" ToolTip="The class the captain signed up with">
                                             <ToggleButton IsChecked="{Binding IsInfantry}" Style="{StaticResource ClassToggle}" Tag="inf" />
                                             <ToggleButton IsChecked="{Binding IsArcher}" Style="{StaticResource ClassToggle}" Tag="arc" />

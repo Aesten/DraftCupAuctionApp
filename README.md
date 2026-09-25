@@ -13,7 +13,8 @@ The app works like a document editor: you open one **tournament** at a time. The
 A tournament holds:
 
 - **Player pool**: shared by the whole tournament. Players have classes (INF / ARC / CAV).
-  - Add players from the first row of the list: type the name, tick the classes (or type them: `Alice, inf cav`) and press Enter. Use **Paste a list…** to add many at once from a spreadsheet, a sign-up form or a Discord message.
+  - Add players from the first row of the list: type the name, tick the classes (or type them: `Alice, inf cav`) and press Enter.
+  - **Import…** adds the players of a list file, for example one kept in Excel (see [Player lists](#player-lists)). **Export…** saves the pool as a spreadsheet, and that file can be imported again.
   - The pool is shown **A–Z** by default, so opening it during an auction doesn't reveal who comes next.
   - Filter it with the search box (it narrows the list as you type), the class buttons, and **All / Available / Unavailable** (not bought yet / already bought). Click a player's class icons to switch those classes on or off.
   - **Auction order** shows the order used by divisions that don't shuffle. Drag the handles (or press Alt+↑/↓) to rearrange it.
@@ -33,7 +34,7 @@ Each division has three pages, switched from the top bar: **Configure**, **Aucti
 
 The auction page is meant to be screen-shared (F11 for full screen). It shows only what viewers need, all at once and without scrolling:
 
-- at the top, in three parts: the auctioneer's controls (left), the player on the block with their classes (center), and the next few players (right; the rest of the queue stays hidden);
+- at the top, in three parts: the auctioneer's controls (left), the player on the block with their classes (center), and the next few players (right; the rest of the queue stays hidden, but **Remaining players** under them lists everyone still in the queue in alphabetical order);
 - below, every team: the captain and their class, the remaining budget, the most it can bid, the roster with prices, the empty spots, and how many players of each class it has (captain included).
 
 The layout is made for 8 teams (4 × 2) and adapts to 4–10 teams and to rosters of 5–10 players, shrinking only if the window is too small.
@@ -45,12 +46,12 @@ The layout is made for 8 teams (4 × 2) and adapts to 4–10 teams and to roster
   - change the price;
   - move them to another team (the first team is refunded);
   - swap them with a player not bought yet, at the same price.
-- The **⋯** button has the half budget cap switch, **Undo** (also Ctrl+Z) and **Finish the auction**.
+- **More** has the half budget cap switch, **Undo** (also Ctrl+Z) and **Finish the auction**.
 - The pool can be edited mid-auction, and the auction follows along:
   - new players go to the skipped list, ready whenever you want them;
   - name and class changes show up immediately;
   - removing a player who was already sold takes them off the team and refunds the price.
-- Captains' classes can also be corrected during the auction, on the **Configure** page.
+- A team is a slot led by its captain: captains' names and classes can be changed during the auction, on the **Configure** page. Budgets, the team size and the list of captains are locked until the auction is reset.
 
 Rules the app enforces:
 
@@ -82,6 +83,21 @@ Tournaments are saved automatically after every change in `%LOCALAPPDATA%\DraftC
 When you import a copy of a tournament you already have, the two are **merged**. For each division, and for the pool, whichever copy changed it last wins. The app lists what will change before applying it. If two copies auctioned at the same time bought the same player, you're warned. Players bought elsewhere are also taken out of any auction still running.
 
 **Import** also accepts the `.json` files of the previous version of the app: an auction plan or an auction state (including an auction in progress) becomes a tournament with one division.
+
+### Player lists
+
+**Import** (start page or menu) turns a player list into a new tournament, and **Import…** in the player pool adds a list to the current pool. Both show the expected format before asking for the file: one player per line, the name, then the classes.
+
+```csv
+Name,Classes
+Alice,inf
+Bob,arc cav
+Carol,cavalry
+```
+
+- Classes are `inf`, `arc` and `cav` (or `infantry`, `archer`, `cavalry`), separated by spaces.
+- Commas, semicolons and tabs all work between columns, and the header line is optional.
+- From Excel: **File › Save As › CSV**. The pool's **Export…** file (one column per class, marked `x`) can be imported as it is.
 
 Each save keeps the previous version as a backup. Deleted tournaments, and tournaments before a reset or an import, are copied to the `Deleted` folder rather than erased.
 

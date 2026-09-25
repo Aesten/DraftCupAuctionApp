@@ -200,8 +200,8 @@
                                     ToolTip="See every skipped player and put one back on the block">
                                 <controls:IconLabel Glyph="&#xE8FD;" Text="{Binding SkippedCount, StringFormat='Skipped players ({0})'}" />
                             </Button>
-                            <Button x:Name="MoreButton" Grid.Column="2" Width="40" Click="MoreButton_Click" ToolTip="More: half budget cap, undo, finish">
-                                <TextBlock Style="{StaticResource Glyph}" Text="&#xE712;" />
+                            <Button x:Name="MoreButton" Grid.Column="2" Click="MoreButton_Click" ToolTip="Half budget cap, undo, finish the auction">
+                                <controls:IconLabel Glyph="&#xE712;" Text="More" />
                                 <Button.ContextMenu>
                                     <ContextMenu>
                                         <MenuItem Header="Half budget cap" IsCheckable="True" IsChecked="{Binding HalfBudgetCap}" IsEnabled="{Binding IsRunning}"
@@ -305,7 +305,7 @@
                         </Grid.RowDefinitions>
 
                         <TextBlock VerticalAlignment="Center" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                            <Run FontWeight="SemiBold" Text="{Binding SoldCount, Mode=OneWay}" /><Run Text=" sold  ·  " /><Run FontWeight="SemiBold" Text="{Binding RemainingCount, Mode=OneWay}" /><Run Text=" to go" />
+                            <Run FontWeight="SemiBold" Text="{Binding SoldCount, Mode=OneWay}" /><Run Text=" sold  ·  " /><Run FontWeight="SemiBold" Text="{Binding RemainingCount, Mode=OneWay}" /><Run Text=" in the queue" />
                         </TextBlock>
                         <TextBlock HorizontalAlignment="Center" Style="{StaticResource Overline}" Text="{Binding StageLabel}" />
                         <Border HorizontalAlignment="Right" Style="{StaticResource Pill}" ToolTip="Captains can only spend down to half of their starting budget."
@@ -329,36 +329,45 @@
                     </Grid>
                 </Border>
 
-                <!-- The next few players: the rest of the queue stays hidden -->
-                <Border Grid.Column="3" Width="300" Margin="12,0,0,0" Padding="18,14" Style="{StaticResource Card}"
-                        Visibility="{Binding ShowsUpNext, Converter={StaticResource BoolToVisibility}}">
-                    <DockPanel>
-                        <TextBlock DockPanel.Dock="Top" Style="{StaticResource PanelLabel}" Text="{Binding UpNextHeader}" />
-                        <Grid>
-                            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" Style="{StaticResource Caption}" Text="Nobody else in the queue."
-                                       Visibility="{Binding UpNext.Count, Converter={StaticResource EmptyToVisibility}}" />
-                            <ItemsControl Focusable="False" ItemsSource="{Binding UpNext}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <UniformGrid Columns="1" Rows="{Binding DataContext.UpNextRows, RelativeSource={RelativeSource AncestorType=UserControl}}" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="{x:Type vm:PlayerItemViewModel}">
-                                        <Grid MinHeight="30">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock VerticalAlignment="Center" FontSize="18" Style="{StaticResource Body}" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                                            <controls:ClassIconStrip Grid.Column="1" Margin="6,0,0,0" IconSize="24" ItemsSource="{Binding Classes}" />
-                                        </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </Grid>
-                    </DockPanel>
-                </Border>
+                <!-- The next few players (the rest of the queue stays hidden), and the whole queue on demand, sorted by name -->
+                <Grid Grid.Column="3" Width="300" Margin="12,0,0,0" Visibility="{Binding IsRunning, Converter={StaticResource BoolToVisibility}}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Border Margin="0,0,0,8" Padding="18,14" Style="{StaticResource Card}" Visibility="{Binding ShowsUpNext, Converter={StaticResource BoolToVisibility}}">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" Style="{StaticResource PanelLabel}" Text="{Binding UpNextHeader}" />
+                            <Grid>
+                                <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" Style="{StaticResource Caption}" Text="Nobody else in the queue."
+                                           Visibility="{Binding UpNext.Count, Converter={StaticResource EmptyToVisibility}}" />
+                                <ItemsControl Focusable="False" ItemsSource="{Binding UpNext}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <UniformGrid Columns="1" Rows="{Binding DataContext.UpNextRows, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type vm:PlayerItemViewModel}">
+                                            <Grid MinHeight="30">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock VerticalAlignment="Center" FontSize="18" Style="{StaticResource Body}" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                                <controls:ClassIconStrip Grid.Column="1" Margin="6,0,0,0" IconSize="24" ItemsSource="{Binding Classes}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Grid>
+                        </DockPanel>
+                    </Border>
+                    <Button Grid.Row="1" HorizontalAlignment="Stretch" Click="RemainingButton_Click"
+                            ToolTip="Everyone still in the queue, sorted by name so the auction order stays hidden (skipped players not included)">
+                        <controls:IconLabel Glyph="&#xE8FD;" Text="{Binding RemainingCount, StringFormat='Remaining players ({0})'}" />
+                    </Button>
+                </Grid>
             </Grid>
 
             <!-- Rosters: every team, always fully visible -->

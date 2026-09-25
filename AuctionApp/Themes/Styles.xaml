@@ -296,7 +296,10 @@
 
     <!-- A team's class counts (framed icon + number); classes the team doesn't have yet are shown faded with a 0. -->
     <DataTemplate x:Key="ClassCountTemplate" DataType="{x:Type vm:ClassCount}">
-        <StackPanel x:Name="Root" Margin="0,0,14,0" Orientation="Horizontal" ToolTip="{Binding Code, Converter={StaticResource ClassName}}">
+        <StackPanel x:Name="Root" Margin="0,0,14,0" Orientation="Horizontal">
+            <StackPanel.ToolTip>
+                <TextBlock Text="{Binding Code, Converter={StaticResource ClassName}, StringFormat='{}{0}: players of this class, captain included'}" />
+            </StackPanel.ToolTip>
             <Border Width="20" Height="20" Padding="3" VerticalAlignment="Center"
                     Background="{Binding Code, Converter={StaticResource ClassBrush}, ConverterParameter=0.28}"
                     BorderBrush="{Binding Code, Converter={StaticResource ClassBrush}, ConverterParameter=0.9}"

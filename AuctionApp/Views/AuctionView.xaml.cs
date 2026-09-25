@@ -37,7 +37,18 @@ public partial class AuctionView : UserControl
         }
     }
 
-    /// <summary>The ⋯ button opens its menu on a normal click.</summary>
+    private void RemainingButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is AuctionViewModel viewModel)
+        {
+            new PlayerListDialog(
+                $"Remaining players ({viewModel.Remaining.Count})",
+                "Everyone still in the queue, in alphabetical order so the auction order stays hidden. Skipped players aren't included.",
+                viewModel.Remaining) { Owner = Window.GetWindow(this) }.ShowDialog();
+        }
+    }
+
+    /// <summary>The More button opens its menu on a normal click.</summary>
     private void MoreButton_Click(object sender, RoutedEventArgs e) => OpenMenu(MoreButton);
 
     /// <summary>Clicking a bought player opens the menu to fix the sale (instead of selecting the team).</summary>

@@ -85,9 +85,7 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void Import()
     {
-        var path = _dialogs.PickFileToOpen(
-            "Import a tournament",
-            "Tournament files (*.json)|*.json|All files (*.*)|*.*");
+        var path = _dialogs.PickImportFile(ImportKind.Tournament);
         if (path != null)
         {
             ImportFile(path);
@@ -238,7 +236,7 @@ public sealed partial class MainViewModel : ObservableObject
     private static string TitleFromFileName(string path)
     {
         var name = Path.GetFileName(path);
-        foreach (var extension in new[] { TournamentJson.FileExtension, ".json" })
+        foreach (var extension in new[] { TournamentJson.FileExtension, ".json", ".csv", ".txt" })
         {
             if (name.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
             {

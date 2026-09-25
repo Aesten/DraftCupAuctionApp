@@ -112,4 +112,19 @@ public class PickCorrectionTests
 
         Assert.Throws<AuctionException>(() => engine.SwapPick(first.CaptainId, sold.Id, other.Id));
     }
+
+    [Fact]
+    public void SyncCaptain_RenamesTheTeamDuringTheAuction()
+    {
+        var tournament = TestData.Tournament();
+        var engine = TestData.Start(tournament);
+        var captain = tournament.Divisions[0].Captains[0];
+
+        captain.Name = "  Renamed ";
+        captain.Class = PlayerClasses.Archer;
+        tournament.Divisions[0].SyncCaptain(captain);
+
+        Assert.Equal("Renamed", engine.GetTeam(captain.Id).CaptainName);
+        Assert.Equal(PlayerClasses.Archer, tournament.Divisions[0].CaptainClass(captain.Id));
+    }
 }

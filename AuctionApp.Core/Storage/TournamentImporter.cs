@@ -5,7 +5,8 @@ using AuctionApp.Core.Model;
 namespace AuctionApp.Core.Storage;
 
 /// <summary>
-/// Reads tournament files exported by this app as well as the JSON files of the previous (WinForms) version:
+/// Reads tournament files exported by this app, player lists (CSV or text, e.g. saved from Excel), and the JSON files
+/// of the previous (WinForms) version:
 /// auction plans (<c>"type": "Auction"</c>) and auction states (<c>"type": "AuctionState"</c>), which become a
 /// tournament with a single division. Exported tournaments keep their id, so they can be merged into the original.
 /// </summary>
@@ -13,6 +14,12 @@ public static class TournamentImporter
 {
     public static Tournament Import(string json, string fallbackTitle)
     {
+        // Anything that isn't JSON is read as a player list (a CSV file saved from Excel, a text file...).
+        if (!json.TrimStart('\uFEFF', ' ', '\t', '\r', '\n').StartsWith('{'))
+        {
+            return FromPlayerList(json, fallbackTitle);
+        }
+
         JsonNode? root;
         try
         {
@@ -33,7 +40,7 @@ public static class TournamentImporter
         {
             "Auction" => FromLegacyPlan(obj.Deserialize<LegacyAuction>(TournamentJson.Options)!),
             "AuctionState" => FromLegacyState(obj.Deserialize<LegacyAuctionState>(TournamentJson.Options)!),
-            null when obj.ContainsKey("divisions") && obj.ContainsKey("players") => Deserialize(json),
+            null when obj.ContainsKey("players") => Deserialize(json),
             _ => throw new InvalidDataException("This file isn't a draft cup tournament."),
         };
 
@@ -42,7 +49,27 @@ public static class TournamentImporter
             tournament.Title = fallbackTitle;
         }
 
+        if (tournament.Divisions.Count == 0)
+        {
+            tournament.AddDivision();
+        }
+
         tournament.Normalize();
+        return tournament;
+    }
+
+    /// <summary>A new tournament from a list of players, one per line: the name, then the classes.</summary>
+    private static Tournament FromPlayerList(string text, string title)
+    {
+        var players = RosterParser.Parse(text);
+        if (players.Count == 0)
+        {
+            throw new InvalidDataException("No players were found in this file. Put one player per line: the name, then the classes (e.g. Alice,inf cav).");
+        }
+
+        var tournament = new Tournament { Title = title };
+        tournament.Players.AddRange(players.Select(player => new Player { Name = player.Name, Classes = player.Classes }));
+        tournament.AddDivision();
         return tournament;
     }
 

@@ -113,11 +113,19 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
         _owner.SettingsChanged();
     }
 
-    /// <summary>A captain's class changed: shown on the team cards straight away, even during the auction.</summary>
-    internal void CaptainClassChanged()
+    /// <summary>
+    /// A captain's name or class changed. Allowed during the auction too: the team is a slot the captain is attached
+    /// to, so its card, the pool's statuses and the results follow straight away.
+    /// </summary>
+    internal void CaptainChanged(Captain captain)
     {
-        _owner.SettingsChanged();
-        _owner.Auction.OnPoolChanged(clearUndo: false);
+        Division.SyncCaptain(captain);
+        Changed();
+        if (IsLocked)
+        {
+            _owner.Auction.OnPoolChanged(clearUndo: false);
+            _owner.Owner.Pool.RefreshStatuses();
+        }
     }
 
     /// <summary>Re-checks the division, e.g. after the pool or another division changed.</summary>
@@ -270,7 +278,7 @@ public sealed partial class CaptainRowViewModel : ObservableObject
 
             Model.Name = value;
             OnPropertyChanged();
-            _owner.Changed();
+            _owner.CaptainChanged(Model);
         }
     }
 
@@ -305,7 +313,7 @@ public sealed partial class CaptainRowViewModel : ObservableObject
         OnPropertyChanged(nameof(IsInfantry));
         OnPropertyChanged(nameof(IsArcher));
         OnPropertyChanged(nameof(IsCavalry));
-        _owner.CaptainClassChanged();
+        _owner.CaptainChanged(Model);
     }
 
     [ObservableProperty]

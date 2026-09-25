@@ -17,6 +17,13 @@ public enum DialogChoice
 }
 
 /// <summary>A player offered in <see cref="IDialogService.PickPlayer"/>; <paramref name="Where"/> says where they are now.</summary>
+/// <summary>What a file is imported as: a whole tournament (or a new one from a player list), or players for the pool.</summary>
+public enum ImportKind
+{
+    Tournament,
+    Players,
+}
+
 public sealed record PlayerChoice(Guid Id, string Name, IReadOnlyList<string> Classes, string Where);
 
 /// <summary>Everything that talks to the user outside of the main window: dialogs, file pickers, clipboard.</summary>
@@ -36,7 +43,8 @@ public interface IDialogService
 
     string? PickFileToSave(string title, string filter, string suggestedName);
 
-    List<ParsedPlayer>? AskForRoster();
+    /// <summary>Shows the expected format, then the file picker. Returns the chosen file, or null.</summary>
+    string? PickImportFile(ImportKind kind);
 
     bool CopyToClipboard(string text);
 
@@ -85,10 +93,16 @@ public sealed class DialogService : IDialogService
         return dialog.ShowDialog(Owner) == true ? dialog.FileName : null;
     }
 
-    public List<ParsedPlayer>? AskForRoster()
+    public string? PickImportFile(ImportKind kind)
     {
-        var dialog = new PasteRosterDialog { Owner = Owner };
-        return dialog.ShowDialog() == true ? dialog.Players : null;
+        if (new ImportDialog(kind) { Owner = Owner }.ShowDialog() != true)
+        {
+            return null;
+        }
+
+        return kind == ImportKind.Players
+            ? PickFileToOpen("Import players", "Player lists (*.csv;*.txt)|*.csv;*.txt|Tournaments (*.json)|*.json|All files (*.*)|*.*")
+            : PickFileToOpen("Import a tournament", "Tournaments and player lists (*.json;*.csv;*.txt)|*.json;*.csv;*.txt|All files (*.*)|*.*");
     }
 
     public bool CopyToClipboard(string text)

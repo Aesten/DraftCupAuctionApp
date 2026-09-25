@@ -85,11 +85,15 @@
                 </Button>
                 <Button Margin="8,0,0,0" Command="{Binding RemovePlayersCommand}" CommandParameter="{Binding SelectedItems, ElementName=PlayersGrid}" Style="{StaticResource SubtleButton}"
                         ToolTip="Remove the selected players (Delete). Players already bought are taken off their team, which gets the money back.">
-                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE74D;" />
+                    <controls:IconLabel Glyph="&#xE74D;" Text="Remove" />
+                </Button>
+                <Button Margin="8,0,0,0" Command="{Binding ImportPlayersCommand}" Style="{StaticResource SubtleButton}"
+                        ToolTip="Add players from a file, e.g. a list kept in Excel (CSV)">
+                    <controls:IconLabel Glyph="&#xE8B5;" Text="Import…" />
                 </Button>
                 <Button Margin="4,0,0,0" Command="{Binding ExportPlayersCommand}" Style="{StaticResource SubtleButton}"
                         ToolTip="Export the pool as a spreadsheet (CSV), with where each player ended up">
-                    <TextBlock Style="{StaticResource Glyph}" Text="&#xEDE1;" />
+                    <controls:IconLabel Glyph="&#xEDE1;" Text="Export…" />
                 </Button>
             </StackPanel>
         </Grid>
@@ -137,9 +141,6 @@
                         <StackPanel Margin="6,0,0,0" VerticalAlignment="Center" Orientation="Horizontal">
                             <Button Command="{Binding AddPlayerCommand}" Style="{DynamicResource AccentButtonStyle}" ToolTip="Add the player (Enter)">
                                 <controls:IconLabel Glyph="&#xE710;" Text="Add" />
-                            </Button>
-                            <Button Margin="6,0,0,0" Command="{Binding PastePlayersCommand}" ToolTip="Add many players at once from a spreadsheet, a form or a chat message">
-                                <controls:IconLabel Glyph="&#xE77F;" Text="Paste a list…" />
                             </Button>
                         </StackPanel>
                     </StackPanel>

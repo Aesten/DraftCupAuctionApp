@@ -11,18 +11,6 @@ public sealed record ParsedPlayer(string Name, List<string> Classes);
 /// </summary>
 public static class RosterParser
 {
-    private static readonly Dictionary<string, string> ClassAliases = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["inf"] = PlayerClasses.Infantry,
-        ["infantry"] = PlayerClasses.Infantry,
-        ["arc"] = PlayerClasses.Archer,
-        ["archer"] = PlayerClasses.Archer,
-        ["archers"] = PlayerClasses.Archer,
-        ["ranged"] = PlayerClasses.Archer,
-        ["cav"] = PlayerClasses.Cavalry,
-        ["cavalry"] = PlayerClasses.Cavalry,
-    };
-
     private static readonly HashSet<string> Marks = new(StringComparer.OrdinalIgnoreCase) { "x", "1", "yes", "y", "true", "✓", "✔" };
 
     public static List<ParsedPlayer> Parse(string text)
@@ -53,7 +41,7 @@ public static class RosterParser
             else
             {
                 classes = rest.SelectMany(cell => cell.Split([' ', '/', '|', '+'], StringSplitOptions.RemoveEmptyEntries))
-                    .Select(token => ClassAliases.GetValueOrDefault(token.Trim()))
+                    .Select(PlayerClasses.FromName)
                     .OfType<string>()
                     .ToList();
             }

@@ -63,7 +63,7 @@ public sealed class Tournament
         foreach (var player in Players)
         {
             player.Name ??= string.Empty;
-            player.Classes ??= [];
+            player.Classes = PlayerClasses.Normalize(player.Classes ?? []);
         }
 
         foreach (var division in Divisions)
@@ -137,6 +137,18 @@ public sealed class Division
 
     public void Touch() => UpdatedAt = DateTimeOffset.Now;
 
+    /// <summary>
+    /// A team is a slot led by a captain; the captain's name (and class) can change during the auction, and the team
+    /// follows. Budgets and the list of captains stay locked while the auction exists.
+    /// </summary>
+    public void SyncCaptain(Captain captain)
+    {
+        if (Session?.Teams.FirstOrDefault(team => team.CaptainId == captain.Id) is { } team)
+        {
+            team.CaptainName = captain.Name.Trim();
+        }
+    }
+
     /// <summary>The class of the captain leading a team, or empty.</summary>
     public string CaptainClass(Guid captainId) => Captains.FirstOrDefault(captain => captain.Id == captainId)?.Class ?? string.Empty;
 
@@ -147,7 +159,7 @@ public sealed class Division
         foreach (var captain in Captains)
         {
             captain.Name ??= string.Empty;
-            captain.Class ??= string.Empty;
+            captain.Class = PlayerClasses.FromName(captain.Class ?? string.Empty) ?? string.Empty;
         }
 
         UpcomingShown = Math.Clamp(UpcomingShown, 0, 10);
@@ -193,10 +205,25 @@ public static class PlayerClasses
 
     public static string ShortName(string code) => code.ToUpperInvariant();
 
-    /// <summary>Keeps known classes in canonical order and drops duplicates.</summary>
+    private static readonly Dictionary<string, string> Aliases = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["inf"] = Infantry,
+        ["infantry"] = Infantry,
+        ["arc"] = Archer,
+        ["archer"] = Archer,
+        ["archers"] = Archer,
+        ["ranged"] = Archer,
+        ["cav"] = Cavalry,
+        ["cavalry"] = Cavalry,
+    };
+
+    /// <summary>The class code for a name like "inf", "Infantry" or "archer", or null if it isn't a class.</summary>
+    public static string? FromName(string name) => Aliases.GetValueOrDefault(name.Trim());
+
+    /// <summary>Keeps known classes in canonical order and drops duplicates. Names like "Infantry" become codes.</summary>
     public static List<string> Normalize(IEnumerable<string> classes)
     {
-        var set = classes.Select(c => c.Trim().ToLowerInvariant()).Where(c => c.Length > 0).ToHashSet();
+        var set = classes.Select(c => FromName(c) ?? c.Trim().ToLowerInvariant()).Where(c => c.Length > 0).ToHashSet();
         var ordered = All.Where(set.Contains).ToList();
         ordered.AddRange(set.Where(c => !All.Contains(c)).Order(StringComparer.Ordinal));
         return ordered;
