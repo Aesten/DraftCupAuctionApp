@@ -1,0 +1,364 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="clr-namespace:AuctionApp.Controls"
+                    xmlns:vm="clr-namespace:AuctionApp.ViewModels">
+
+    <!--
+        App-wide styles layered on top of the built-in Fluent theme. Colors always come from the theme's own
+        brushes (DynamicResource) so everything follows the Windows light/dark setting and accent color.
+    -->
+
+    <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    <controls:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility" />
+    <controls:BoolToHiddenConverter x:Key="BoolToHidden" />
+    <controls:ClassIconConverter x:Key="ClassIcon" />
+    <controls:ClassNameConverter x:Key="ClassName" />
+    <controls:ClassBrushConverter x:Key="ClassBrush" />
+    <controls:ProportionalThicknessConverter x:Key="ProportionalThickness" />
+    <controls:NotEmptyToVisibilityConverter x:Key="NotEmptyToVisibility" />
+    <controls:NotEmptyToVisibilityConverter x:Key="EmptyToVisibility" Invert="True" />
+    <controls:IndexToVisibilityConverter x:Key="IndexToVisibility" />
+
+    <!-- Surfaces -->
+
+    <!-- Text boxes: the text sits in the middle of the box (the Fluent default puts it at the top). -->
+    <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="Card" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="16" />
+    </Style>
+
+    <Style x:Key="Pill" TargetType="Border">
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="Padding" Value="8,2" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Background" Value="{DynamicResource SystemFillColorNeutralBackgroundBrush}" />
+    </Style>
+
+    <!-- Typography -->
+
+    <Style x:Key="PageTitle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="28" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+    </Style>
+
+    <Style x:Key="SectionTitle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+    </Style>
+
+    <Style x:Key="Strong" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+    </Style>
+
+    <Style x:Key="Body" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+    </Style>
+
+    <Style x:Key="Caption" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+    </Style>
+
+    <Style x:Key="Overline" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+    </Style>
+
+    <Style x:Key="Glyph" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{DynamicResource SymbolThemeFontFamily}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="StatValue" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="20" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+    </Style>
+
+    <!-- Buttons -->
+
+    <!-- A borderless button for icons and secondary actions inside lists and cards. -->
+    <Style x:Key="SubtleButton" TargetType="Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+        <Setter Property="Padding" Value="6" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource DefaultControlFocusVisualStyle}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Root"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="4"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          RecognizesAccessKey="True" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorDisabledBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource SubtleButton}">
+        <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+    </Style>
+
+    <!-- Tab strip (tournament pages): text with an accent underline under the selected tab. -->
+    <Style x:Key="TabStripItem" TargetType="ListBoxItem">
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource DefaultControlFocusVisualStyle}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Grid Background="Transparent">
+                        <Border x:Name="Hover" Margin="0,0,0,6" CornerRadius="4" Background="Transparent" />
+                        <ContentPresenter Margin="12,8,12,12" VerticalAlignment="Center" />
+                        <Border x:Name="Underline" Height="3" Margin="12,0" VerticalAlignment="Bottom" CornerRadius="1.5" Background="Transparent" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Hover" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Underline" Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Segmented switch (a division's pages): pill-shaped options, the selected one filled. -->
+    <Style x:Key="SegmentedItem" TargetType="ListBoxItem">
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource DefaultControlFocusVisualStyle}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="Root" Margin="2" Padding="14,6" CornerRadius="4" Background="Transparent">
+                        <ContentPresenter VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="SegmentedList" TargetType="ListBox">
+        <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="2" />
+        <Setter Property="ItemContainerStyle" Value="{StaticResource SegmentedItem}" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBox">
+                    <Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" CornerRadius="6">
+                        <ItemsPresenter />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="ItemsPanel">
+            <Setter.Value>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="TabStrip" TargetType="ListBox">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="ItemContainerStyle" Value="{StaticResource TabStripItem}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBox">
+                    <ItemsPresenter />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="ItemsPanel">
+            <Setter.Value>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
+        Class icons: the black-on-transparent PNGs are used as a mask so they take the theme's text color, inside a
+        rounded frame tinted with the class color (infantry red, archer green, cavalry blue).
+    -->
+    <DataTemplate x:Key="ClassIconTemplate">
+        <Border Width="{Binding IconSize, RelativeSource={RelativeSource AncestorType=controls:ClassIconStrip}}"
+                Height="{Binding IconSize, RelativeSource={RelativeSource AncestorType=controls:ClassIconStrip}}"
+                Margin="0,0,3,0"
+                Background="{Binding Converter={StaticResource ClassBrush}, ConverterParameter=0.28}"
+                BorderBrush="{Binding Converter={StaticResource ClassBrush}, ConverterParameter=0.9}"
+                BorderThickness="1"
+                CornerRadius="4"
+                Padding="{Binding IconSize, RelativeSource={RelativeSource AncestorType=controls:ClassIconStrip}, Converter={StaticResource ProportionalThickness}, ConverterParameter=0.16}"
+                ToolTip="{Binding Converter={StaticResource ClassName}}">
+            <Rectangle Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=controls:ClassIconStrip}}">
+                <Rectangle.OpacityMask>
+                    <ImageBrush ImageSource="{Binding Converter={StaticResource ClassIcon}}" Stretch="Uniform" />
+                </Rectangle.OpacityMask>
+            </Rectangle>
+        </Border>
+    </DataTemplate>
+
+    <!--
+        A class as an on/off toggle (its code in Tag): the framed, tinted icon when on, a faint icon when off.
+        Used for players' classes in the pool, and for the class filters.
+    -->
+    <Style x:Key="ClassToggle" TargetType="ToggleButton">
+        <Setter Property="Width" Value="30" />
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="ToolTip" Value="{Binding Tag, RelativeSource={RelativeSource Self}, Converter={StaticResource ClassName}}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Frame" Padding="5" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" CornerRadius="5">
+                        <Rectangle x:Name="Icon" Fill="{DynamicResource TextFillColorPrimaryBrush}" Opacity="0.18">
+                            <Rectangle.OpacityMask>
+                                <ImageBrush ImageSource="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource ClassIcon}}" Stretch="Uniform" />
+                            </Rectangle.OpacityMask>
+                        </Rectangle>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                            <Setter TargetName="Icon" Property="Opacity" Value="0.45" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Frame" Property="Background" Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource ClassBrush}, ConverterParameter=0.28}" />
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource ClassBrush}, ConverterParameter=0.9}" />
+                            <Setter TargetName="Icon" Property="Opacity" Value="1" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Cursor" Value="Arrow" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- A team's class counts (framed icon + number); classes the team doesn't have yet are shown faded with a 0. -->
+    <DataTemplate x:Key="ClassCountTemplate" DataType="{x:Type vm:ClassCount}">
+        <StackPanel x:Name="Root" Margin="0,0,14,0" Orientation="Horizontal">
+            <StackPanel.ToolTip>
+                <TextBlock Text="{Binding Code, Converter={StaticResource ClassName}, StringFormat='{}{0}: players of this class, captain included'}" />
+            </StackPanel.ToolTip>
+            <Border Width="20" Height="20" Padding="3" VerticalAlignment="Center"
+                    Background="{Binding Code, Converter={StaticResource ClassBrush}, ConverterParameter=0.28}"
+                    BorderBrush="{Binding Code, Converter={StaticResource ClassBrush}, ConverterParameter=0.9}"
+                    BorderThickness="1" CornerRadius="4">
+                <Rectangle Fill="{DynamicResource TextFillColorPrimaryBrush}">
+                    <Rectangle.OpacityMask>
+                        <ImageBrush ImageSource="{Binding Code, Converter={StaticResource ClassIcon}}" Stretch="Uniform" />
+                    </Rectangle.OpacityMask>
+                </Rectangle>
+            </Border>
+            <TextBlock Margin="6,0,0,0" VerticalAlignment="Center" FontSize="15" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding Count}" />
+        </StackPanel>
+        <DataTemplate.Triggers>
+            <DataTrigger Binding="{Binding IsZero}" Value="True">
+                <Setter TargetName="Root" Property="Opacity" Value="0.4" />
+            </DataTrigger>
+        </DataTemplate.Triggers>
+    </DataTemplate>
+
+    <Style x:Key="ClassCounts" TargetType="ItemsControl">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="ItemTemplate" Value="{StaticResource ClassCountTemplate}" />
+        <Setter Property="ItemsPanel">
+            <Setter.Value>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="controls:ClassIconStrip">
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="ItemTemplate" Value="{StaticResource ClassIconTemplate}" />
+        <Setter Property="ItemsPanel">
+            <Setter.Value>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="controls:ClassIconStrip">
+                    <ItemsPresenter />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

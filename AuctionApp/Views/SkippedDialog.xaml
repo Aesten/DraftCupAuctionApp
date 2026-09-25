@@ -1,0 +1,63 @@
+<Window x:Class="AuctionApp.Views.SkippedDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:AuctionApp.Controls"
+        xmlns:vm="clr-namespace:AuctionApp.ViewModels"
+        Title="Skipped players"
+        Width="460"
+        Height="560"
+        MinHeight="300"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="24,20,24,12">
+            <TextBlock Style="{StaticResource SectionTitle}" Text="{Binding SkippedCount, StringFormat='Skipped players ({0})'}" />
+            <TextBlock Margin="0,6,0,0" Style="{StaticResource Caption}"
+                       Text="Players nobody bid on, and players who joined the pool during the auction. Put one on the block, or send them all back to the end of the queue." />
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" Margin="12,0" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Margin="12,8" Style="{StaticResource Caption}" Text="Nobody has been skipped."
+                           Visibility="{Binding HasSkipped, Converter={StaticResource InverseBoolToVisibility}}" />
+                <ItemsControl Margin="0,0,12,0" Focusable="False" ItemsSource="{Binding Skipped}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:PlayerItemViewModel}">
+                            <Grid Height="40" Margin="12,0,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock VerticalAlignment="Center" FontSize="15" Style="{StaticResource Body}" Text="{Binding Name}" />
+                                <controls:ClassIconStrip Grid.Column="1" Margin="8,0" IconSize="22" ItemsSource="{Binding Classes}" />
+                                <Button Grid.Column="2" Click="BringBack_Click" ToolTip="Put this player on the block now">
+                                    <controls:IconLabel Glyph="&#xE7A7;" Text="On the block" />
+                                </Button>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2"
+                Padding="24,16"
+                Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}"
+                BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+                BorderThickness="0,1,0,0">
+            <Grid>
+                <Button HorizontalAlignment="Left" Click="RequeueAll_Click" IsEnabled="{Binding HasSkipped}">
+                    <controls:IconLabel Glyph="&#xE72C;" Text="Send all back to the queue" />
+                </Button>
+                <Button MinWidth="96" HorizontalAlignment="Right" Content="Close" IsCancel="True" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
