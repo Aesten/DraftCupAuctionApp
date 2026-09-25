@@ -6,15 +6,15 @@
              xmlns:controls="clr-namespace:AuctionApp.Controls"
              xmlns:vm="clr-namespace:AuctionApp.ViewModels"
              d:DataContext="{d:DesignInstance Type=vm:ResultsViewModel}"
-             d:DesignHeight="800"
-             d:DesignWidth="1300"
+             d:DesignHeight="900"
+             d:DesignWidth="1600"
              mc:Ignorable="d">
-    <Grid Margin="32,16,32,8">
+    <Grid Margin="16,12,16,16">
         <Border MaxWidth="560" Margin="0,48,0,0" Padding="32" HorizontalAlignment="Center" VerticalAlignment="Top" Style="{StaticResource Card}"
                 Visibility="{Binding HasSession, Converter={StaticResource InverseBoolToVisibility}}">
             <StackPanel>
-                <TextBlock HorizontalAlignment="Center" FontSize="36" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Style="{StaticResource Glyph}" Text="&#xE9D2;" />
-                <TextBlock Margin="0,16,0,0" HorizontalAlignment="Center" Style="{StaticResource SectionTitle}" Text="No results yet" />
+                <TextBlock HorizontalAlignment="Center" FontSize="36" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Style="{StaticResource Glyph}" Text="&#xE902;" />
+                <TextBlock Margin="0,16,0,0" HorizontalAlignment="Center" Style="{StaticResource SectionTitle}" Text="No teams yet" />
                 <TextBlock Margin="0,8,0,0" HorizontalAlignment="Center" FontSize="14" Style="{StaticResource Caption}" TextAlignment="Center"
                            Text="The teams show up here once this division's auction has started." />
             </StackPanel>
@@ -25,8 +25,12 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
 
-            <Grid Margin="0,0,0,12">
+            <Grid Grid.ColumnSpan="2" Margin="0,0,0,12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
@@ -46,72 +50,71 @@
                 </StackPanel>
             </Grid>
 
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                <StackPanel>
-                    <ItemsControl Focusable="False" ItemsSource="{Binding Teams}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <controls:FitGrid VerticalAlignment="Top" MinItemWidth="220" Spacing="12" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type vm:TeamResultViewModel}">
-                                <Border Style="{StaticResource Card}">
-                                    <StackPanel>
-                                        <Grid>
-                                            <TextBlock FontSize="16" Style="{StaticResource Strong}" Text="{Binding Name}" />
-                                            <TextBlock HorizontalAlignment="Right" Style="{StaticResource Caption}" Text="{Binding SlotsText}" />
-                                        </Grid>
-                                        <TextBlock Margin="0,2,0,8" Style="{StaticResource Caption}" Text="{Binding SpentText}" />
-                                        <ItemsControl Focusable="False" ItemsSource="{Binding Picks}">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate DataType="{x:Type vm:ResultPickViewModel}">
-                                                    <Grid Height="26">
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="*" />
-                                                            <ColumnDefinition Width="Auto" />
-                                                            <ColumnDefinition Width="Auto" />
-                                                        </Grid.ColumnDefinitions>
-                                                        <TextBlock VerticalAlignment="Center" Style="{StaticResource Body}" Text="{Binding Name}" />
-                                                        <controls:ClassIconStrip Grid.Column="1" Margin="6,0,0,0" IconSize="14" ItemsSource="{Binding Classes}" />
-                                                        <TextBlock Grid.Column="2" MinWidth="34" Margin="6,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold"
-                                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{Binding PriceText}" TextAlignment="Right" />
-                                                    </Grid>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                        <TextBlock Margin="0,8,0,0" Style="{StaticResource Caption}" Text="{Binding CompositionText}"
-                                                   Visibility="{Binding CompositionText, Converter={StaticResource NotEmptyToVisibility}}" />
-                                    </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+            <!-- Every team, always fully visible -->
+            <controls:ScaleToFit Grid.Row="1" VerticalAlignment="Top" MaxScale="1.4" MinScale="0.5">
+                <ItemsControl Focusable="False" ItemsSource="{Binding Teams}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <controls:FitGrid MinItemWidth="250" Spacing="12" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:TeamResultViewModel}">
+                            <Border Style="{StaticResource Card}" Padding="14,12">
+                                <DockPanel>
+                                    <Grid DockPanel.Dock="Top">
+                                        <TextBlock FontSize="18" Style="{StaticResource Strong}" Text="{Binding Name}" />
+                                        <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="13" Style="{StaticResource Caption}" Text="{Binding SlotsText}" />
+                                    </Grid>
+                                    <TextBlock DockPanel.Dock="Top" Margin="0,2,0,8" FontSize="13" Style="{StaticResource Caption}" Text="{Binding SpentText}" />
+                                    <TextBlock DockPanel.Dock="Bottom" Margin="0,6,0,0" FontSize="12" Style="{StaticResource Caption}" Text="{Binding CompositionText}" />
+                                    <ItemsControl Focusable="False" ItemsSource="{Binding Picks}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type vm:ResultPickViewModel}">
+                                                <Grid Height="27">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock VerticalAlignment="Center" FontSize="15" Style="{StaticResource Body}" Text="{Binding Name}" />
+                                                    <controls:ClassIconStrip Grid.Column="1" Margin="6,0,0,0" IconSize="20" ItemsSource="{Binding Classes}" />
+                                                    <TextBlock Grid.Column="2" MinWidth="36" Margin="4,0,0,0" VerticalAlignment="Center" FontSize="15" FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding PriceText}" TextAlignment="Right" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </DockPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </controls:ScaleToFit>
 
-                    <Border Margin="0,12,0,12" Style="{StaticResource Card}" Visibility="{Binding HasUnsold, Converter={StaticResource BoolToVisibility}}">
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource SectionTitle}" Text="Not sold" />
-                            <ItemsControl Margin="0,8,0,0" Focusable="False" ItemsSource="{Binding Unsold}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="{x:Type vm:PlayerItemViewModel}">
-                                        <Border Margin="0,0,8,8" Padding="10,4" CornerRadius="12" Background="{DynamicResource SubtleFillColorSecondaryBrush}">
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding Name}" />
-                                                <controls:ClassIconStrip Margin="6,0,0,0" IconSize="12" ItemsSource="{Binding Classes}" />
-                                            </StackPanel>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </ScrollViewer>
+            <!-- Unsold players, beside the teams -->
+            <Border Grid.Row="1" Grid.Column="1" Width="240" Margin="12,0,0,0" Padding="16,12" VerticalAlignment="Stretch" Style="{StaticResource Card}"
+                    Visibility="{Binding HasUnsold, Converter={StaticResource BoolToVisibility}}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Margin="0,0,0,8" Style="{StaticResource Strong}" Text="{Binding Unsold.Count, StringFormat='Not sold ({0})'}" />
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl Margin="0,0,8,0" Focusable="False" ItemsSource="{Binding Unsold}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:PlayerItemViewModel}">
+                                    <Grid Height="28">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock VerticalAlignment="Center" Style="{StaticResource Body}" Text="{Binding Name}" />
+                                        <controls:ClassIconStrip Grid.Column="1" IconSize="18" ItemsSource="{Binding Classes}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
         </Grid>
     </Grid>
 </UserControl>

@@ -30,7 +30,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid Margin="32,16,32,20">
+    <Grid Margin="24,16,24,20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -168,6 +168,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel VerticalAlignment="Center">
                     <TextBlock Style="{StaticResource Strong}" Text="{Binding Summary}" />
@@ -189,7 +190,11 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </StackPanel>
-                <Button Grid.Column="1" MinWidth="180" Padding="20,10" VerticalAlignment="Center"
+                <Button Grid.Column="1" Margin="0,0,12,0" VerticalAlignment="Center"
+                        Command="{Binding DeleteDivisionCommand}" Style="{StaticResource DangerButton}" ToolTip="Delete this division">
+                    <controls:IconLabel Glyph="&#xE74D;" Text="Delete division" />
+                </Button>
+                <Button Grid.Column="2" MinWidth="180" Padding="20,10" VerticalAlignment="Center"
                         Command="{Binding StartAuctionCommand}"
                         IsEnabled="{Binding CanStart}"
                         Style="{DynamicResource AccentButtonStyle}"

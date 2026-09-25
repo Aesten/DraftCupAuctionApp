@@ -19,7 +19,6 @@ public sealed partial class AuctionViewModel : ObservableObject
     private readonly DivisionViewModel _owner;
     private readonly UndoHistory _history = new();
     private AuctionEngine? _engine;
-    private int _dismissedNewPlayers;
 
     public AuctionViewModel(DivisionViewModel owner)
     {
@@ -36,8 +35,6 @@ public sealed partial class AuctionViewModel : ObservableObject
     public ObservableCollection<PlayerItemViewModel> UpNext { get; } = [];
 
     public ObservableCollection<PlayerItemViewModel> Skipped { get; } = [];
-
-    public ObservableCollection<ActivityItemViewModel> Activity { get; } = [];
 
     [ObservableProperty]
     public partial bool HasSession { get; set; }
@@ -82,12 +79,9 @@ public sealed partial class AuctionViewModel : ObservableObject
     [ObservableProperty]
     public partial bool HasSkipped { get; set; }
 
-    /// <summary>Pool players that became available after the auction started (late sign-ups, reset divisions).</summary>
+    /// <summary>The latest thing that happened, e.g. "Alice sold to Bob for 2.5".</summary>
     [ObservableProperty]
-    public partial int NewPlayersCount { get; set; }
-
-    [ObservableProperty]
-    public partial bool HasNewPlayers { get; set; }
+    public partial string LastAction { get; set; } = string.Empty;
 
     [ObservableProperty]
     public partial TeamCardViewModel? SelectedTeam { get; set; }
@@ -145,8 +139,7 @@ public sealed partial class AuctionViewModel : ObservableObject
             IsRunning = IsFinished = HasCurrentPlayer = IsQueueEmpty = false;
             UpNext.Clear();
             Skipped.Clear();
-            Activity.Clear();
-            RefreshNewPlayers();
+            LastAction = string.Empty;
             UpdateUndo();
             return;
         }
@@ -174,7 +167,7 @@ public sealed partial class AuctionViewModel : ObservableObject
         UpNextHeader = $"Next {shown}";
         Replace(UpNext, session.Queue.Skip(1).Take(shown).Select((player, i) => new PlayerItemViewModel(player, i + 1)));
         Replace(Skipped, session.Skipped.Select((player, i) => new PlayerItemViewModel(player, i + 1)));
-        Replace(Activity, session.Activity.AsEnumerable().Reverse().Take(100).Select(entry => new ActivityItemViewModel(entry)));
+        LastAction = session.Activity.LastOrDefault()?.Text ?? string.Empty;
 
         foreach (var team in Teams)
         {
@@ -182,16 +175,29 @@ public sealed partial class AuctionViewModel : ObservableObject
         }
 
         OnPropertyChanged(nameof(HalfBudgetCap));
-        RefreshNewPlayers();
         CheckSale();
         UpdateUndo();
     }
 
-    /// <summary>Checks the pool for players this running auction doesn't have yet.</summary>
-    internal void RefreshNewPlayers()
+    /// <summary>
+    /// The pool changed (players added, edited or removed): show the result. Undo points are dropped when players
+    /// were removed, since going back to them would bring removed players back into the auction.
+    /// </summary>
+    internal void OnPoolChanged(bool clearUndo)
     {
-        NewPlayersCount = _engine != null && IsRunning ? TournamentRules.NewlyAvailable(_owner.Tournament, Division).Count : 0;
-        HasNewPlayers = NewPlayersCount > 0 && NewPlayersCount != _dismissedNewPlayers;
+        if (clearUndo)
+        {
+            _history.Clear();
+        }
+
+        if (_engine == null && Division.Session != null || _engine != null && Division.Session == null)
+        {
+            Reload();
+        }
+        else
+        {
+            Refresh();
+        }
     }
 
     /// <summary>How many players of each class a team has, e.g. "3 INF · 2 CAV".</summary>
@@ -342,17 +348,6 @@ public sealed partial class AuctionViewModel : ObservableObject
     [RelayCommand]
     private void RequeueSkipped() =>
         Apply("send skipped players back to the queue", engine => engine.RequeueSkipped());
-
-    [RelayCommand]
-    private void AddNewPlayers() =>
-        Apply("add new players to the queue", engine => engine.AddToQueue(TournamentRules.NewlyAvailable(_owner.Tournament, Division)));
-
-    [RelayCommand]
-    private void DismissNewPlayers()
-    {
-        _dismissedNewPlayers = NewPlayersCount;
-        HasNewPlayers = false;
-    }
 
     internal void ReturnPick(TeamCardViewModel team, PickItemViewModel pick)
     {
@@ -520,21 +515,4 @@ public sealed class PlayerItemViewModel(SessionPlayer player, int position)
     public int Position => position;
 
     public IReadOnlyList<string> Classes { get; } = AuctionViewModel.KnownClasses(player.Classes);
-}
-
-public sealed class ActivityItemViewModel(ActivityEntry entry)
-{
-    public string Time => entry.At.LocalDateTime.ToString("HH:mm");
-
-    public string Text => entry.Text;
-
-    public ActivityKind Kind => entry.Kind;
-
-    public string Glyph => entry.Kind switch
-    {
-        ActivityKind.Sold => "",
-        ActivityKind.Skipped => "",
-        ActivityKind.Returned => "",
-        _ => "",
-    };
 }

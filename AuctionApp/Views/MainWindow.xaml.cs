@@ -8,7 +8,7 @@ namespace AuctionApp.Views;
 
 public partial class MainWindow : Window
 {
-    private WindowState _stateBeforeStreamMode = WindowState.Normal;
+    private WindowState _stateBeforeFullScreen = WindowState.Normal;
 
     public MainWindow()
     {
@@ -23,33 +23,32 @@ public partial class MainWindow : Window
         base.OnClosing(e);
     }
 
-    /// <summary>F11 toggles stream mode (full screen, page content only); Escape leaves it.</summary>
+    /// <summary>F11 toggles full screen (for screen sharing); Escape closes the menu, then leaves full screen.</summary>
     protected override void OnPreviewKeyDown(KeyEventArgs e)
     {
         base.OnPreviewKeyDown(e);
-        if (ViewModel is not { } viewModel)
+        if (e.Key == Key.F11)
         {
-            return;
+            SetFullScreen(WindowStyle != WindowStyle.None);
+            e.Handled = true;
         }
-
-        if (e.Key == Key.F11 || (e.Key == Key.Escape && viewModel.IsStreamMode))
+        else if (e.Key == Key.Escape && ViewModel is { IsMenuOpen: true } viewModel)
         {
-            SetStreamMode(!viewModel.IsStreamMode && e.Key == Key.F11);
+            viewModel.IsMenuOpen = false;
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape && WindowStyle == WindowStyle.None)
+        {
+            SetFullScreen(false);
             e.Handled = true;
         }
     }
 
-    private void SetStreamMode(bool enabled)
+    private void SetFullScreen(bool enabled)
     {
-        if (ViewModel is not { } viewModel || viewModel.IsStreamMode == enabled)
-        {
-            return;
-        }
-
-        viewModel.IsStreamMode = enabled;
         if (enabled)
         {
-            _stateBeforeStreamMode = WindowState;
+            _stateBeforeFullScreen = WindowState;
             WindowStyle = WindowStyle.None;
             // Going through Normal makes Windows recompute the maximized bounds without the title bar.
             WindowState = WindowState.Normal;
@@ -58,7 +57,7 @@ public partial class MainWindow : Window
         else
         {
             WindowStyle = WindowStyle.SingleBorderWindow;
-            WindowState = _stateBeforeStreamMode;
+            WindowState = _stateBeforeFullScreen;
         }
     }
 

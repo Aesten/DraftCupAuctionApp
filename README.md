@@ -8,29 +8,42 @@ Download `DraftCupAuction.exe` (from the latest run of the **Build** workflow on
 
 ## How it's organized
 
-Everything lives in a **tournament**, which is also what gets saved, exported and moved between computers.
+The app works like a document editor: you open one **tournament** at a time. The start page lists the tournaments on this PC, and lets you create a new one or import a file. The ☰ menu (top left) floats over the page, and has the same list plus export, duplicate, close and delete.
 
-- **Player pool**: shared by the whole tournament. Players have classes (INF / ARC / CAV). Type them in the empty last row of the list, or use **Paste a list…** to add many at once from a spreadsheet, a sign-up form or a Discord message (`Alice, inf cav`). The pool's order matters for divisions that don't shuffle: drag the handles (or press Alt+↑/↓) to rearrange it. Each player shows where they stand: available, in a running auction, bought (division, team and price), or captain.
+A tournament holds:
+
+- **Player pool**: shared by the whole tournament. Players have classes (INF / ARC / CAV).
+  - Add players with the **Add a player** box (`Alice, inf cav`, then Enter). Use **Paste a list…** to add many at once from a spreadsheet, a sign-up form or a Discord message.
+  - The pool is shown **A–Z** by default, so opening it during an auction doesn't reveal who comes next.
+  - **Auction order** shows the order used by divisions that don't shuffle. Drag the handles (or press Alt+↑/↓) to rearrange it.
+  - Each player shows where they stand: available, in a running auction, or bought (division, team and price).
 - **Divisions**: one auction each, with its own:
   - captains, each with their own budget;
   - team size (5 to 10 players besides the captain);
-  - player order (shuffled, or the pool's order);
-  - number of upcoming players revealed on screen;
+  - player order (shuffled, or the pool's auction order);
+  - number of upcoming players revealed on screen (3 by default);
   - half budget cap setting.
 
-  Divisions can be auctioned in any order, on different days and different computers. **Whichever division starts first gets the whole pool; each later one gets the pool minus the players already bought.** Players whose name matches a captain are never auctioned.
+  Divisions can be auctioned in any order, on different days and different computers. **Whichever division starts first gets the whole pool; each later one gets the pool minus the players already bought.**
 
-Every division has three pages: **Configure**, **Auction** and **Team compositions**.
+Each division has three pages, switched from the top bar: **Configure**, **Auction** and **Teams**.
 
 ### Running an auction
 
+The auction page is meant to be screen-shared (F11 for full screen). It shows only what viewers need, all at once and without scrolling:
+
+- the player on the block and the next few players (the rest of the queue stays hidden);
+- every team, with its remaining budget, the most it can bid, its roster with prices, and its empty spots.
+
+The layout is made for 8 teams (4 × 2) and adapts to 4–10 teams and to rosters of 5–10 players, shrinking only if the window is too small.
+
 - Click the winning team's card, type the price and press **Enter** (or click **Sold!**). The price box accepts `2.5` as well as `2,5`.
-- **Skip** a player nobody wants. Skipped players can be brought back one by one, or all sent back to the queue.
-- Each team card shows the remaining budget, the most the team can bid right now, and its empty spots.
-- Only the next few players are shown (3 by default, set per division), so captains can't plan too far ahead.
+- **Skip** a player nobody wants. **Skipped players** opens the full list: put one back on the block, or send them all back to the queue.
 - **Undo** (Ctrl+Z) reverts the last action. Hovering a bought player also lets you take them back.
-- **Stream mode (F11)** goes full screen and hides everything but the page itself: no sidebar, no tabs. Escape leaves it.
-- If players are added to the pool after an auction started (late sign-ups), the auction offers to add them to its queue.
+- The pool can be edited mid-auction, and the auction follows along:
+  - new players go to the skipped list, ready whenever you want them;
+  - name and class changes show up immediately;
+  - removing a player who was already sold takes them off the team and refunds the price.
 
 Rules the app enforces:
 
@@ -38,7 +51,7 @@ Rules the app enforces:
 - Prices go in steps of 0.1 and can't exceed what the team has left.
 - **Half budget cap**: while it's on, a team can only spend down to half of its starting budget (rounded up to 0.1). It can be switched on and off at any time.
 
-When a division is done, share its teams from **Team compositions**: **Copy as text** (formatted for Discord) or a spreadsheet (CSV).
+When a division is done, share its teams from **Teams**: **Copy as text** (formatted for Discord) or a spreadsheet (CSV).
 
 ### Keyboard
 
@@ -47,15 +60,16 @@ When a division is done, share its teams from **Team compositions**: **Copy as t
 | Enter (in the price box) | Sell to the selected team |
 | Up / Down (in the price box) | Price ±0.1 |
 | Ctrl+Z | Undo the last auction action |
-| Alt+Up / Alt+Down (in the pool) | Move the selected player |
-| F11 / Escape | Enter / leave stream mode |
+| Alt+Up / Alt+Down (pool, auction order) | Move the selected player |
+| F11 | Full screen on / off |
+| Escape | Close the menu, or leave full screen |
 
 ## Moving a tournament between computers
 
-Tournaments are saved automatically in `%LOCALAPPDATA%\DraftCupAuction` (**Open the data folder** in the sidebar). To hand one over:
+Tournaments are saved automatically after every change in `%LOCALAPPDATA%\DraftCupAuction` (**Open the data folder** in the menu). To hand one over:
 
-1. **Export…** the tournament. This gives you a `.draftcup.json` file (plain JSON).
-2. On the other computer, **Import** it: use the sidebar button, drop the file on the window, or open the file with the app.
+1. **Export to a file…** from the menu. This gives you a `.draftcup.json` file (plain JSON).
+2. On the other computer, **Import** it: use the start page or the menu, drop the file on the window, or open the file with the app.
 3. Run a division there, export again, and import the file back on the first computer.
 
 When you import a copy of a tournament you already have, the two are **merged**. For each division, and for the pool, whichever copy changed it last wins. The app lists what will change before applying it. If two copies auctioned at the same time bought the same player, you're warned. Players bought elsewhere are also taken out of any auction still running.

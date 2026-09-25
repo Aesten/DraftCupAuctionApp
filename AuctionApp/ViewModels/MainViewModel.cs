@@ -10,7 +10,10 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace AuctionApp.ViewModels;
 
-/// <summary>The window: the library of tournaments in the sidebar and the tournament that is open.</summary>
+/// <summary>
+/// The window. Works like a document editor: one tournament project is open at a time. The start page and the
+/// floating menu list the known projects, and let you create, import or export one.
+/// </summary>
 public sealed partial class MainViewModel : ObservableObject
 {
     private readonly TournamentStore _store;
@@ -20,98 +23,53 @@ public sealed partial class MainViewModel : ObservableObject
     {
         _store = store;
         _dialogs = dialogs;
-        RefreshLibrary();
-        SelectedItem = Library.FirstOrDefault();
+        RefreshRecent();
     }
 
-    public ObservableCollection<TournamentListItem> Library { get; } = [];
+    /// <summary>The tournaments saved on this computer, most recently edited first.</summary>
+    public ObservableCollection<TournamentListItem> Recent { get; } = [];
 
     [ObservableProperty]
-    public partial TournamentListItem? SelectedItem { get; set; }
-
-    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasProject))]
     public partial TournamentViewModel? Current { get; set; }
 
+    /// <summary>The floating menu (projects, import, export) that slides over the page.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowSidebar), nameof(ShowSidebarButton))]
-    public partial bool IsSidebarOpen { get; set; } = true;
+    public partial bool IsMenuOpen { get; set; }
 
-    /// <summary>Full screen with only the page content visible (no sidebar, no tabs), for streams and projectors.</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowSidebar), nameof(ShowSidebarButton))]
-    public partial bool IsStreamMode { get; set; }
+    public bool HasProject => Current != null;
 
-    public bool ShowSidebar => IsSidebarOpen && !IsStreamMode;
-
-    public bool ShowSidebarButton => !IsSidebarOpen && !IsStreamMode;
-
-    public bool IsLibraryEmpty => Library.Count == 0;
+    public bool HasRecent => Recent.Count > 0;
 
     public string DataFolder => _store.RootDirectory;
 
-    partial void OnSelectedItemChanged(TournamentListItem? value)
-    {
-        if (Current?.Id == value?.Id)
-        {
-            return;
-        }
-
-        Current = null;
-        if (value != null)
-        {
-            Load(value);
-        }
-    }
-
     partial void OnCurrentChanging(TournamentViewModel? oldValue, TournamentViewModel? newValue) => oldValue?.Close();
 
-    private void Load(TournamentListItem item)
+    public void RefreshRecent()
     {
-        try
+        Recent.Clear();
+        foreach (var summary in _store.List())
         {
-            Current = new TournamentViewModel(_store.Load(item.Id), _store, _dialogs, this);
+            Recent.Add(new TournamentListItem(summary) { IsOpen = summary.Id == Current?.Id });
         }
-        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
+
+        OnPropertyChanged(nameof(HasRecent));
+    }
+
+    partial void OnIsMenuOpenChanged(bool value)
+    {
+        if (value)
         {
-            _dialogs.ShowError("Couldn't open this tournament", ex.Message);
+            Current?.SaveNow();
+            RefreshRecent();
         }
     }
 
-    /// <summary>Re-reads the library, updating the existing items in place so the selection is kept.</summary>
-    public void RefreshLibrary()
-    {
-        var summaries = _store.List();
-        foreach (var gone in Library.Where(item => summaries.All(summary => summary.Id != item.Id)).ToList())
-        {
-            Library.Remove(gone);
-        }
+    [RelayCommand]
+    private void ToggleMenu() => IsMenuOpen = !IsMenuOpen;
 
-        for (var i = 0; i < summaries.Count; i++)
-        {
-            var existing = Library.FirstOrDefault(item => item.Id == summaries[i].Id);
-            if (existing == null)
-            {
-                Library.Insert(i, new TournamentListItem(summaries[i]));
-                continue;
-            }
-
-            existing.Update(summaries[i]);
-            var index = Library.IndexOf(existing);
-            if (index != i)
-            {
-                Library.Move(index, i);
-            }
-        }
-
-        OnPropertyChanged(nameof(IsLibraryEmpty));
-    }
-
-    /// <summary>Called by the open tournament when its title or progress changes, to update the sidebar.</summary>
-    internal void UpdateListItem(Tournament tournament)
-    {
-        var item = Library.FirstOrDefault(entry => entry.Id == tournament.Id);
-        item?.Update(TournamentStore.Summarize(tournament));
-    }
+    [RelayCommand]
+    private void OpenRecent(TournamentListItem item) => Open(item.Id);
 
     [RelayCommand]
     private void NewTournament()
@@ -136,12 +94,24 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    private void CloseTournament()
+    {
+        Current = null;
+        IsMenuOpen = false;
+        RefreshRecent();
+    }
+
+    [RelayCommand]
+    private void OpenDataFolder() => _dialogs.OpenFolder(_store.RootDirectory);
+
     /// <summary>
     /// Imports a tournament file (from the Import button, a file dropped on the window or "Open with"). A copy of a
-    /// tournament that is already in the library is merged into it, so results auctioned elsewhere come back in.
+    /// tournament that is already on this computer is merged into it, so results auctioned elsewhere come back in.
     /// </summary>
     public void ImportFile(string path)
     {
+        IsMenuOpen = false;
         Tournament incoming;
         try
         {
@@ -164,11 +134,7 @@ public sealed partial class MainViewModel : ObservableObject
             return;
         }
 
-        if (Current?.Id == incoming.Id)
-        {
-            Current.SaveNow();
-        }
-
+        Current?.SaveNow();
         var existing = _store.Load(incoming.Id);
         var merge = TournamentMerger.Merge(existing, incoming);
         var answer = merge.HasChanges
@@ -181,7 +147,7 @@ public sealed partial class MainViewModel : ObservableObject
             : _dialogs.Ask(
                 "Already up to date",
                 $"\"{existing.Title}\" already contains everything in this file.",
-                "OK",
+                "Open it",
                 "Import as a separate copy",
                 cancel: null);
 
@@ -196,6 +162,9 @@ public sealed partial class MainViewModel : ObservableObject
                 }
 
                 break;
+            case DialogChoice.Primary:
+                Open(existing.Id);
+                break;
             case DialogChoice.Secondary:
                 incoming.Id = Guid.NewGuid();
                 incoming.Title += " (copy)";
@@ -208,42 +177,32 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
-    private void OpenDataFolder() => _dialogs.OpenFolder(_store.RootDirectory);
-
-    [RelayCommand]
-    private void ToggleSidebar() => IsSidebarOpen = !IsSidebarOpen;
-
-    /// <summary>Selects a tournament in the sidebar and opens it; <paramref name="reload"/> re-reads it from disk.</summary>
+    /// <summary>Opens a tournament; <paramref name="reload"/> re-reads it from disk even if it is already open.</summary>
     internal void Open(Guid id, bool reload = false)
     {
-        RefreshLibrary();
-        var item = Library.FirstOrDefault(entry => entry.Id == id);
-        if (item == null)
+        IsMenuOpen = false;
+        if (Current?.Id == id && !reload)
         {
             return;
         }
 
-        if (SelectedItem == item)
+        Current = null;
+        try
         {
-            if (reload || Current == null)
-            {
-                Current = null;
-                Load(item);
-            }
+            Current = new TournamentViewModel(_store.Load(id), _store, _dialogs, this);
         }
-        else
+        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
         {
-            SelectedItem = item;
+            _dialogs.ShowError("Couldn't open this tournament", ex.Message);
         }
+
+        RefreshRecent();
     }
 
     internal void OnDeleted()
     {
         Current = null;
-        SelectedItem = null;
-        RefreshLibrary();
-        SelectedItem = Library.FirstOrDefault();
+        RefreshRecent();
     }
 
     /// <summary>Called when the window closes, so the last edits are written.</summary>
@@ -295,24 +254,36 @@ public sealed partial class TournamentListItem(TournamentSummary summary) : Obse
 {
     public Guid Id { get; } = summary.Id;
 
-    [ObservableProperty]
-    public partial string Title { get; set; } = Display(summary.Title);
+    public string Title { get; } = string.IsNullOrWhiteSpace(summary.Title) ? "Untitled tournament" : summary.Title;
+
+    public string Details { get; } = Describe(summary);
+
+    public string EditedText { get; } = "Edited " + Relative(summary.UpdatedAt);
+
+    public bool IsLive { get; } = summary.DivisionsInProgress > 0;
 
     [ObservableProperty]
-    public partial string Details { get; set; } = Describe(summary);
-
-    internal void Update(TournamentSummary updated)
-    {
-        Title = Display(updated.Title);
-        Details = Describe(updated);
-    }
-
-    private static string Display(string title) => string.IsNullOrWhiteSpace(title) ? "Untitled tournament" : title;
+    public partial bool IsOpen { get; set; }
 
     private static string Describe(TournamentSummary summary)
     {
         var divisions = summary.DivisionCount == 1 ? "1 division" : $"{summary.DivisionCount} divisions";
-        var state = summary.DivisionsInProgress > 0 ? " · live" : summary.DivisionsFinished == summary.DivisionCount && summary.DivisionCount > 0 ? " · done" : string.Empty;
+        var state = summary.DivisionsInProgress > 0
+            ? " · auction in progress"
+            : summary.DivisionsFinished == summary.DivisionCount && summary.DivisionCount > 0 ? " · done" : string.Empty;
         return $"{summary.PlayerCount} players · {divisions}{state}";
+    }
+
+    private static string Relative(DateTimeOffset time)
+    {
+        var elapsed = DateTimeOffset.Now - time;
+        return elapsed.TotalMinutes switch
+        {
+            < 1 => "just now",
+            < 60 => $"{(int)elapsed.TotalMinutes} min ago",
+            < 60 * 24 => $"{(int)elapsed.TotalHours} h ago",
+            < 60 * 24 * 7 => time.LocalDateTime.ToString("dddd HH:mm"),
+            _ => time.LocalDateTime.ToString("d MMM yyyy"),
+        };
     }
 }

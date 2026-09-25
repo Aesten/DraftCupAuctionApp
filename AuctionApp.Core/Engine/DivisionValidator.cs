@@ -45,19 +45,6 @@ public static class DivisionValidator
             Error("Budgets can't be negative.");
         }
 
-        var otherCaptains = tournament.Divisions
-            .Where(other => other != division)
-            .SelectMany(other => other.Captains.Select(captain => (captain.Name, other)))
-            .ToList();
-        foreach (var captain in division.Captains)
-        {
-            var clash = otherCaptains.FirstOrDefault(entry => string.Equals(entry.Name.Trim(), captain.Name.Trim(), StringComparison.OrdinalIgnoreCase));
-            if (clash.other != null && !string.IsNullOrWhiteSpace(captain.Name))
-            {
-                Warning($"{captain.Name.Trim()} is also a captain in {clash.other.Name}.");
-            }
-        }
-
         var available = TournamentRules.AvailablePlayers(tournament, division);
         var needed = division.Captains.Count * division.TeamSize;
         if (tournament.Players.Count == 0)
@@ -73,9 +60,10 @@ public static class DivisionValidator
             Warning($"Only {available.Count} players are available for {needed} spots, so some teams won't be full.");
         }
 
-        if (available.Any(player => string.IsNullOrWhiteSpace(player.Name)))
+        var unnamed = tournament.Players.Count(player => string.IsNullOrWhiteSpace(player.Name));
+        if (unnamed > 0)
         {
-            Error("Some players in the pool have no name.");
+            Warning($"{unnamed} player(s) in the pool have no name and won't be auctioned.");
         }
 
         foreach (var other in tournament.Divisions.Where(other => other != division && other.Status == DivisionStatus.InProgress))

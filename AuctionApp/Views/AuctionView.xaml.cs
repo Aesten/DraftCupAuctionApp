@@ -27,6 +27,14 @@ public partial class AuctionView : UserControl
         }
     }
 
+    private void SkippedButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is AuctionViewModel viewModel)
+        {
+            new SkippedDialog { DataContext = viewModel, Owner = Window.GetWindow(this) }.ShowDialog();
+        }
+    }
+
     /// <summary>After picking the winning team, the price box gets the focus so the price can be typed straight away.</summary>
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {

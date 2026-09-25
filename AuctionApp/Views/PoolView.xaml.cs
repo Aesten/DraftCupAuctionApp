@@ -20,6 +20,26 @@ public partial class PoolView : UserControl
     public PoolView()
     {
         InitializeComponent();
+        DataContextChanged += (_, e) =>
+        {
+            if (e.OldValue is PoolViewModel oldModel)
+            {
+                oldModel.PlayerAdded -= ShowPlayer;
+            }
+
+            if (e.NewValue is PoolViewModel newModel)
+            {
+                newModel.PlayerAdded += ShowPlayer;
+            }
+        };
+    }
+
+    /// <summary>Selects a player that was just added (or already listed) so the auctioneer sees it, then back to the add box.</summary>
+    private void ShowPlayer(PoolPlayerRowViewModel row)
+    {
+        PlayersGrid.SelectedItem = row;
+        PlayersGrid.ScrollIntoView(row);
+        NewPlayerBox.Focus();
     }
 
     private PoolViewModel? ViewModel => DataContext as PoolViewModel;
@@ -28,7 +48,7 @@ public partial class PoolView : UserControl
 
     private void Handle_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (sender is FrameworkElement { DataContext: PoolPlayerRowViewModel row })
+        if (sender is FrameworkElement { DataContext: PoolPlayerRowViewModel row } && ViewModel is { IsAuctionOrder: true })
         {
             _dragCandidate = row;
             _dragStart = e.GetPosition(PlayersGrid);
@@ -165,7 +185,7 @@ public partial class PoolView : UserControl
         }
 
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
-        if (Keyboard.Modifiers == ModifierKeys.Alt && key is Key.Up or Key.Down && PlayersGrid.SelectedItem is PoolPlayerRowViewModel row)
+        if (Keyboard.Modifiers == ModifierKeys.Alt && key is Key.Up or Key.Down && viewModel.IsAuctionOrder && PlayersGrid.SelectedItem is PoolPlayerRowViewModel row)
         {
             PlayersGrid.CommitEdit(DataGridEditingUnit.Row, exitEditingMode: true);
             viewModel.MoveBy(row, key == Key.Up ? -1 : 1);

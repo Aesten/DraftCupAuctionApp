@@ -133,22 +133,10 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
 
         var available = TournamentRules.AvailablePlayers(Tournament, Division).Count;
         var picked = TournamentRules.PickedPlayerIds(Tournament, except: Division).Count;
-        var captains = Tournament.Players.Count - available - picked;
-        var details = new List<string>();
-        if (picked > 0)
-        {
-            details.Add($"{picked} already bought in other divisions");
-        }
-
-        if (captains > 0)
-        {
-            details.Add($"{captains} {(captains == 1 ? "is a captain" : "are captains")}");
-        }
-
         AvailabilityText = IsLocked
-            ? "The auction has started: players added to the pool later can be added to its queue from the auction screen."
+            ? "Players added to the pool from now on go to this auction's skipped list."
             : $"{available} of the {Tournament.Players.Count} players in the pool will be auctioned"
-              + (details.Count > 0 ? $" ({string.Join(", ", details)})." : ".");
+              + (picked > 0 ? $" ({picked} already bought in other divisions)." : ".");
         OnPropertyChanged(nameof(CaptainsHeader));
     }
 
@@ -193,6 +181,9 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
 
     [RelayCommand]
     private void ShowPool() => _owner.Owner.ShowPool();
+
+    [RelayCommand]
+    private void DeleteDivision() => _owner.Owner.RemoveDivision(_owner);
 
     [RelayCommand]
     private void StartAuction()

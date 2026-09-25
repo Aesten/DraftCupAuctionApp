@@ -158,3 +158,47 @@ public sealed class IndexToVisibilityConverter : IValueConverter
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
 }
+
+/// <summary>Each class's color, used to tint the frame around its icon (parameter: opacity, e.g. "0.25").</summary>
+public sealed class ClassBrushConverter : IValueConverter
+{
+    private static readonly Dictionary<string, Color> Colors = new()
+    {
+        [PlayerClasses.Infantry] = Color.FromRgb(0xE0, 0x5A, 0x4F),
+        [PlayerClasses.Archer] = Color.FromRgb(0x4C, 0xAF, 0x6A),
+        [PlayerClasses.Cavalry] = Color.FromRgb(0x4A, 0x8F, 0xE0),
+    };
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        var color = value is string code && Colors.TryGetValue(code, out var known) ? known : System.Windows.Media.Colors.Gray;
+        var opacity = double.TryParse(parameter?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var o) ? o : 1.0;
+        var brush = new SolidColorBrush(color) { Opacity = opacity };
+        brush.Freeze();
+        return brush;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
+}
+
+/// <summary>A padding proportional to a size (parameter: the fraction), e.g. the space around a class icon in its frame.</summary>
+public sealed class ProportionalThicknessConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        var fraction = double.TryParse(parameter?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var f) ? f : 0.15;
+        return value is double size ? new Thickness(Math.Round(size * fraction)) : new Thickness(0);
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
+}
+
+/// <summary>Maps a bool to 0/1, to bind a two-option segmented switch's selected index.</summary>
+public sealed class BoolToIndexConverter : IValueConverter
+{
+    public static BoolToIndexConverter Instance { get; } = new();
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) => value is true ? 1 : 0;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => value is 1;
+}

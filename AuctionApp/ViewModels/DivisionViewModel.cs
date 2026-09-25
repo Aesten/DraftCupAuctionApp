@@ -108,10 +108,16 @@ public sealed partial class DivisionViewModel : ObservableObject
     }
 
     /// <summary>The pool or another division changed, so the players available here may have too.</summary>
-    internal void OnPoolChanged()
+    internal void OnPoolChanged(bool clearUndo)
     {
         Setup.Refresh();
-        Auction.RefreshNewPlayers();
+        Auction.OnPoolChanged(clearUndo);
+        if (SelectedPage == TeamsPage)
+        {
+            Results.Refresh();
+        }
+
+        OnPropertyChanged(nameof(Details));
     }
 
     [RelayCommand]

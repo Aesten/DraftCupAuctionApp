@@ -10,12 +10,19 @@
              d:DesignWidth="1200"
              mc:Ignorable="d">
     <UserControl.Resources>
+        <controls:BindingProxy x:Key="Proxy" Data="{Binding}" />
+
         <DataTemplate x:Key="ClassHeader">
-            <Rectangle Width="16" Height="16" Fill="{DynamicResource TextFillColorPrimaryBrush}" ToolTip="{Binding Converter={StaticResource ClassName}}">
-                <Rectangle.OpacityMask>
-                    <ImageBrush ImageSource="{Binding Converter={StaticResource ClassIcon}}" Stretch="Uniform" />
-                </Rectangle.OpacityMask>
-            </Rectangle>
+            <Border Width="22" Height="22" Padding="3" CornerRadius="4" BorderThickness="1"
+                    Background="{Binding Converter={StaticResource ClassBrush}, ConverterParameter=0.28}"
+                    BorderBrush="{Binding Converter={StaticResource ClassBrush}, ConverterParameter=0.9}"
+                    ToolTip="{Binding Converter={StaticResource ClassName}}">
+                <Rectangle Fill="{DynamicResource TextFillColorPrimaryBrush}">
+                    <Rectangle.OpacityMask>
+                        <ImageBrush ImageSource="{Binding Converter={StaticResource ClassIcon}}" Stretch="Uniform" />
+                    </Rectangle.OpacityMask>
+                </Rectangle>
+            </Border>
         </DataTemplate>
 
         <Style x:Key="CellText" TargetType="TextBlock">
@@ -25,7 +32,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid Margin="32,16,32,20">
+    <Grid Margin="24,16,24,20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -39,10 +46,37 @@
             <StackPanel VerticalAlignment="Center">
                 <TextBlock Style="{StaticResource Strong}" FontSize="15" Text="{Binding Summary}" />
                 <TextBlock Margin="0,2,0,0" MaxWidth="720" HorizontalAlignment="Left" Style="{StaticResource Caption}"
-                           Text="Shared by every division: a division auctions whoever hasn't been bought by another one when it starts. Divisions that don't shuffle use this order: drag the handles or press Alt+↑/↓ to rearrange." />
+                           Text="Shared by every division: a division auctions whoever hasn't been bought by another one when it starts. Players added, edited or removed during an auction follow along: new ones go to its skipped list." />
+                <Grid Width="420" Margin="0,10,0,0" HorizontalAlignment="Left">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="NewPlayerBox" Text="{Binding NewPlayerText, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="A name, optionally followed by classes, e.g. Alice, inf cav. Press Enter to add.">
+                        <TextBox.InputBindings>
+                            <KeyBinding Key="Enter" Command="{Binding AddPlayerCommand}" />
+                        </TextBox.InputBindings>
+                    </TextBox>
+                    <TextBlock Margin="11,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" Text="Add a player (e.g. Alice, inf cav) and press Enter"
+                               Visibility="{Binding NewPlayerText, Converter={StaticResource EmptyToVisibility}}" />
+                    <Button Grid.Column="1" Margin="8,0,0,0" Command="{Binding AddPlayerCommand}" Style="{DynamicResource AccentButtonStyle}">
+                        <controls:IconLabel Glyph="&#xE710;" Text="Add" />
+                    </Button>
+                </Grid>
             </StackPanel>
-            <StackPanel Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal">
-                <Grid Width="220">
+            <StackPanel Grid.Column="1" VerticalAlignment="Bottom" Orientation="Horizontal">
+                <!-- Sorted by name unless the auction order is asked for, so the upcoming order isn't shown on stream by accident -->
+                <ListBox Margin="0,0,12,0" Style="{StaticResource SegmentedList}" SelectedIndex="{Binding IsAuctionOrder, Converter={x:Static controls:BoolToIndexConverter.Instance}}">
+                    <ListBoxItem ToolTip="Sorted by name">
+                        <TextBlock Text="A–Z" />
+                    </ListBoxItem>
+                    <ListBoxItem ToolTip="The order divisions that don't shuffle auction the players in. Drag the handles or press Alt+↑/↓ to rearrange.">
+                        <TextBlock Text="Auction order" />
+                    </ListBoxItem>
+                </ListBox>
+                <Grid Width="200">
                     <TextBox Padding="32,5,10,6" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
                     <TextBlock Margin="10,0,0,0" IsHitTestVisible="False" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                Style="{StaticResource Glyph}" Text="&#xE721;" />
@@ -56,7 +90,8 @@
                 <Button Margin="8,0,0,0" Command="{Binding RemovePlayersCommand}" CommandParameter="{Binding SelectedItems, ElementName=PlayersGrid}">
                     <controls:IconLabel Glyph="&#xE74D;" Text="Remove" />
                 </Button>
-                <Button Margin="8,0,0,0" Command="{Binding SortByNameCommand}" Style="{StaticResource SubtleButton}" ToolTip="Sort the pool by name">
+                <Button Margin="8,0,0,0" Command="{Binding SortPoolOrderByNameCommand}" Style="{StaticResource SubtleButton}" ToolTip="Put the auction order in alphabetical order"
+                        Visibility="{Binding IsAuctionOrder, Converter={StaticResource BoolToVisibility}}">
                     <TextBlock Style="{StaticResource Glyph}" Text="&#xE8CB;" />
                 </Button>
                 <Button Margin="4,0,0,0" Command="{Binding ExportPlayersCommand}" Style="{StaticResource SubtleButton}"
@@ -70,7 +105,7 @@
             <DataGrid x:Name="PlayersGrid"
                       AllowDrop="True"
                       AutoGenerateColumns="False"
-                      CanUserAddRows="True"
+                      CanUserAddRows="False"
                       CanUserDeleteRows="True"
                       CanUserReorderColumns="False"
                       CanUserResizeRows="False"
@@ -88,33 +123,25 @@
                       SelectionUnit="FullRow"
                       Unloaded="PlayersGrid_Unloaded">
                 <DataGrid.Columns>
-                    <DataGridTemplateColumn Width="34" CanUserResize="False">
+                    <DataGridTemplateColumn Width="34" CanUserResize="False"
+                                            Visibility="{Binding Data.IsAuctionOrder, Source={StaticResource Proxy}, Converter={StaticResource BoolToVisibility}}">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Border x:Name="Handle" Background="Transparent" Cursor="SizeAll" PreviewMouseLeftButtonDown="Handle_PreviewMouseLeftButtonDown"
                                         ToolTip="Drag to move">
                                     <TextBlock HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorTertiaryBrush}" Style="{StaticResource Glyph}" Text="&#xE76F;" />
                                 </Border>
-                                <DataTemplate.Triggers>
-                                    <DataTrigger Binding="{Binding Converter={x:Static controls:IsNewItemPlaceholderConverter.Instance}}" Value="True">
-                                        <Setter TargetName="Handle" Property="Visibility" Value="Hidden" />
-                                    </DataTrigger>
-                                </DataTemplate.Triggers>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTextColumn Width="44" Binding="{Binding Position}" ElementStyle="{StaticResource CellText}" Header="#" IsReadOnly="True" />
+                    <DataGridTextColumn Width="44" Binding="{Binding Position}" ElementStyle="{StaticResource CellText}" Header="#" IsReadOnly="True"
+                                        Visibility="{Binding Data.IsAuctionOrder, Source={StaticResource Proxy}, Converter={StaticResource BoolToVisibility}}" />
                     <DataGridTextColumn Width="*" MinWidth="160" Binding="{Binding Name}" ElementStyle="{StaticResource CellText}" Header="Player" />
 
                     <DataGridTemplateColumn Width="56" Header="inf" HeaderTemplate="{StaticResource ClassHeader}">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <CheckBox x:Name="Box" MinWidth="0" HorizontalAlignment="Center" IsChecked="{Binding Infantry, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataTemplate.Triggers>
-                                    <DataTrigger Binding="{Binding Converter={x:Static controls:IsNewItemPlaceholderConverter.Instance}}" Value="True">
-                                        <Setter TargetName="Box" Property="Visibility" Value="Hidden" />
-                                    </DataTrigger>
-                                </DataTemplate.Triggers>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -122,11 +149,6 @@
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <CheckBox x:Name="Box" MinWidth="0" HorizontalAlignment="Center" IsChecked="{Binding Archer, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataTemplate.Triggers>
-                                    <DataTrigger Binding="{Binding Converter={x:Static controls:IsNewItemPlaceholderConverter.Instance}}" Value="True">
-                                        <Setter TargetName="Box" Property="Visibility" Value="Hidden" />
-                                    </DataTrigger>
-                                </DataTemplate.Triggers>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -134,11 +156,6 @@
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <CheckBox x:Name="Box" MinWidth="0" HorizontalAlignment="Center" IsChecked="{Binding Cavalry, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataTemplate.Triggers>
-                                    <DataTrigger Binding="{Binding Converter={x:Static controls:IsNewItemPlaceholderConverter.Instance}}" Value="True">
-                                        <Setter TargetName="Box" Property="Visibility" Value="Hidden" />
-                                    </DataTrigger>
-                                </DataTemplate.Triggers>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -158,12 +175,6 @@
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding StatusKind}" Value="InAuction">
                                         <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource SystemFillColorCautionBrush}" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding StatusKind}" Value="Captain">
-                                        <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource SystemFillColorNeutralBrush}" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding Converter={x:Static controls:IsNewItemPlaceholderConverter.Instance}}" Value="True">
-                                        <Setter TargetName="Status" Property="Visibility" Value="Hidden" />
                                     </DataTrigger>
                                 </DataTemplate.Triggers>
                             </DataTemplate>

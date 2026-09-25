@@ -3,51 +3,19 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:controls="clr-namespace:AuctionApp.Controls"
              xmlns:views="clr-namespace:AuctionApp.Views"
              xmlns:vm="clr-namespace:AuctionApp.ViewModels"
              d:DataContext="{d:DesignInstance Type=vm:DivisionViewModel}"
              d:DesignHeight="800"
-             d:DesignWidth="1200"
+             d:DesignWidth="1400"
              mc:Ignorable="d">
+    <!-- The page switch (Configure / Auction / Teams) lives in the tournament's top bar. -->
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-
-        <!-- Division header: hidden in stream mode -->
-        <Grid Margin="40,16,32,0"
-              Visibility="{Binding DataContext.IsStreamMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBoolToVisibility}}">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <ListBox SelectedIndex="{Binding SelectedPage}" Style="{StaticResource SegmentedList}">
-                <ListBoxItem>
-                    <controls:IconLabel Glyph="&#xE713;" Text="Configure" />
-                </ListBoxItem>
-                <ListBoxItem>
-                    <controls:IconLabel Glyph="&#xE7C1;" Text="Auction" />
-                </ListBoxItem>
-                <ListBoxItem>
-                    <controls:IconLabel Glyph="&#xE902;" Text="Team compositions" />
-                </ListBoxItem>
-            </ListBox>
-            <TextBlock Grid.Column="1" Margin="16,0" VerticalAlignment="Center" Style="{StaticResource Caption}" FontSize="13" Text="{Binding Details}" />
-            <Button Grid.Column="2" Command="{Binding DeleteCommand}" Style="{StaticResource DangerButton}" ToolTip="Delete this division">
-                <controls:IconLabel Glyph="&#xE74D;" Text="Delete division" />
-            </Button>
-        </Grid>
-
-        <Grid Grid.Row="1">
-            <views:DivisionSetupView DataContext="{Binding Setup}"
-                                     Visibility="{Binding DataContext.SelectedPage, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource IndexToVisibility}, ConverterParameter=0}" />
-            <views:AuctionView DataContext="{Binding Auction}"
-                               Visibility="{Binding DataContext.SelectedPage, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource IndexToVisibility}, ConverterParameter=1}" />
-            <views:ResultsView DataContext="{Binding Results}"
-                               Visibility="{Binding DataContext.SelectedPage, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource IndexToVisibility}, ConverterParameter=2}" />
-        </Grid>
+        <views:DivisionSetupView DataContext="{Binding Setup}"
+                                 Visibility="{Binding DataContext.SelectedPage, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource IndexToVisibility}, ConverterParameter=0}" />
+        <views:AuctionView DataContext="{Binding Auction}"
+                           Visibility="{Binding DataContext.SelectedPage, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource IndexToVisibility}, ConverterParameter=1}" />
+        <views:ResultsView DataContext="{Binding Results}"
+                           Visibility="{Binding DataContext.SelectedPage, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource IndexToVisibility}, ConverterParameter=2}" />
     </Grid>
 </UserControl>

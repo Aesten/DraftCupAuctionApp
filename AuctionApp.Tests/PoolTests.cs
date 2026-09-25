@@ -35,18 +35,6 @@ public class PoolTests
     }
 
     [Fact]
-    public void Captains_AreNeverAuctioned()
-    {
-        var tournament = TestData.Tournament(players: 4);
-        tournament.Players.Add(new Player { Name = "division 1 captain 1" });
-
-        var engine = TestData.Start(tournament);
-
-        Assert.Equal(4, engine.Session.Queue.Count);
-        Assert.Equal(PoolStatusKind.Captain, TournamentRules.PoolStatuses(tournament)[tournament.Players[4].Id].Kind);
-    }
-
-    [Fact]
     public void PoolStatuses_TellWhereEveryoneIs()
     {
         var tournament = TestData.Tournament(players: 3);
@@ -61,22 +49,6 @@ public class PoolTests
 
         engine.Finish();
         Assert.Equal(PoolStatusKind.Available, TournamentRules.PoolStatuses(tournament)[tournament.Players[1].Id].Kind);
-    }
-
-    [Fact]
-    public void LatePoolAdditions_CanBeAddedToARunningAuction()
-    {
-        var tournament = TestData.Tournament(players: 3);
-        var engine = TestData.Start(tournament);
-        var late = new Player { Name = "Late signup" };
-        tournament.Players.Add(late);
-
-        var fresh = TournamentRules.NewlyAvailable(tournament, tournament.Divisions[0]);
-        Assert.Equal(late, Assert.Single(fresh));
-
-        engine.AddToQueue(fresh);
-        Assert.Equal("Late signup", engine.Session.Queue[^1].Name);
-        Assert.Empty(TournamentRules.NewlyAvailable(tournament, tournament.Divisions[0]));
     }
 
     [Fact]
@@ -97,17 +69,60 @@ public class PoolTests
     }
 
     [Fact]
-    public void RemovingAPoolPlayer_IsRefusedOnceBought()
+    public void LatePoolAdditions_GoToTheSkippedListOfRunningAuctions()
     {
         var tournament = TestData.Tournament(players: 3);
         var engine = TestData.Start(tournament);
-        engine.Sell(engine.Session.Teams[0].CaptainId, 1m);
+        tournament.Players.Add(new Player { Name = "Late signup" });
+        tournament.Players.Add(new Player { Name = "" });
 
-        Assert.NotNull(TournamentRules.CanRemovePlayer(tournament, tournament.Players[0]));
-        Assert.Null(TournamentRules.CanRemovePlayer(tournament, tournament.Players[1]));
+        var added = TournamentRules.AddNewPlayersToRunningAuctions(tournament);
+
+        Assert.Equal(1, added);
+        Assert.Equal("Late signup", Assert.Single(engine.Session.Skipped).Name);
+        Assert.Equal(0, TournamentRules.AddNewPlayersToRunningAuctions(tournament));
+        engine.BringBack(engine.Session.Skipped[0].Id);
+        Assert.Equal("Late signup", engine.Session.CurrentPlayer!.Name);
+    }
+
+    [Fact]
+    public void LatePoolAdditions_DoNotTouchFinishedOrUnstartedDivisions()
+    {
+        var tournament = TestData.Tournament(players: 3);
+        var engine = TestData.Start(tournament);
+        engine.Finish();
+        TestData.AddDivision(tournament);
+        tournament.Players.Add(new Player { Name = "Late signup" });
+
+        Assert.Equal(0, TournamentRules.AddNewPlayersToRunningAuctions(tournament));
+    }
+
+    [Fact]
+    public void RemovingASoldPlayer_TakesThemOffTheRosterAndRefunds()
+    {
+        var tournament = TestData.Tournament(players: 3);
+        var engine = TestData.Start(tournament);
+        var team = engine.Session.Teams[0];
+        engine.Sell(team.CaptainId, 3m);
+        var player = tournament.Players[0];
+
+        Assert.Single(TournamentRules.Sales(tournament, player));
+        TournamentRules.RemovePlayer(tournament, player);
+
+        Assert.Empty(team.Picks);
+        Assert.Equal(20m, team.Remaining);
+        Assert.Equal(2, tournament.Players.Count);
+    }
+
+    [Fact]
+    public void RemovingAQueuedPlayer_TakesThemOutOfTheAuction()
+    {
+        var tournament = TestData.Tournament(players: 3);
+        var engine = TestData.Start(tournament);
 
         TournamentRules.RemovePlayer(tournament, tournament.Players[1]);
-        Assert.Single(engine.Session.Queue);
+
+        Assert.Equal(2, engine.Session.Queue.Count);
     }
 
     [Fact]

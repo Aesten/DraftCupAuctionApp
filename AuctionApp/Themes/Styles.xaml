@@ -11,6 +11,8 @@
     <controls:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility" />
     <controls:ClassIconConverter x:Key="ClassIcon" />
     <controls:ClassNameConverter x:Key="ClassName" />
+    <controls:ClassBrushConverter x:Key="ClassBrush" />
+    <controls:ProportionalThicknessConverter x:Key="ProportionalThickness" />
     <controls:NotEmptyToVisibilityConverter x:Key="NotEmptyToVisibility" />
     <controls:NotEmptyToVisibilityConverter x:Key="EmptyToVisibility" Invert="True" />
     <controls:IndexToVisibilityConverter x:Key="IndexToVisibility" />
@@ -91,6 +93,8 @@
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
         <Setter Property="Padding" Value="6" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="HorizontalAlignment" Value="Left" />
         <Setter Property="VerticalAlignment" Value="Center" />
@@ -102,7 +106,9 @@
                             Background="{TemplateBinding Background}"
                             CornerRadius="4"
                             Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True" />
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          RecognizesAccessKey="True" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -226,17 +232,26 @@
         </Setter>
     </Style>
 
-    <!-- Class icons (black-on-transparent PNGs used as a mask, so they take the text color of the current theme). -->
+    <!--
+        Class icons: the black-on-transparent PNGs are used as a mask so they take the theme's text color, inside a
+        rounded frame tinted with the class color (infantry red, archer green, cavalry blue).
+    -->
     <DataTemplate x:Key="ClassIconTemplate">
-        <Rectangle Width="{Binding IconSize, RelativeSource={RelativeSource AncestorType=controls:ClassIconStrip}}"
-                   Height="{Binding IconSize, RelativeSource={RelativeSource AncestorType=controls:ClassIconStrip}}"
-                   Margin="0,0,4,0"
-                   Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=controls:ClassIconStrip}}"
-                   ToolTip="{Binding Converter={StaticResource ClassName}}">
-            <Rectangle.OpacityMask>
-                <ImageBrush ImageSource="{Binding Converter={StaticResource ClassIcon}}" Stretch="Uniform" />
-            </Rectangle.OpacityMask>
-        </Rectangle>
+        <Border Width="{Binding IconSize, RelativeSource={RelativeSource AncestorType=controls:ClassIconStrip}}"
+                Height="{Binding IconSize, RelativeSource={RelativeSource AncestorType=controls:ClassIconStrip}}"
+                Margin="0,0,3,0"
+                Background="{Binding Converter={StaticResource ClassBrush}, ConverterParameter=0.28}"
+                BorderBrush="{Binding Converter={StaticResource ClassBrush}, ConverterParameter=0.9}"
+                BorderThickness="1"
+                CornerRadius="4"
+                Padding="{Binding IconSize, RelativeSource={RelativeSource AncestorType=controls:ClassIconStrip}, Converter={StaticResource ProportionalThickness}, ConverterParameter=0.16}"
+                ToolTip="{Binding Converter={StaticResource ClassName}}">
+            <Rectangle Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=controls:ClassIconStrip}}">
+                <Rectangle.OpacityMask>
+                    <ImageBrush ImageSource="{Binding Converter={StaticResource ClassIcon}}" Stretch="Uniform" />
+                </Rectangle.OpacityMask>
+            </Rectangle>
+        </Border>
     </DataTemplate>
 
     <Style TargetType="controls:ClassIconStrip">

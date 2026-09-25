@@ -13,8 +13,9 @@ using CommunityToolkit.Mvvm.Input;
 namespace AuctionApp.ViewModels;
 
 /// <summary>
-/// The tournament's player pool, shared by every division. Its order matters for divisions that don't shuffle, so
-/// it can be rearranged by drag and drop. The rows edit the tournament directly and every change is saved.
+/// The tournament's player pool, shared by every division. It is shown sorted by name by default, so opening it
+/// during an auction doesn't reveal who comes next; the "auction order" view is where it gets rearranged for
+/// divisions that don't shuffle. Rows edit the tournament directly, running auctions follow, and every change is saved.
 /// </summary>
 public sealed partial class PoolViewModel : ObservableObject
 {
@@ -32,6 +33,7 @@ public sealed partial class PoolViewModel : ObservableObject
         Players.CollectionChanged += OnPlayersCollectionChanged;
         PlayersView = CollectionViewSource.GetDefaultView(Players);
         PlayersView.Filter = item => item is PoolPlayerRowViewModel row && MatchesSearch(row);
+        ApplySort();
         RefreshStatuses();
     }
 
@@ -51,8 +53,45 @@ public sealed partial class PoolViewModel : ObservableObject
     [ObservableProperty]
     public partial string Summary { get; set; } = string.Empty;
 
+    /// <summary>The "add a player" box: a name, optionally followed by classes ("Alice, inf cav").</summary>
+    [ObservableProperty]
+    public partial string NewPlayerText { get; set; } = string.Empty;
+
+    /// <summary>Raised after a player is added, so the view can select and show them.</summary>
+    public event Action<PoolPlayerRowViewModel>? PlayerAdded;
+
     [ObservableProperty]
     public partial bool IsFiltered { get; set; }
+
+    /// <summary>True: sorted by name (safe to show on stream). False: the pool's own order, which can be rearranged.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAuctionOrder))]
+    public partial bool IsSortedByName { get; set; } = true;
+
+    public bool IsAuctionOrder
+    {
+        get => !IsSortedByName;
+        set => IsSortedByName = !value;
+    }
+
+    partial void OnIsSortedByNameChanged(bool value) => ApplySort();
+
+    private void ApplySort()
+    {
+        EndPendingEdits();
+        PlayersView.SortDescriptions.Clear();
+        if (IsSortedByName)
+        {
+            PlayersView.SortDescriptions.Add(new SortDescription(nameof(PoolPlayerRowViewModel.Name), ListSortDirection.Ascending));
+        }
+    }
+
+    /// <summary>The pool tab was opened: back to the name order, so the auction order isn't shown by accident.</summary>
+    internal void OnShown()
+    {
+        IsSortedByName = true;
+        RefreshStatuses();
+    }
 
     partial void OnSearchTextChanged(string value)
     {
@@ -80,16 +119,10 @@ public sealed partial class PoolViewModel : ObservableObject
 
         var available = statuses.Values.Count(status => status.Kind == PoolStatusKind.Available);
         var picked = statuses.Values.Count(status => status.Kind == PoolStatusKind.Picked);
-        var captains = statuses.Values.Count(status => status.Kind == PoolStatusKind.Captain);
         var parts = new List<string> { $"{Players.Count} players", $"{available} available" };
         if (picked > 0)
         {
             parts.Add($"{picked} bought");
-        }
-
-        if (captains > 0)
-        {
-            parts.Add($"{captains} {(captains == 1 ? "is a captain" : "are captains")}");
         }
 
         Summary = string.Join("  ·  ", parts);
@@ -102,15 +135,16 @@ public sealed partial class PoolViewModel : ObservableObject
         Changed();
     }
 
-    private void Changed()
+    private void Changed(bool playersRemoved = false)
     {
         if (_syncing)
         {
             return;
         }
 
+        // The tournament first (running auctions pick up new players), then the statuses shown here.
+        _owner.PoolChanged(playersRemoved);
         RefreshStatuses();
-        _owner.PoolChanged();
     }
 
     private void OnPlayersCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -133,7 +167,8 @@ public sealed partial class PoolViewModel : ObservableObject
                     TournamentRules.RemovePlayer(Tournament, row.Model);
                 }
 
-                break;
+                Changed(playersRemoved: true);
+                return;
             case NotifyCollectionChangedAction.Move:
                 Tournament.Players.RemoveAt(e.OldStartingIndex);
                 Tournament.Players.Insert(e.NewStartingIndex, ((PoolPlayerRowViewModel)e.NewItems![0]!).Model);
@@ -160,17 +195,21 @@ public sealed partial class PoolViewModel : ObservableObject
         }
     }
 
-    /// <summary>Checked before the grid deletes rows with the Delete key: bought players can't be removed.</summary>
-    public bool ConfirmRemoval(IEnumerable<PoolPlayerRowViewModel> rows)
+    /// <summary>Asked before removing players; players already bought are taken off their team, which gets its money back.</summary>
+    public bool ConfirmRemoval(IReadOnlyCollection<PoolPlayerRowViewModel> rows)
     {
-        var problems = rows.Select(row => TournamentRules.CanRemovePlayer(Tournament, row.Model)).OfType<string>().ToList();
-        if (problems.Count > 0)
+        var sales = rows
+            .SelectMany(row => TournamentRules.Sales(Tournament, row.Model).Select(sale => $"• {row.Name}: bought by {sale}"))
+            .ToList();
+        if (sales.Count == 0)
         {
-            Dialogs.ShowError("Can't remove these players", string.Join("\n", problems));
-            return false;
+            return true;
         }
 
-        return true;
+        return Dialogs.Ask(
+            rows.Count == 1 ? $"Remove {rows.First().Name}?" : $"Remove {rows.Count} players?",
+            string.Join("\n", sales) + "\n\nThey will be taken off their team, and the team gets the money back.",
+            "Remove") == DialogChoice.Primary;
     }
 
     [RelayCommand]
@@ -183,10 +222,43 @@ public sealed partial class PoolViewModel : ObservableObject
         }
 
         EndPendingEdits();
-        foreach (var row in rows)
+        _syncing = true;
+        try
         {
-            Players.Remove(row);
+            foreach (var row in rows)
+            {
+                Players.Remove(row);
+            }
         }
+        finally
+        {
+            _syncing = false;
+        }
+
+        Changed(playersRemoved: true);
+    }
+
+    [RelayCommand]
+    private void AddPlayer()
+    {
+        if (RosterParser.Parse(NewPlayerText).FirstOrDefault() is not { } parsed)
+        {
+            return;
+        }
+
+        var existing = Players.FirstOrDefault(row => string.Equals(row.Name.Trim(), parsed.Name, StringComparison.CurrentCultureIgnoreCase));
+        if (existing != null
+            && Dialogs.Ask($"{parsed.Name} is already in the pool", "Add another player with the same name?", "Add anyway") != DialogChoice.Primary)
+        {
+            PlayerAdded?.Invoke(existing);
+            return;
+        }
+
+        EndPendingEdits();
+        var row = new PoolPlayerRowViewModel(new Player { Name = parsed.Name, Classes = parsed.Classes });
+        Players.Add(row);
+        NewPlayerText = string.Empty;
+        PlayerAdded?.Invoke(row);
     }
 
     [RelayCommand]
@@ -270,9 +342,9 @@ public sealed partial class PoolViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void SortByName()
+    private void SortPoolOrderByName()
     {
-        if (Dialogs.Ask("Sort the pool by name?", "This replaces the current order of the pool, which divisions that don't shuffle use as their auction order.", "Sort") != DialogChoice.Primary)
+        if (Dialogs.Ask("Put the auction order in alphabetical order?", "This replaces the current order of the pool, which divisions that don't shuffle use as their auction order.", "Sort") != DialogChoice.Primary)
         {
             return;
         }
@@ -375,7 +447,6 @@ public sealed partial class PoolPlayerRowViewModel : ObservableObject
         {
             PoolStatusKind.Picked => $"{status.Division!.Name} · {status.CaptainName} · {Money.Format(status.Price)}",
             PoolStatusKind.InAuction => $"In the {status.Division!.Name} auction",
-            PoolStatusKind.Captain => $"Captain in {status.Division!.Name}",
             _ => "Available",
         };
     }

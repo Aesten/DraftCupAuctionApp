@@ -7,7 +7,7 @@
              xmlns:vm="clr-namespace:AuctionApp.ViewModels"
              d:DataContext="{d:DesignInstance Type=vm:TournamentViewModel}"
              d:DesignHeight="800"
-             d:DesignWidth="1200"
+             d:DesignWidth="1400"
              mc:Ignorable="d">
     <Grid>
         <Grid.RowDefinitions>
@@ -16,70 +16,76 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- Header: hidden in stream mode -->
-        <StackPanel Visibility="{Binding DataContext.IsStreamMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBoolToVisibility}}">
-            <Grid Margin="40,20,32,0">
+        <!-- One compact bar, so the auction gets almost the whole window -->
+        <Border BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
+            <Grid Margin="8,6,16,0">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <StackPanel>
-                    <!-- The title is edited in place. -->
-                    <TextBox x:Name="TitleBox" Margin="-6,0,0,0" Padding="4,0" HorizontalAlignment="Left" MinWidth="200"
-                             Background="Transparent" BorderThickness="0" FontSize="28" FontWeight="Bold"
-                             Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}" ToolTip="Click to rename the tournament" />
-                    <TextBlock Margin="0,2,0,0" Style="{StaticResource Caption}" FontSize="13" Text="{Binding Summary}" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal">
-                    <Button Command="{Binding ExportCommand}"
-                            ToolTip="Save the whole tournament to a file, to run a division on another PC. Import it back afterwards to merge the results.">
-                        <controls:IconLabel Glyph="&#xEDE1;" Text="Export…" />
-                    </Button>
-                    <Button Margin="4,0,0,0" Command="{Binding DuplicateCommand}" Style="{StaticResource SubtleButton}"
-                            ToolTip="New tournament with the same pool and divisions, without any auction results">
-                        <TextBlock Style="{StaticResource Glyph}" Text="&#xE8C8;" />
-                    </Button>
-                    <Button Margin="4,0,0,0" Command="{Binding DeleteCommand}" Style="{StaticResource DangerButton}" ToolTip="Delete this tournament">
-                        <TextBlock Style="{StaticResource Glyph}" Text="&#xE74D;" />
-                    </Button>
-                </StackPanel>
-            </Grid>
 
-            <!-- Tabs: the pool, then one per division -->
-            <StackPanel Margin="28,12,32,0" Orientation="Horizontal">
-                <ListBox ItemsSource="{Binding Tabs}" SelectedItem="{Binding SelectedTab}" Style="{StaticResource TabStrip}">
-                    <ListBox.Resources>
-                        <DataTemplate DataType="{x:Type vm:PoolViewModel}">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Style="{StaticResource Glyph}" Text="&#xE716;" />
-                                <TextBlock Margin="8,0,0,0" Text="{Binding Header}" />
-                            </StackPanel>
-                        </DataTemplate>
-                        <DataTemplate DataType="{x:Type vm:DivisionViewModel}">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Style="{StaticResource Glyph}" Text="&#xE8FD;" />
-                                <TextBlock Margin="8,0,0,0" Text="{Binding Header}" />
-                                <Ellipse x:Name="Live" Width="7" Height="7" Margin="8,0,0,0" VerticalAlignment="Center"
-                                         Fill="{DynamicResource SystemFillColorSuccessBrush}" ToolTip="Auction in progress" Visibility="Collapsed" />
-                            </StackPanel>
-                            <DataTemplate.Triggers>
-                                <DataTrigger Binding="{Binding Status}" Value="InProgress">
-                                    <Setter TargetName="Live" Property="Visibility" Value="Visible" />
-                                </DataTrigger>
-                            </DataTemplate.Triggers>
-                        </DataTemplate>
-                    </ListBox.Resources>
-                </ListBox>
-                <Button Margin="4,0,0,6" VerticalAlignment="Center" Command="{Binding AddDivisionCommand}" Style="{StaticResource SubtleButton}"
-                        ToolTip="Add a division (another auction sharing the same player pool)">
-                    <controls:IconLabel Glyph="&#xE710;" Text="Division" />
+                <Button Margin="0,0,0,6" Padding="10" VerticalAlignment="Center"
+                        Command="{Binding DataContext.ToggleMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                        Style="{StaticResource SubtleButton}" ToolTip="Menu: tournaments, import, export">
+                    <TextBlock FontSize="16" Style="{StaticResource Glyph}" Text="&#xE700;" />
                 </Button>
-            </StackPanel>
-            <Border Height="1" Background="{DynamicResource DividerStrokeColorDefaultBrush}" />
-        </StackPanel>
+
+                <!-- The title is edited in place -->
+                <TextBox Grid.Column="1" MinWidth="120" MaxWidth="360" Margin="4,0,12,6" Padding="4,2" VerticalAlignment="Center"
+                         Background="Transparent" BorderThickness="0" FontSize="18" FontWeight="Bold"
+                         Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}" ToolTip="Tournament name (click to rename)" />
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <ListBox ItemsSource="{Binding Tabs}" SelectedItem="{Binding SelectedTab}" Style="{StaticResource TabStrip}">
+                        <ListBox.Resources>
+                            <DataTemplate DataType="{x:Type vm:PoolViewModel}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE716;" />
+                                    <TextBlock Margin="8,0,0,0" Text="{Binding Header}" />
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate DataType="{x:Type vm:DivisionViewModel}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE8FD;" />
+                                    <TextBlock Margin="8,0,0,0" Text="{Binding Header}" />
+                                    <Ellipse x:Name="Live" Width="7" Height="7" Margin="8,0,0,0" VerticalAlignment="Center"
+                                             Fill="{DynamicResource SystemFillColorSuccessBrush}" ToolTip="Auction in progress" Visibility="Collapsed" />
+                                </StackPanel>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Status}" Value="InProgress">
+                                        <Setter TargetName="Live" Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ListBox.Resources>
+                    </ListBox>
+                    <Button Margin="2,0,0,6" VerticalAlignment="Center" Command="{Binding AddDivisionCommand}" Style="{StaticResource SubtleButton}"
+                            ToolTip="Add a division (another auction sharing the same player pool)">
+                        <TextBlock Style="{StaticResource Glyph}" Text="&#xE710;" />
+                    </Button>
+                </StackPanel>
+
+                <!-- The selected division's pages -->
+                <ListBox Grid.Column="3" Margin="0,0,0,6" VerticalAlignment="Center"
+                         SelectedIndex="{Binding SelectedDivision.SelectedPage}" Style="{StaticResource SegmentedList}"
+                         Visibility="{Binding SelectedDivision, Converter={StaticResource NotEmptyToVisibility}}">
+                    <ListBoxItem>
+                        <controls:IconLabel Glyph="&#xE713;" Text="Configure" />
+                    </ListBoxItem>
+                    <ListBoxItem>
+                        <controls:IconLabel Glyph="&#xE7C1;" Text="Auction" />
+                    </ListBoxItem>
+                    <ListBoxItem>
+                        <controls:IconLabel Glyph="&#xE902;" Text="Teams" />
+                    </ListBoxItem>
+                </ListBox>
+            </Grid>
+        </Border>
 
         <!-- Save problems must never go unnoticed. -->
-        <Border Grid.Row="1" Margin="32,12,32,0" Padding="12,8" CornerRadius="4"
+        <Border Grid.Row="1" Margin="16,8,16,0" Padding="12,8" CornerRadius="4"
                 Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}"
                 Visibility="{Binding SaveError, Converter={StaticResource NotEmptyToVisibility}}">
             <StackPanel Orientation="Horizontal">

@@ -31,7 +31,7 @@ public sealed partial class TournamentViewModel : ObservableObject
         _saveTimer.Tick += (_, _) => SaveNow();
 
         // A merged copy may have sold a player another auction here still has in its queue.
-        if (TournamentRules.DropPlayersTakenElsewhere(tournament).Count > 0)
+        if (TournamentRules.DropPlayersTakenElsewhere(tournament).Count > 0 | TournamentRules.AddNewPlayersToRunningAuctions(tournament) > 0)
         {
             _dirty = true;
         }
@@ -49,6 +49,7 @@ public sealed partial class TournamentViewModel : ObservableObject
         SelectedTab = Divisions.FirstOrDefault(d => d.Division.Status == DivisionStatus.InProgress)
             ?? (object?)Divisions.FirstOrDefault(d => d.Division.Status == DivisionStatus.NotStarted && tournament.Players.Count > 0)
             ?? Pool;
+        OnSelectedTabChanged(SelectedTab);
     }
 
     public Guid Id => Tournament.Id;
@@ -69,7 +70,20 @@ public sealed partial class TournamentViewModel : ObservableObject
     public ObservableCollection<object> Tabs { get; } = [];
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedDivision))]
     public partial object? SelectedTab { get; set; }
+
+    /// <summary>The selected division, if a division tab is selected (its page switch shows in the top bar).</summary>
+    public DivisionViewModel? SelectedDivision => SelectedTab as DivisionViewModel;
+
+    partial void OnSelectedTabChanged(object? value)
+    {
+        // The pool is shown sorted by name by default, so opening it mid-auction doesn't reveal the upcoming order.
+        if (value is PoolViewModel pool)
+        {
+            pool.OnShown();
+        }
+    }
 
     /// <summary>Set when the last save failed (disk full, folder not writable...). Shown as a banner.</summary>
     [ObservableProperty]
@@ -102,14 +116,28 @@ public sealed partial class TournamentViewModel : ObservableObject
 
     // Change tracking
 
-    /// <summary>The title or the pool changed.</summary>
-    internal void PoolChanged()
+    /// <summary>
+    /// The title or the pool changed. Running auctions follow along: new players land in their skipped list,
+    /// edits show up on the team cards, removed players leave (refunded if they were sold).
+    /// </summary>
+    internal void PoolChanged(bool playersRemoved = false)
     {
         Tournament.TouchPool();
-        MarkDirty();
+        var affectsAuctions = TournamentRules.AddNewPlayersToRunningAuctions(Tournament) > 0 || playersRemoved;
+        if (affectsAuctions)
+        {
+            // Saved right away: it may change a running auction.
+            _dirty = true;
+            SaveNow();
+        }
+        else
+        {
+            MarkDirty();
+        }
+
         foreach (var division in Divisions)
         {
-            division.OnPoolChanged();
+            division.OnPoolChanged(clearUndo: playersRemoved);
         }
 
         OnPropertyChanged(nameof(Summary));
@@ -132,12 +160,13 @@ public sealed partial class TournamentViewModel : ObservableObject
         division.Touch();
         Tournament.UpdatedAt = division.UpdatedAt;
         DropPlayersTakenElsewhere();
+        TournamentRules.AddNewPlayersToRunningAuctions(Tournament);
         _dirty = true;
         SaveNow();
         Pool.RefreshStatuses();
-        foreach (var other in Divisions)
+        foreach (var other in Divisions.Where(other => other.Division != division))
         {
-            other.OnPoolChanged();
+            other.OnPoolChanged(clearUndo: false);
         }
     }
 
@@ -176,7 +205,6 @@ public sealed partial class TournamentViewModel : ObservableObject
             Store.Save(Tournament);
             _dirty = false;
             SaveError = null;
-            _main.UpdateListItem(Tournament);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -238,10 +266,12 @@ public sealed partial class TournamentViewModel : ObservableObject
         Tournament.UpdatedAt = DateTimeOffset.Now;
         _dirty = true;
         SaveNow();
+        TournamentRules.AddNewPlayersToRunningAuctions(Tournament);
+        SaveNow();
         Pool.RefreshStatuses();
         foreach (var division in Divisions)
         {
-            division.OnPoolChanged();
+            division.OnPoolChanged(clearUndo: false);
         }
 
         OnPropertyChanged(nameof(Summary));
@@ -268,6 +298,7 @@ public sealed partial class TournamentViewModel : ObservableObject
     [RelayCommand]
     private void Export()
     {
+        _main.IsMenuOpen = false;
         SaveNow();
         var path = Dialogs.PickFileToSave(
             "Export the tournament",

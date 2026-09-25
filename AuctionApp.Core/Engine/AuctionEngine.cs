@@ -171,22 +171,6 @@ public sealed class AuctionEngine
         Log(ActivityKind.Returned, $"{pick.Player.Name} taken back from {team.CaptainName} (refunded {Money.Format(pick.Price)})");
     }
 
-    /// <summary>Adds pool players that became available after the auction started to the end of the queue.</summary>
-    public void AddToQueue(IReadOnlyCollection<Player> players)
-    {
-        EnsureRunning();
-        var known = Session.AllPlayers().Select(p => p.Id).ToHashSet();
-        var added = players.Where(player => !known.Contains(player.Id)).Select(SessionPlayer.From).ToList();
-        if (added.Count == 0)
-        {
-            return;
-        }
-
-        Shuffle(added);
-        Session.Queue.AddRange(added);
-        Log(ActivityKind.Info, $"{added.Count} new player(s) added to the queue");
-    }
-
     /// <summary>Closes the auction. Whoever wasn't sold is listed as unsold and stays available to other divisions.</summary>
     public void Finish()
     {
