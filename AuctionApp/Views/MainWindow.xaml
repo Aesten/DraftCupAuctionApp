@@ -58,19 +58,22 @@
             </DataTemplate.Triggers>
         </DataTemplate>
 
-        <!-- Light / dark: follow Windows, or force one (remembered on this PC) -->
+        <!-- Light / dark: starts like Windows, a choice is remembered on this PC -->
         <DataTemplate x:Key="ThemePicker">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Margin="0,0,10,0" VerticalAlignment="Center" Style="{StaticResource Caption}" Text="Theme" />
                 <ListBox SelectedIndex="{Binding DataContext.ThemeIndex, RelativeSource={RelativeSource AncestorType=Window}}" Style="{StaticResource SegmentedList}">
-                    <ListBoxItem ToolTip="Light or dark, like Windows">
-                        <TextBlock Text="Windows" />
+                    <ListBoxItem>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Glyph}" Text="&#xE706;" />
+                            <TextBlock Margin="6,0,0,0" Text="Light" />
+                        </StackPanel>
                     </ListBoxItem>
                     <ListBoxItem>
-                        <TextBlock Text="Light" />
-                    </ListBoxItem>
-                    <ListBoxItem>
-                        <TextBlock Text="Dark" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Glyph}" Text="&#xE708;" />
+                            <TextBlock Margin="6,0,0,0" Text="Dark" />
+                        </StackPanel>
                     </ListBoxItem>
                 </ListBox>
             </StackPanel>

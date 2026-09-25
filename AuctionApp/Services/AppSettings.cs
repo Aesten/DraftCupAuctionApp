@@ -1,13 +1,14 @@
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Windows;
+using Microsoft.Win32;
 
 namespace AuctionApp.Services;
 
 /// <summary>Preferences of this PC (not of a tournament), saved as settings.json in the app's data folder.</summary>
 public sealed class AppSettings
 {
-    public const string SystemTheme = "System";
     public const string LightTheme = "Light";
     public const string DarkTheme = "Dark";
 
@@ -15,8 +16,12 @@ public sealed class AppSettings
 
     private string _path = string.Empty;
 
-    /// <summary>"System" (follow Windows), "Light" or "Dark".</summary>
-    public string Theme { get; set; } = SystemTheme;
+    /// <summary>"Light" or "Dark" once chosen; empty until then, meaning: like Windows.</summary>
+    public string Theme { get; set; } = string.Empty;
+
+    /// <summary>The theme in use: the one chosen, or the one Windows uses for apps.</summary>
+    [JsonIgnore]
+    public bool IsDark => Theme == DarkTheme || Theme.Length == 0 && !WindowsUsesLightTheme();
 
     public static AppSettings Load(string folder)
     {
@@ -32,9 +37,9 @@ public sealed class AppSettings
         }
 
         settings._path = path;
-        if (settings.Theme is not (SystemTheme or LightTheme or DarkTheme))
+        if (settings.Theme is not (LightTheme or DarkTheme))
         {
-            settings.Theme = SystemTheme;
+            settings.Theme = string.Empty;
         }
 
         return settings;
@@ -52,7 +57,10 @@ public sealed class AppSettings
         }
     }
 
-    /// <summary>Switches the whole app to the theme, live (WPF's built-in Fluent theme in light or dark).</summary>
+    /// <summary>
+    /// Switches the whole app to the theme, live (WPF's built-in Fluent theme in light or dark). Until a theme is
+    /// chosen, the app follows Windows, including when Windows switches while it's open.
+    /// </summary>
     public void ApplyTheme()
     {
         if (Application.Current is not { } app)
@@ -68,5 +76,23 @@ public sealed class AppSettings
             _ => ThemeMode.System,
         };
 #pragma warning restore WPF0001
+    }
+
+    /// <summary>
+    /// Windows' "app mode" (Settings › Personalization › Colors), read the same way WPF does for ThemeMode.System:
+    /// the apps setting, else the system one, else dark.
+    /// </summary>
+    public static bool WindowsUsesLightTheme()
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+            var value = key?.GetValue("AppsUseLightTheme") as int? ?? key?.GetValue("SystemUsesLightTheme") as int?;
+            return value is not null and not 0;
+        }
+        catch (Exception ex) when (ex is System.Security.SecurityException or IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
     }
 }

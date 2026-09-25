@@ -52,6 +52,13 @@ public partial class App : Application
         settings.ApplyTheme();
 
         var viewModel = new MainViewModel(store, new DialogService(), settings);
+        Microsoft.Win32.SystemEvents.UserPreferenceChanged += (_, args) =>
+        {
+            if (args.Category == Microsoft.Win32.UserPreferenceCategory.General)
+            {
+                Dispatcher.BeginInvoke(viewModel.OnWindowsThemeChanged);
+            }
+        };
         var window = new MainWindow { DataContext = viewModel };
         MainWindow = window;
         window.Show();

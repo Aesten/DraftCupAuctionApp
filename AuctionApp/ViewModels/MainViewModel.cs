@@ -29,15 +29,13 @@ public sealed partial class MainViewModel : ObservableObject
         RefreshRecent();
     }
 
-    private static readonly string[] Themes = [AppSettings.SystemTheme, AppSettings.LightTheme, AppSettings.DarkTheme];
-
-    /// <summary>0: follow Windows, 1: light, 2: dark. Applied straight away and remembered on this PC.</summary>
+    /// <summary>0: light, 1: dark. Starts like Windows; a choice is applied straight away and remembered on this PC.</summary>
     public int ThemeIndex
     {
-        get => Math.Max(0, Array.IndexOf(Themes, _settings.Theme));
+        get => _settings.IsDark ? 1 : 0;
         set
         {
-            var theme = Themes[Math.Clamp(value, 0, Themes.Length - 1)];
+            var theme = value == 1 ? AppSettings.DarkTheme : AppSettings.LightTheme;
             if (theme == _settings.Theme)
             {
                 return;
@@ -49,6 +47,9 @@ public sealed partial class MainViewModel : ObservableObject
             OnPropertyChanged();
         }
     }
+
+    /// <summary>Windows switched between light and dark: the toggle follows while no theme has been chosen.</summary>
+    internal void OnWindowsThemeChanged() => OnPropertyChanged(nameof(ThemeIndex));
 
     /// <summary>The tournaments saved on this computer, most recently edited first.</summary>
     public ObservableCollection<TournamentListItem> Recent { get; } = [];
