@@ -84,7 +84,7 @@ public sealed class Tournament
             ShuffleOrder = division.ShuffleOrder,
             UpcomingShown = division.UpcomingShown,
             HalfBudgetCapAtStart = division.HalfBudgetCapAtStart,
-            Captains = division.Captains.Select(captain => new Captain { Name = captain.Name, Budget = captain.Budget }).ToList(),
+            Captains = division.Captains.Select(captain => new Captain { Name = captain.Name, Budget = captain.Budget, Class = captain.Class }).ToList(),
         }).ToList(),
     };
 }
@@ -137,6 +137,9 @@ public sealed class Division
 
     public void Touch() => UpdatedAt = DateTimeOffset.Now;
 
+    /// <summary>The class of the captain leading a team, or empty.</summary>
+    public string CaptainClass(Guid captainId) => Captains.FirstOrDefault(captain => captain.Id == captainId)?.Class ?? string.Empty;
+
     public void Normalize()
     {
         Name ??= string.Empty;
@@ -144,6 +147,7 @@ public sealed class Division
         foreach (var captain in Captains)
         {
             captain.Name ??= string.Empty;
+            captain.Class ??= string.Empty;
         }
 
         UpcomingShown = Math.Clamp(UpcomingShown, 0, 10);
@@ -166,6 +170,9 @@ public sealed class Captain
 
     /// <summary>Each captain has their own budget, balanced against their skill.</summary>
     public decimal Budget { get; set; } = 20m;
+
+    /// <summary>The single class the captain signed up with (a <see cref="PlayerClasses"/> code), or empty.</summary>
+    public string Class { get; set; } = string.Empty;
 }
 
 public static class PlayerClasses

@@ -113,6 +113,13 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
         _owner.SettingsChanged();
     }
 
+    /// <summary>A captain's class changed: shown on the team cards straight away, even during the auction.</summary>
+    internal void CaptainClassChanged()
+    {
+        _owner.SettingsChanged();
+        _owner.Auction.OnPoolChanged(clearUndo: false);
+    }
+
     /// <summary>Re-checks the division, e.g. after the pool or another division changed.</summary>
     internal void Refresh()
     {
@@ -265,6 +272,40 @@ public sealed partial class CaptainRowViewModel : ObservableObject
             OnPropertyChanged();
             _owner.Changed();
         }
+    }
+
+    /// <summary>Captains sign up with a single class; clicking the selected one clears it. Editable during the auction too.</summary>
+    public bool IsInfantry
+    {
+        get => Model.Class == PlayerClasses.Infantry;
+        set => SetClass(PlayerClasses.Infantry, value);
+    }
+
+    public bool IsArcher
+    {
+        get => Model.Class == PlayerClasses.Archer;
+        set => SetClass(PlayerClasses.Archer, value);
+    }
+
+    public bool IsCavalry
+    {
+        get => Model.Class == PlayerClasses.Cavalry;
+        set => SetClass(PlayerClasses.Cavalry, value);
+    }
+
+    private void SetClass(string code, bool on)
+    {
+        var updated = on ? code : Model.Class == code ? string.Empty : Model.Class;
+        if (updated == Model.Class)
+        {
+            return;
+        }
+
+        Model.Class = updated;
+        OnPropertyChanged(nameof(IsInfantry));
+        OnPropertyChanged(nameof(IsArcher));
+        OnPropertyChanged(nameof(IsCavalry));
+        _owner.CaptainClassChanged();
     }
 
     [ObservableProperty]

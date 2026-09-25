@@ -30,44 +30,12 @@
     <Grid MaxWidth="1180" Margin="24,20,24,20" HorizontalAlignment="Stretch">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Adding players -->
-        <Grid Margin="0,0,0,14">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <StackPanel>
-                <TextBlock Style="{StaticResource Strong}" FontSize="16" Text="{Binding Summary}" />
-                <TextBlock Margin="0,2,0,0" Style="{StaticResource Caption}"
-                           Text="Shared by every division. Players added, edited or removed during an auction follow along; new ones go to its skipped list." />
-            </StackPanel>
-            <StackPanel Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal">
-                <Grid Width="340">
-                    <TextBox x:Name="NewPlayerBox" Text="{Binding NewPlayerText, UpdateSourceTrigger=PropertyChanged}"
-                             ToolTip="A name, optionally followed by classes, e.g. Alice, inf cav. Press Enter to add.">
-                        <TextBox.InputBindings>
-                            <KeyBinding Key="Enter" Command="{Binding AddPlayerCommand}" />
-                        </TextBox.InputBindings>
-                    </TextBox>
-                    <TextBlock Margin="11,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
-                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" Text="Add a player (e.g. Alice, inf cav)"
-                               Visibility="{Binding NewPlayerText, Converter={StaticResource EmptyToVisibility}}" />
-                </Grid>
-                <Button Margin="6,0,0,0" Command="{Binding AddPlayerCommand}" Style="{DynamicResource AccentButtonStyle}">
-                    <controls:IconLabel Glyph="&#xE710;" Text="Add" />
-                </Button>
-                <Button Margin="6,0,0,0" Command="{Binding PastePlayersCommand}" ToolTip="Add many players at once from a spreadsheet, a form or a chat message">
-                    <controls:IconLabel Glyph="&#xE77F;" Text="Paste a list…" />
-                </Button>
-            </StackPanel>
-        </Grid>
-
         <!-- Finding players -->
-        <Grid Grid.Row="1" Margin="0,0,0,10">
+        <Grid Margin="0,0,0,10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -99,8 +67,6 @@
                         <TextBlock Text="Unavailable" />
                     </ListBoxItem>
                 </ListBox>
-
-                <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" FontFamily="Cascadia Mono, Consolas" Style="{StaticResource Caption}" FontSize="13" Text="{Binding ShownCount}" />
             </StackPanel>
 
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal">
@@ -128,84 +94,141 @@
             </StackPanel>
         </Grid>
 
-        <Border Grid.Row="2" Padding="6" Style="{StaticResource Card}">
-            <DataGrid x:Name="PlayersGrid"
-                      AllowDrop="True"
-                      AutoGenerateColumns="False"
-                      Background="Transparent"
-                      CanUserAddRows="False"
-                      CanUserDeleteRows="True"
-                      CanUserReorderColumns="False"
-                      CanUserResizeRows="False"
-                      CanUserSortColumns="False"
-                      DragLeave="PlayersGrid_DragLeave"
-                      DragOver="PlayersGrid_DragOver"
-                      Drop="PlayersGrid_Drop"
-                      GridLinesVisibility="Horizontal"
-                      HeadersVisibility="Column"
-                      IsKeyboardFocusWithinChanged="PlayersGrid_IsKeyboardFocusWithinChanged"
-                      ItemsSource="{Binding PlayersView}"
-                      PreviewKeyDown="PlayersGrid_PreviewKeyDown"
-                      PreviewMouseLeftButtonUp="PlayersGrid_PreviewMouseLeftButtonUp"
-                      PreviewMouseMove="PlayersGrid_PreviewMouseMove"
-                      RowHeight="44"
-                      SelectionMode="Extended"
-                      SelectionUnit="FullRow"
-                      Unloaded="PlayersGrid_Unloaded">
-                <DataGrid.Resources>
-                    <!-- A light accent wash instead of the solid accent, so the class icons stay readable on the selected row -->
-                    <SolidColorBrush x:Key="DataGridRowSelectedBackgroundThemeBrush" Opacity="0.22" Color="{DynamicResource {x:Static SystemColors.AccentColorKey}}" />
-                    <SolidColorBrush x:Key="DataGridRowSelectedForegroundThemeBrush" Color="{DynamicResource TextFillColorPrimary}" />
-                </DataGrid.Resources>
-                <DataGrid.Columns>
-                    <DataGridTemplateColumn Width="34" CanUserResize="False"
-                                            Visibility="{Binding Data.IsAuctionOrder, Source={StaticResource Proxy}, Converter={StaticResource BoolToVisibility}}">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <Border Background="Transparent" Cursor="SizeAll" PreviewMouseLeftButtonDown="Handle_PreviewMouseLeftButtonDown" ToolTip="Drag to move">
-                                    <TextBlock HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorTertiaryBrush}" Style="{StaticResource Glyph}" Text="&#xE76F;" />
-                                </Border>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTextColumn Width="48" Binding="{Binding Position}" ElementStyle="{StaticResource CellText}" Header="#" IsReadOnly="True"
-                                        Visibility="{Binding Data.IsAuctionOrder, Source={StaticResource Proxy}, Converter={StaticResource BoolToVisibility}}" />
-                    <DataGridTextColumn Width="*" MinWidth="200" Binding="{Binding Name}" ElementStyle="{StaticResource CellText}" Header="NAME" />
+        <Border Grid.Row="1" Padding="6" Style="{StaticResource Card}">
+            <DockPanel>
+                <!--
+                    Column headers, then the row for adding a player, then the players. The grid's own headers are hidden
+                    so the add row can sit between them; the widths follow the grid's columns.
+                -->
+                <Border DockPanel.Dock="Top" Height="34" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
+                    <StackPanel Orientation="Horizontal">
+                        <Border Width="{Binding Columns[0].ActualWidth, ElementName=PlayersGrid}" Visibility="{Binding IsAuctionOrder, Converter={StaticResource BoolToVisibility}}" />
+                        <TextBlock Width="{Binding Columns[1].ActualWidth, ElementName=PlayersGrid}" Padding="6,0" VerticalAlignment="Center" Style="{StaticResource Overline}" Text="#"
+                                   Visibility="{Binding IsAuctionOrder, Converter={StaticResource BoolToVisibility}}" />
+                        <TextBlock Width="{Binding Columns[2].ActualWidth, ElementName=PlayersGrid}" Padding="6,0" VerticalAlignment="Center" Style="{StaticResource Overline}" Text="NAME" />
+                        <TextBlock Width="{Binding Columns[3].ActualWidth, ElementName=PlayersGrid}" VerticalAlignment="Center" Style="{StaticResource Overline}" Text="CLASSES" />
+                        <TextBlock Padding="6,0" VerticalAlignment="Center" Style="{StaticResource Overline}" Text="STATUS" />
+                    </StackPanel>
+                </Border>
 
-                    <DataGridTemplateColumn Width="130" Header="CLASSES">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
-                                    <ToggleButton Margin="0,0,4,0" IsChecked="{Binding Infantry, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ClassToggle}" Tag="inf" />
-                                    <ToggleButton Margin="0,0,4,0" IsChecked="{Binding Archer, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ClassToggle}" Tag="arc" />
-                                    <ToggleButton IsChecked="{Binding Cavalry, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ClassToggle}" Tag="cav" />
-                                </StackPanel>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
+                <Border DockPanel.Dock="Top" Height="48" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
+                    <StackPanel Orientation="Horizontal">
+                        <Border Width="{Binding Columns[0].ActualWidth, ElementName=PlayersGrid}" Visibility="{Binding IsAuctionOrder, Converter={StaticResource BoolToVisibility}}" />
+                        <Border Width="{Binding Columns[1].ActualWidth, ElementName=PlayersGrid}" Visibility="{Binding IsAuctionOrder, Converter={StaticResource BoolToVisibility}}" />
+                        <Grid Width="{Binding Columns[2].ActualWidth, ElementName=PlayersGrid}" Margin="0,0,0,0">
+                            <TextBox x:Name="NewPlayerBox" Margin="0,0,12,0" Padding="32,5,10,6" VerticalAlignment="Center" VerticalContentAlignment="Center"
+                                     Text="{Binding NewPlayerText, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="A name, optionally followed by classes (Alice, inf cav), or tick the classes on the right. Enter adds the player.">
+                                <TextBox.InputBindings>
+                                    <KeyBinding Key="Enter" Command="{Binding AddPlayerCommand}" />
+                                </TextBox.InputBindings>
+                            </TextBox>
+                            <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                                       Style="{StaticResource Glyph}" Text="&#xE710;" />
+                            <TextBlock Margin="33,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}" Text="Add a player"
+                                       Visibility="{Binding NewPlayerText, Converter={StaticResource EmptyToVisibility}}" />
+                        </Grid>
+                        <StackPanel Width="{Binding Columns[3].ActualWidth, ElementName=PlayersGrid}" VerticalAlignment="Center" Orientation="Horizontal">
+                            <ToggleButton Margin="0,0,4,0" IsChecked="{Binding NewInfantry}" Style="{StaticResource ClassToggle}" Tag="inf" />
+                            <ToggleButton Margin="0,0,4,0" IsChecked="{Binding NewArcher}" Style="{StaticResource ClassToggle}" Tag="arc" />
+                            <ToggleButton IsChecked="{Binding NewCavalry}" Style="{StaticResource ClassToggle}" Tag="cav" />
+                        </StackPanel>
+                        <StackPanel Margin="6,0,0,0" VerticalAlignment="Center" Orientation="Horizontal">
+                            <Button Command="{Binding AddPlayerCommand}" Style="{DynamicResource AccentButtonStyle}" ToolTip="Add the player (Enter)">
+                                <controls:IconLabel Glyph="&#xE710;" Text="Add" />
+                            </Button>
+                            <Button Margin="6,0,0,0" Command="{Binding PastePlayersCommand}" ToolTip="Add many players at once from a spreadsheet, a form or a chat message">
+                                <controls:IconLabel Glyph="&#xE77F;" Text="Paste a list…" />
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
 
-                    <DataGridTemplateColumn Width="280" Header="STATUS">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <StackPanel Margin="6,0" VerticalAlignment="Center" Orientation="Horizontal">
-                                    <Ellipse x:Name="Dot" Width="8" Height="8" Fill="{DynamicResource SystemFillColorSuccessBrush}" />
-                                    <TextBlock x:Name="Text" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                               Text="{Binding StatusText}" TextTrimming="CharacterEllipsis" />
-                                </StackPanel>
-                                <DataTemplate.Triggers>
-                                    <DataTrigger Binding="{Binding StatusKind}" Value="Picked">
-                                        <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource AccentFillColorDefaultBrush}" />
-                                        <Setter TargetName="Text" Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding StatusKind}" Value="InAuction">
-                                        <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource SystemFillColorCautionBrush}" />
-                                    </DataTrigger>
-                                </DataTemplate.Triggers>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                </DataGrid.Columns>
-            </DataGrid>
+                <DataGrid x:Name="PlayersGrid"
+                          AllowDrop="True"
+                          AutoGenerateColumns="False"
+                          Background="Transparent"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="True"
+                          CanUserReorderColumns="False"
+                          CanUserResizeRows="False"
+                          CanUserSortColumns="False"
+                          DragLeave="PlayersGrid_DragLeave"
+                          DragOver="PlayersGrid_DragOver"
+                          Drop="PlayersGrid_Drop"
+                          GridLinesVisibility="Horizontal"
+                          HeadersVisibility="None"
+                          IsKeyboardFocusWithinChanged="PlayersGrid_IsKeyboardFocusWithinChanged"
+                          ItemsSource="{Binding PlayersView}"
+                          PreviewKeyDown="PlayersGrid_PreviewKeyDown"
+                          PreviewMouseLeftButtonUp="PlayersGrid_PreviewMouseLeftButtonUp"
+                          PreviewMouseMove="PlayersGrid_PreviewMouseMove"
+                          RowHeight="44"
+                          SelectionMode="Extended"
+                          SelectionUnit="FullRow"
+                          Unloaded="PlayersGrid_Unloaded">
+                    <DataGrid.Resources>
+                        <!-- A light accent wash instead of the solid accent, so the class icons stay readable on the selected row -->
+                        <SolidColorBrush x:Key="DataGridRowSelectedBackgroundThemeBrush" Opacity="0.22" Color="{DynamicResource {x:Static SystemColors.AccentColorKey}}" />
+                        <SolidColorBrush x:Key="DataGridRowSelectedForegroundThemeBrush" Color="{DynamicResource TextFillColorPrimary}" />
+                    </DataGrid.Resources>
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Width="34" CanUserResize="False"
+                                                Visibility="{Binding Data.IsAuctionOrder, Source={StaticResource Proxy}, Converter={StaticResource BoolToVisibility}}">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Background="Transparent" Cursor="SizeAll" PreviewMouseLeftButtonDown="Handle_PreviewMouseLeftButtonDown" ToolTip="Drag to move">
+                                        <TextBlock HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorTertiaryBrush}" Style="{StaticResource Glyph}" Text="&#xE76F;" />
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Width="48" Binding="{Binding Position}" ElementStyle="{StaticResource CellText}" Header="#" IsReadOnly="True"
+                                            Visibility="{Binding Data.IsAuctionOrder, Source={StaticResource Proxy}, Converter={StaticResource BoolToVisibility}}" />
+                        <DataGridTextColumn Width="*" MinWidth="200" Binding="{Binding Name}" ElementStyle="{StaticResource CellText}" Header="NAME" />
+
+                        <DataGridTemplateColumn Width="130" Header="CLASSES">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                                        <ToggleButton Margin="0,0,4,0" IsChecked="{Binding Infantry, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ClassToggle}" Tag="inf" />
+                                        <ToggleButton Margin="0,0,4,0" IsChecked="{Binding Archer, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ClassToggle}" Tag="arc" />
+                                        <ToggleButton IsChecked="{Binding Cavalry, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ClassToggle}" Tag="cav" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTemplateColumn Width="280" Header="STATUS">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="6,0" VerticalAlignment="Center" Orientation="Horizontal">
+                                        <Ellipse x:Name="Dot" Width="8" Height="8" Fill="{DynamicResource SystemFillColorSuccessBrush}" />
+                                        <TextBlock x:Name="Text" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                   Text="{Binding StatusText}" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding StatusKind}" Value="Picked">
+                                            <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                            <Setter TargetName="Text" Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding StatusKind}" Value="InAuction">
+                                            <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
         </Border>
+
+        <!-- How many players, below the list -->
+        <Grid Grid.Row="2" Margin="4,8,4,0">
+            <TextBlock FontSize="12" Style="{StaticResource Caption}" Text="{Binding Summary}" />
+            <TextBlock HorizontalAlignment="Right" FontSize="12" Style="{StaticResource Caption}" Text="{Binding ShownCount}" />
+        </Grid>
     </Grid>
 </UserControl>

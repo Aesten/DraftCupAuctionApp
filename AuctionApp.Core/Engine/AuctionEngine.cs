@@ -81,14 +81,9 @@ public sealed class AuctionEngine
             return "Select the team that won the bid.";
         }
 
-        if (price < 0)
+        if (PriceProblem(price) is { } priceProblem)
         {
-            return "The price can't be negative.";
-        }
-
-        if (!Money.IsWholeStep(price))
-        {
-            return $"Prices go in steps of {Money.Format(Money.Step)}.";
+            return priceProblem;
         }
 
         if (SlotsLeft(team) == 0)
@@ -164,11 +159,80 @@ public sealed class AuctionEngine
     public void ReturnPick(Guid captainId, Guid playerId)
     {
         EnsureRunning();
-        var team = GetTeam(captainId);
-        var pick = team.Picks.FirstOrDefault(p => p.Player.Id == playerId) ?? throw new AuctionException("That player isn't in this team.");
+        var (team, pick) = FindPick(captainId, playerId);
         team.Picks.Remove(pick);
         Session.Queue.Insert(0, pick.Player);
-        Log(ActivityKind.Returned, $"{pick.Player.Name} taken back from {team.CaptainName} (refunded {Money.Format(pick.Price)})");
+        Log(ActivityKind.Returned, $"{pick.Player.Name} taken back from {team.CaptainName} (refunded {Money.Format(pick.Price)}), back on the block");
+    }
+
+    /// <summary>Takes a player back from a team (refunding the price) and puts them in the skipped list.</summary>
+    public void ReturnPickToSkipped(Guid captainId, Guid playerId)
+    {
+        EnsureRunning();
+        var (team, pick) = FindPick(captainId, playerId);
+        team.Picks.Remove(pick);
+        Session.Skipped.Add(pick.Player);
+        Log(ActivityKind.Returned, $"{pick.Player.Name} taken back from {team.CaptainName} (refunded {Money.Format(pick.Price)}), sent to the skipped list");
+    }
+
+    /// <summary>
+    /// Corrects the price of a sale. Corrections only check that the team doesn't go over its budget: the half budget
+    /// cap applies to bids, not to fixing a typo afterwards.
+    /// </summary>
+    public void ChangePickPrice(Guid captainId, Guid playerId, decimal price)
+    {
+        var (team, pick) = FindPick(captainId, playerId);
+        CheckPrice(price);
+        if (price > team.Remaining + pick.Price)
+        {
+            throw new AuctionException($"{team.CaptainName} can't afford {Money.Format(price)} ({Money.Format(team.Remaining + pick.Price)} available).");
+        }
+
+        var old = pick.Price;
+        pick.Price = price;
+        Log(ActivityKind.Info, $"{pick.Player.Name}'s price changed from {Money.Format(old)} to {Money.Format(price)}");
+    }
+
+    /// <summary>Gives a bought player to another team at the same price (the first team is refunded).</summary>
+    public void MovePick(Guid captainId, Guid playerId, Guid toCaptainId)
+    {
+        var (team, pick) = FindPick(captainId, playerId);
+        var target = GetTeam(toCaptainId);
+        if (target == team)
+        {
+            return;
+        }
+
+        if (SlotsLeft(target) == 0)
+        {
+            throw new AuctionException($"{target.CaptainName}'s team is already full.");
+        }
+
+        if (pick.Price > target.Remaining)
+        {
+            throw new AuctionException($"{target.CaptainName} can't afford {Money.Format(pick.Price)} ({Money.Format(target.Remaining)} left).");
+        }
+
+        team.Picks.Remove(pick);
+        target.Picks.Add(pick);
+        Log(ActivityKind.Info, $"{pick.Player.Name} moved from {team.CaptainName} to {target.CaptainName} ({Money.Format(pick.Price)})");
+    }
+
+    /// <summary>
+    /// Replaces a bought player with a player not bought yet, at the same price. The replaced player takes the other
+    /// one's place (on the block, in the queue, in the skipped list or among the unsold).
+    /// </summary>
+    public void SwapPick(Guid captainId, Guid playerId, Guid otherPlayerId)
+    {
+        var (team, pick) = FindPick(captainId, playerId);
+        var list = new[] { Session.Queue, Session.Skipped, Session.Unsold }.FirstOrDefault(l => l.Any(p => p.Id == otherPlayerId))
+            ?? throw new AuctionException("That player isn't available in this auction.");
+        var index = list.FindIndex(p => p.Id == otherPlayerId);
+        var other = list[index];
+        list[index] = pick.Player;
+        var old = pick.Player;
+        pick.Player = other;
+        Log(ActivityKind.Info, $"{old.Name} swapped with {other.Name} in {team.CaptainName}'s team ({Money.Format(pick.Price)})");
     }
 
     /// <summary>Closes the auction. Whoever wasn't sold is listed as unsold and stays available to other divisions.</summary>
@@ -206,6 +270,26 @@ public sealed class AuctionEngine
 
         Session.HalfBudgetCap = enabled;
         Log(ActivityKind.Info, enabled ? "Half budget cap turned on" : "Half budget cap turned off");
+    }
+
+    private static string? PriceProblem(decimal price) =>
+        price < 0 ? "The price can't be negative."
+        : !Money.IsWholeStep(price) ? $"Prices go in steps of {Money.Format(Money.Step)}."
+        : null;
+
+    private static void CheckPrice(decimal price)
+    {
+        if (PriceProblem(price) is { } problem)
+        {
+            throw new AuctionException(problem);
+        }
+    }
+
+    private (SessionTeam Team, Pick Pick) FindPick(Guid captainId, Guid playerId)
+    {
+        var team = GetTeam(captainId);
+        var pick = team.Picks.FirstOrDefault(p => p.Player.Id == playerId) ?? throw new AuctionException("That player isn't in this team.");
+        return (team, pick);
     }
 
     private void Shuffle(List<SessionPlayer> players)

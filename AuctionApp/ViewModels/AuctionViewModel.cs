@@ -61,11 +61,23 @@ public sealed partial class AuctionViewModel : ObservableObject
     [ObservableProperty]
     public partial string QueueEmptyText { get; set; } = string.Empty;
 
+    /// <summary>The label above the center stage: who is on the block, or why nobody is.</summary>
+    [ObservableProperty]
+    public partial string StageLabel { get; set; } = "NOW ON THE BLOCK";
+
+    /// <summary>Shown on the center stage when nobody is on the block.</summary>
+    [ObservableProperty]
+    public partial string StageMessage { get; set; } = string.Empty;
+
     [ObservableProperty]
     public partial string UpNextHeader { get; set; } = "Up next";
 
     [ObservableProperty]
     public partial bool ShowsUpNext { get; set; }
+
+    /// <summary>How many rows the upcoming list is laid out for, so it fills its panel evenly.</summary>
+    [ObservableProperty]
+    public partial int UpNextRows { get; set; } = 1;
 
     [ObservableProperty]
     public partial int SoldCount { get; set; }
@@ -155,6 +167,8 @@ public sealed partial class AuctionViewModel : ObservableObject
         QueueEmptyText = session.Skipped.Count > 0
             ? $"Nobody is left in the queue, but {session.Skipped.Count} skipped player(s) can get another chance."
             : "Everyone has been auctioned.";
+        StageLabel = IsFinished ? "ALL DONE" : IsQueueEmpty ? "QUEUE EMPTY" : "NOW ON THE BLOCK";
+        StageMessage = IsFinished ? "The auction is finished." : QueueEmptyText;
 
         SoldCount = session.SoldCount;
         RemainingCount = session.Queue.Count;
@@ -164,7 +178,8 @@ public sealed partial class AuctionViewModel : ObservableObject
         // Only the next few players are revealed on stream.
         var shown = Division.UpcomingShown;
         ShowsUpNext = shown > 0 && IsRunning;
-        UpNextHeader = $"Next {shown}";
+        UpNextHeader = shown == 1 ? "NEXT UP" : $"NEXT {shown}";
+        UpNextRows = Math.Max(1, shown);
         Replace(UpNext, session.Queue.Skip(1).Take(shown).Select((player, i) => new PlayerItemViewModel(player, i + 1)));
         Replace(Skipped, session.Skipped.Select((player, i) => new PlayerItemViewModel(player, i + 1)));
         LastAction = session.Activity.LastOrDefault()?.Text ?? string.Empty;
@@ -200,12 +215,18 @@ public sealed partial class AuctionViewModel : ObservableObject
         }
     }
 
-    /// <summary>How many players of each class a team has, e.g. "3 INF · 2 CAV".</summary>
-    internal static string Composition(IEnumerable<Pick> picks) =>
-        string.Join("  ·  ", PlayerClasses.All
-            .Select(code => (code, count: picks.Count(pick => pick.Player.Classes.Contains(code))))
-            .Where(entry => entry.count > 0)
-            .Select(entry => $"{entry.count} {PlayerClasses.ShortName(entry.code)}"));
+    /// <summary>
+    /// How many players of each class a team has, captain included, zeros too (e.g. INF 3 · ARC 0 · CAV 2).
+    /// A player with several classes counts in each of them.
+    /// </summary>
+    internal static IReadOnlyList<ClassCount> Composition(string captainClass, IEnumerable<Pick> picks)
+    {
+        var classes = picks.Select(pick => pick.Player.Classes).Append(captainClass.Length > 0 ? [captainClass] : []).ToList();
+        return PlayerClasses.All.Select(code => new ClassCount(code, classes.Count(list => list.Contains(code)))).ToList();
+    }
+
+    internal static IReadOnlyList<string> CaptainClasses(Division division, Guid captainId) =>
+        KnownClasses([division.CaptainClass(captainId)]);
 
     internal static IReadOnlyList<string> KnownClasses(IEnumerable<string> classes) => classes.Where(PlayerClasses.All.Contains).ToList();
 
@@ -284,7 +305,8 @@ public sealed partial class AuctionViewModel : ObservableObject
         }
         else if (SelectedTeam == null)
         {
-            SaleProblem = "Click the team that won the bid.";
+            // The team placeholder already says to click the winning team.
+            SaleProblem = null;
         }
         else
         {
@@ -294,7 +316,7 @@ public sealed partial class AuctionViewModel : ObservableObject
         SellCommand.NotifyCanExecuteChanged();
     }
 
-    private bool CanSell() => HasCurrentPlayer && SaleProblem == null;
+    private bool CanSell() => HasCurrentPlayer && SelectedTeam != null && SaleProblem == null;
 
     [RelayCommand(CanExecute = nameof(CanSell))]
     private void Sell()
@@ -340,16 +362,54 @@ public sealed partial class AuctionViewModel : ObservableObject
     private void RequeueSkipped() =>
         Apply("send skipped players back to the queue", engine => engine.RequeueSkipped());
 
-    internal void ReturnPick(TeamCardViewModel team, PickItemViewModel pick)
+    // Fixing a sale: from the menu of a bought player.
+
+    internal IEnumerable<TeamCardViewModel> OtherTeams(TeamCardViewModel team) => Teams.Where(other => other != team);
+
+    internal void ReturnToBlock(TeamCardViewModel team, PickItemViewModel pick) =>
+        Apply($"take {pick.Name} back from {team.Name}", engine => engine.ReturnPick(team.CaptainId, pick.PlayerId));
+
+    internal void ReturnToSkipped(TeamCardViewModel team, PickItemViewModel pick) =>
+        Apply($"send {pick.Name} to the skipped list", engine => engine.ReturnPickToSkipped(team.CaptainId, pick.PlayerId));
+
+    internal void ChangePickPrice(TeamCardViewModel team, PickItemViewModel pick)
     {
-        var answer = Dialogs.Ask(
-            $"Take {pick.Name} back from {team.Name}?",
-            $"{team.Name} gets {pick.PriceText} back and {pick.Name} goes back on the block.",
-            "Take back");
-        if (answer == DialogChoice.Primary)
+        if (Dialogs.AskPrice($"Change {pick.Name}'s price", $"{team.Name} paid {pick.PriceText}. The difference is refunded or charged to {team.Name}.", pick.Price) is { } price
+            && price != pick.Price)
         {
-            Apply($"take {pick.Name} back from {team.Name}", engine => engine.ReturnPick(team.CaptainId, pick.PlayerId));
+            Apply($"change {pick.Name}'s price", engine => engine.ChangePickPrice(team.CaptainId, pick.PlayerId, price));
         }
+    }
+
+    internal void MovePick(TeamCardViewModel team, PickItemViewModel pick, TeamCardViewModel target) =>
+        Apply($"move {pick.Name} to {target.Name}", engine => engine.MovePick(team.CaptainId, pick.PlayerId, target.CaptainId));
+
+    internal void SwapPick(TeamCardViewModel team, PickItemViewModel pick)
+    {
+        if (_engine == null)
+        {
+            return;
+        }
+
+        var session = _engine.Session;
+        var choices = session.Queue.Select((player, i) => Choice(player, i == 0 ? "On the block" : "In the queue"))
+            .Concat(session.Skipped.Select(player => Choice(player, "Skipped")))
+            .Concat(session.Unsold.Select(player => Choice(player, "Not sold")))
+            .ToList();
+        if (choices.Count == 0)
+        {
+            Dialogs.ShowError("Nobody to swap with", "Every player of this auction has been bought.");
+            return;
+        }
+
+        var message = $"The player you pick joins {team.Name} for {pick.PriceText}, and {pick.Name} takes their place.";
+        if (Dialogs.PickPlayer($"Swap {pick.Name} with…", message, choices) is { } otherId)
+        {
+            var other = choices.First(choice => choice.Id == otherId).Name;
+            Apply($"swap {pick.Name} with {other}", engine => engine.SwapPick(team.CaptainId, pick.PlayerId, otherId));
+        }
+
+        static PlayerChoice Choice(SessionPlayer player, string where) => new(player.Id, player.Name, KnownClasses(player.Classes), where);
     }
 
     // End of the auction
@@ -435,7 +495,10 @@ public sealed partial class TeamCardViewModel(Guid captainId, AuctionViewModel o
     public partial string SlotsText { get; set; } = string.Empty;
 
     [ObservableProperty]
-    public partial string CompositionText { get; set; } = string.Empty;
+    public partial IReadOnlyList<ClassCount> Composition { get; set; } = [];
+
+    [ObservableProperty]
+    public partial IReadOnlyList<string> CaptainClasses { get; set; } = [];
 
     [ObservableProperty]
     public partial double BudgetLeftRatio { get; set; }
@@ -460,12 +523,13 @@ public sealed partial class TeamCardViewModel(Guid captainId, AuctionViewModel o
             : engine.Session.IsFinished
                 ? $"{slotsLeft} spot(s) left"
                 : $"Max bid {Money.Format(engine.MaxBid(team))}";
-        CompositionText = AuctionViewModel.Composition(team.Picks);
+        CaptainClasses = AuctionViewModel.CaptainClasses(engine.Division, CaptainId);
+        Composition = AuctionViewModel.Composition(engine.Division.CaptainClass(CaptainId), team.Picks);
 
         Picks.Clear();
         foreach (var pick in team.Picks)
         {
-            Picks.Add(new PickItemViewModel(pick, !engine.Session.IsFinished, this));
+            Picks.Add(new PickItemViewModel(pick, !engine.Session.IsFinished, this, owner));
         }
 
         EmptySlots.Clear();
@@ -477,24 +541,49 @@ public sealed partial class TeamCardViewModel(Guid captainId, AuctionViewModel o
 
     [RelayCommand]
     private void Select() => owner.Select(this);
-
-    internal void ReturnPick(PickItemViewModel pick) => owner.ReturnPick(this, pick);
 }
 
-public sealed partial class PickItemViewModel(Pick pick, bool canReturn, TeamCardViewModel team)
+/// <summary>A bought player on a team card. Clicking it opens a menu to fix the sale.</summary>
+public sealed partial class PickItemViewModel(Pick pick, bool isRunning, TeamCardViewModel team, AuctionViewModel auction)
 {
     public Guid PlayerId => pick.Player.Id;
 
     public string Name => pick.Player.Name;
 
-    public bool CanReturn => canReturn;
+    public decimal Price => pick.Price;
+
+    /// <summary>Taking a player back needs a running auction; the other fixes also work once it's finished.</summary>
+    public bool CanReturn => isRunning;
 
     public IReadOnlyList<string> Classes { get; } = AuctionViewModel.KnownClasses(pick.Player.Classes);
 
     public string PriceText => Money.Format(pick.Price);
 
+    public string Header => $"{Name} — {team.Name}, {PriceText}";
+
+    /// <summary>The teams this player can be moved to.</summary>
+    public IReadOnlyList<TeamCardViewModel> OtherTeams => auction.OtherTeams(team).ToList();
+
     [RelayCommand]
-    private void Return() => team.ReturnPick(this);
+    private void ReturnToBlock() => auction.ReturnToBlock(team, this);
+
+    [RelayCommand]
+    private void ReturnToSkipped() => auction.ReturnToSkipped(team, this);
+
+    [RelayCommand]
+    private void ChangePrice() => auction.ChangePickPrice(team, this);
+
+    [RelayCommand]
+    private void MoveTo(TeamCardViewModel target) => auction.MovePick(team, this, target);
+
+    [RelayCommand]
+    private void Swap() => auction.SwapPick(team, this);
+}
+
+/// <summary>How many players of one class a team has.</summary>
+public sealed record ClassCount(string Code, int Count)
+{
+    public bool IsZero => Count == 0;
 }
 
 public sealed class PlayerItemViewModel(SessionPlayer player, int position)

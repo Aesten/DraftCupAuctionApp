@@ -94,7 +94,8 @@ public sealed class TeamResultViewModel
             pick.Player.Name,
             AuctionViewModel.KnownClasses(pick.Player.Classes),
             Money.Format(pick.Price))).ToList();
-        CompositionText = AuctionViewModel.Composition(team.Picks);
+        CaptainClasses = AuctionViewModel.CaptainClasses(division, team.CaptainId);
+        Composition = AuctionViewModel.Composition(division.CaptainClass(team.CaptainId), team.Picks);
     }
 
     public string Name { get; }
@@ -103,7 +104,9 @@ public sealed class TeamResultViewModel
 
     public string SlotsText { get; }
 
-    public string CompositionText { get; }
+    public IReadOnlyList<string> CaptainClasses { get; }
+
+    public IReadOnlyList<ClassCount> Composition { get; }
 
     public IReadOnlyList<ResultPickViewModel> Picks { get; }
 }

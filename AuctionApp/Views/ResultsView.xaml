@@ -63,11 +63,17 @@
                             <Border Style="{StaticResource Card}" Padding="14,12">
                                 <DockPanel>
                                     <Grid DockPanel.Dock="Top">
-                                        <TextBlock FontSize="18" Style="{StaticResource Strong}" Text="{Binding Name}" />
-                                        <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="13" Style="{StaticResource Caption}" Text="{Binding SlotsText}" />
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <controls:ClassIconStrip Margin="0,0,5,0" IconSize="22" ItemsSource="{Binding CaptainClasses}" />
+                                        <TextBlock Grid.Column="1" FontSize="18" Style="{StaticResource Strong}" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="13" Style="{StaticResource Caption}" Text="{Binding SlotsText}" />
                                     </Grid>
                                     <TextBlock DockPanel.Dock="Top" Margin="0,2,0,8" FontSize="13" Style="{StaticResource Caption}" Text="{Binding SpentText}" />
-                                    <TextBlock DockPanel.Dock="Bottom" Margin="0,6,0,0" FontSize="12" Style="{StaticResource Caption}" Text="{Binding CompositionText}" />
+                                    <ItemsControl DockPanel.Dock="Bottom" Margin="0,8,0,0" ItemsSource="{Binding Composition}" Style="{StaticResource ClassCounts}" />
                                     <ItemsControl Focusable="False" ItemsSource="{Binding Picks}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate DataType="{x:Type vm:ResultPickViewModel}">

@@ -12,7 +12,8 @@
     <!--
         Designed to be screen-shared: everything viewers need is on screen at once (the player on the block, the next
         few players, every team with its budget and roster), with no scrolling and nothing they shouldn't see.
-        The auction itself (player on the block, bid controls, next players) is the top band; the rosters fill the rest.
+        Top: the auctioneer's controls, the player on the block (center stage) and the next players. Below: the rosters.
+        The winning team is picked by clicking its card; a bought player can be clicked to fix the sale.
     -->
     <UserControl.InputBindings>
         <KeyBinding Command="{Binding UndoCommand}" Gesture="Ctrl+Z" />
@@ -23,6 +24,57 @@
             <Setter Property="Margin" Value="0,0,0,6" />
         </Style>
 
+        <Style x:Key="BigButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Height" Value="44" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="FontSize" Value="15" />
+        </Style>
+
+        <Style x:Key="BigAccentButton" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+            <Setter Property="Height" Value="44" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="FontSize" Value="15" />
+        </Style>
+
+        <!-- The menu of a bought player: fixing a sale without undoing everything after it. -->
+        <ContextMenu x:Key="PickMenu" x:Shared="False">
+            <MenuItem Header="{Binding Header}" IsEnabled="False" />
+            <Separator />
+            <MenuItem Command="{Binding ReturnToBlockCommand}" Header="Refund and put back on the block" IsEnabled="{Binding CanReturn}">
+                <MenuItem.Icon>
+                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE7A7;" />
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Command="{Binding ReturnToSkippedCommand}" Header="Refund and send to the skipped list" IsEnabled="{Binding CanReturn}">
+                <MenuItem.Icon>
+                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE8FD;" />
+                </MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Command="{Binding ChangePriceCommand}" Header="Change the price…">
+                <MenuItem.Icon>
+                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE70F;" />
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Move to another team" ItemsSource="{Binding OtherTeams}">
+                <MenuItem.Icon>
+                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE8AB;" />
+                </MenuItem.Icon>
+                <MenuItem.ItemContainerStyle>
+                    <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                        <Setter Property="Header" Value="{Binding Name}" />
+                        <Setter Property="Command" Value="{Binding DataContext.MoveToCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                        <Setter Property="CommandParameter" Value="{Binding}" />
+                    </Style>
+                </MenuItem.ItemContainerStyle>
+            </MenuItem>
+            <MenuItem Command="{Binding SwapCommand}" Header="Swap with another player…">
+                <MenuItem.Icon>
+                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE8EE;" />
+                </MenuItem.Icon>
+            </MenuItem>
+        </ContextMenu>
+
         <DataTemplate x:Key="TeamCardTemplate" DataType="{x:Type vm:TeamCardViewModel}">
             <Border x:Name="Card"
                     Padding="14,12"
@@ -30,51 +82,53 @@
                     BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="8"
-                    Cursor="Hand">
+                    Cursor="Hand"
+                    ToolTip="Click to pick this team as the winner">
                 <Border.InputBindings>
                     <MouseBinding Command="{Binding SelectCommand}" MouseAction="LeftClick" />
                 </Border.InputBindings>
                 <DockPanel>
                     <Grid DockPanel.Dock="Top">
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock x:Name="TeamName" VerticalAlignment="Center" FontSize="18" Style="{StaticResource Strong}" Text="{Binding Name}" />
-                        <TextBlock Grid.Column="1" Margin="8,0,0,0" FontSize="26" FontWeight="Bold"
+                        <controls:ClassIconStrip Margin="0,0,5,0" IconSize="22" ItemsSource="{Binding CaptainClasses}" />
+                        <TextBlock x:Name="TeamName" Grid.Column="1" VerticalAlignment="Center" FontSize="18" Style="{StaticResource Strong}"
+                                   Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="2" Margin="8,0,0,0" FontSize="26" FontWeight="Bold"
                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding RemainingText}" />
                     </Grid>
                     <ProgressBar DockPanel.Dock="Top" Height="4" Margin="0,4,0,4" Maximum="1" Minimum="0" Value="{Binding BudgetLeftRatio, Mode=OneWay}" />
                     <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
-                        <TextBlock x:Name="MaxBid" FontSize="13" Style="{StaticResource Caption}" Text="{Binding MaxBidText}" />
+                        <TextBlock FontSize="13" Style="{StaticResource Caption}" Text="{Binding MaxBidText}" />
                         <TextBlock HorizontalAlignment="Right" FontSize="13" Style="{StaticResource Caption}" Text="{Binding SlotsText}" />
                     </Grid>
-                    <TextBlock DockPanel.Dock="Bottom" Margin="0,6,0,0" FontSize="12" Style="{StaticResource Caption}" Text="{Binding CompositionText}" />
+                    <ItemsControl DockPanel.Dock="Bottom" Margin="0,8,0,0" ItemsSource="{Binding Composition}" Style="{StaticResource ClassCounts}" />
 
                     <StackPanel>
                         <ItemsControl Focusable="False" ItemsSource="{Binding Picks}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type vm:PickItemViewModel}">
-                                    <Grid x:Name="Row" Height="27" Background="Transparent">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock VerticalAlignment="Center" FontSize="15" Style="{StaticResource Body}" Text="{Binding Name}" />
-                                        <controls:ClassIconStrip Grid.Column="1" Margin="6,0,0,0" IconSize="20" ItemsSource="{Binding Classes}" />
-                                        <TextBlock Grid.Column="2" MinWidth="36" Margin="4,0,0,0" VerticalAlignment="Center" FontSize="15" FontWeight="SemiBold"
-                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding PriceText}" TextAlignment="Right" />
-                                        <Button x:Name="ReturnButton" Grid.Column="3" Margin="2,0,0,0" Padding="4" Command="{Binding ReturnCommand}"
-                                                IsEnabled="{Binding CanReturn}" Style="{StaticResource SubtleButton}"
-                                                ToolTip="Take back (refund and put on the block again)" Visibility="Collapsed">
-                                            <TextBlock FontSize="12" Style="{StaticResource Glyph}" Text="&#xE7A7;" />
-                                        </Button>
-                                    </Grid>
+                                    <Border x:Name="Row" Height="27" Margin="-4,0" Padding="4,0" Background="Transparent" CornerRadius="4"
+                                            ContextMenu="{StaticResource PickMenu}" MouseLeftButtonDown="PickRow_MouseLeftButtonDown"
+                                            ToolTip="Click to fix this sale">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock VerticalAlignment="Center" FontSize="15" Style="{StaticResource Body}" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                            <controls:ClassIconStrip Grid.Column="1" Margin="6,0,0,0" IconSize="20" ItemsSource="{Binding Classes}" />
+                                            <TextBlock Grid.Column="2" MinWidth="36" Margin="4,0,0,0" VerticalAlignment="Center" FontSize="15" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding PriceText}" TextAlignment="Right" />
+                                        </Grid>
+                                    </Border>
                                     <DataTemplate.Triggers>
                                         <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="ReturnButton" Property="Visibility" Value="Visible" />
+                                            <Setter TargetName="Row" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
                                         </Trigger>
                                     </DataTemplate.Triggers>
                                 </DataTemplate>
@@ -125,150 +179,187 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <!-- Top: the auction itself. The player on the block, the bid, the next players. -->
-            <Border Padding="24,16" Style="{StaticResource Card}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" MinWidth="360" />
-                        <ColumnDefinition Width="24" />
-                        <ColumnDefinition Width="470" />
-                        <ColumnDefinition Width="24" />
-                        <ColumnDefinition Width="300" />
-                    </Grid.ColumnDefinitions>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="360" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-                    <!-- On the block -->
-                    <Grid VerticalAlignment="Center">
-                        <StackPanel Visibility="{Binding HasCurrentPlayer, Converter={StaticResource BoolToVisibility}}">
-                            <TextBlock Style="{StaticResource PanelLabel}" Text="NOW ON THE BLOCK" />
-                            <Viewbox HorizontalAlignment="Left" MaxHeight="76" Stretch="Uniform" StretchDirection="DownOnly">
-                                <TextBlock FontSize="60" FontWeight="Bold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding CurrentPlayerName}" />
-                            </Viewbox>
-                            <controls:ClassIconStrip Margin="0,10,0,0" HorizontalAlignment="Left" IconSize="44" ItemsSource="{Binding CurrentPlayerClasses}" />
-                        </StackPanel>
-
-                        <StackPanel Visibility="{Binding IsQueueEmpty, Converter={StaticResource BoolToVisibility}}">
-                            <TextBlock Style="{StaticResource PanelLabel}" Text="QUEUE EMPTY" />
-                            <TextBlock FontSize="22" Style="{StaticResource SectionTitle}" Text="{Binding QueueEmptyText}" TextWrapping="Wrap" />
-                            <Button Margin="0,12,0,0" Command="{Binding RequeueSkippedCommand}" Style="{DynamicResource AccentButtonStyle}"
-                                    Visibility="{Binding HasSkipped, Converter={StaticResource BoolToVisibility}}">
-                                <controls:IconLabel Glyph="&#xE72C;" Text="Auction the skipped players again" />
+                <!-- The auctioneer's controls -->
+                <Border Padding="16" Style="{StaticResource Card}">
+                    <DockPanel>
+                        <Grid DockPanel.Dock="Bottom" Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="8" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Button HorizontalAlignment="Stretch" Click="SkippedButton_Click" IsEnabled="{Binding IsRunning}"
+                                    ToolTip="See every skipped player and put one back on the block">
+                                <controls:IconLabel Glyph="&#xE8FD;" Text="{Binding SkippedCount, StringFormat='Skipped players ({0})'}" />
                             </Button>
-                        </StackPanel>
+                            <Button x:Name="MoreButton" Grid.Column="2" Width="40" Click="MoreButton_Click" ToolTip="More: half budget cap, undo, finish">
+                                <TextBlock Style="{StaticResource Glyph}" Text="&#xE712;" />
+                                <Button.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Half budget cap" IsCheckable="True" IsChecked="{Binding HalfBudgetCap}" IsEnabled="{Binding IsRunning}"
+                                                  ToolTip="While on, captains can only spend down to half of their starting budget." />
+                                        <Separator />
+                                        <MenuItem Command="{Binding UndoCommand}" Header="{Binding UndoText}" InputGestureText="Ctrl+Z">
+                                            <MenuItem.Icon>
+                                                <TextBlock Style="{StaticResource Glyph}" Text="&#xE7A7;" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Command="{Binding FinishCommand}" Header="Finish the auction…" IsEnabled="{Binding IsRunning}">
+                                            <MenuItem.Icon>
+                                                <TextBlock Style="{StaticResource Glyph}" Text="&#xE7C1;" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                    </ContextMenu>
+                                </Button.ContextMenu>
+                            </Button>
+                        </Grid>
 
-                        <StackPanel Visibility="{Binding IsFinished, Converter={StaticResource BoolToVisibility}}">
-                            <TextBlock Style="{StaticResource PanelLabel}" Text="ALL DONE" />
-                            <TextBlock FontSize="22" Style="{StaticResource SectionTitle}" Text="The auction is finished." />
-                            <StackPanel Margin="0,12,0,0" Orientation="Horizontal">
-                                <Button Margin="0,0,8,0" Command="{Binding ShowTeamsCommand}" Style="{DynamicResource AccentButtonStyle}">
-                                    <controls:IconLabel Glyph="&#xE902;" Text="Team compositions" />
+                        <Grid>
+                            <!-- Selling the player on the block -->
+                            <StackPanel VerticalAlignment="Top" Visibility="{Binding HasCurrentPlayer, Converter={StaticResource BoolToVisibility}}">
+                                <Border x:Name="WinnerBox" Height="48" Padding="12,0" CornerRadius="6" BorderThickness="1"
+                                        Background="{DynamicResource SubtleFillColorSecondaryBrush}" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
+                                    <Grid VerticalAlignment="Center">
+                                        <TextBlock FontSize="14" Foreground="{DynamicResource TextFillColorTertiaryBrush}" Text="Click the winning team"
+                                                   Visibility="{Binding SelectedTeam, Converter={StaticResource EmptyToVisibility}}" />
+                                        <StackPanel Visibility="{Binding SelectedTeam, Converter={StaticResource NotEmptyToVisibility}}">
+                                            <TextBlock FontSize="18" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Style="{StaticResource Strong}"
+                                                       Text="{Binding SelectedTeam.Name}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock FontSize="12" Foreground="{DynamicResource SystemFillColorCautionBrush}" Text="{Binding SaleProblem}"
+                                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding SaleProblem}"
+                                                       Visibility="{Binding SaleProblem, Converter={StaticResource NotEmptyToVisibility}}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                                <Grid Margin="0,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <RepeatButton Width="44" Height="44" Command="{Binding ChangePriceCommand}" CommandParameter="-0.1" Content="−" FontSize="18" ToolTip="−0.1 (Down arrow)" />
+                                    <TextBox x:Name="PriceBox" Grid.Column="1" Margin="6,0" VerticalContentAlignment="Center" FontSize="24" FontWeight="SemiBold"
+                                             HorizontalContentAlignment="Center" Text="{Binding PriceText, UpdateSourceTrigger=PropertyChanged}"
+                                             ToolTip="Price in millions. Enter sells, Up/Down change it by 0.1.">
+                                        <TextBox.InputBindings>
+                                            <KeyBinding Key="Enter" Command="{Binding SellCommand}" />
+                                            <KeyBinding Key="Up" Command="{Binding ChangePriceCommand}" CommandParameter="0.1" />
+                                            <KeyBinding Key="Down" Command="{Binding ChangePriceCommand}" CommandParameter="-0.1" />
+                                        </TextBox.InputBindings>
+                                    </TextBox>
+                                    <RepeatButton Grid.Column="2" Width="44" Height="44" Command="{Binding ChangePriceCommand}" CommandParameter="0.1" Content="+" FontSize="18" ToolTip="+0.1 (Up arrow)" />
+                                </Grid>
+                                <Grid Margin="0,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="110" />
+                                    </Grid.ColumnDefinitions>
+                                    <Button Command="{Binding SellCommand}" Style="{StaticResource BigAccentButton}" ToolTip="Sell to the selected team (Enter)">
+                                        <controls:IconLabel Glyph="&#xE8FB;" Text="Sold!" />
+                                    </Button>
+                                    <Button Grid.Column="2" Command="{Binding SkipCommand}" Style="{StaticResource BigButton}" ToolTip="Nobody bids: move to the skipped list">
+                                        <controls:IconLabel Glyph="&#xE893;" Text="Skip" />
+                                    </Button>
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- Nobody on the block -->
+                            <StackPanel VerticalAlignment="Center" Visibility="{Binding IsQueueEmpty, Converter={StaticResource BoolToVisibility}}">
+                                <Button Command="{Binding RequeueSkippedCommand}" Style="{StaticResource BigAccentButton}"
+                                        Visibility="{Binding HasSkipped, Converter={StaticResource BoolToVisibility}}">
+                                    <controls:IconLabel Glyph="&#xE72C;" Text="Auction the skipped players again" />
                                 </Button>
-                                <Button Command="{Binding ReopenCommand}" ToolTip="Continue the auction; unsold players go back to the skipped list">
-                                    <controls:IconLabel Glyph="&#xE72C;" Text="Reopen" />
+                                <Button Margin="0,8,0,0" Command="{Binding FinishCommand}" Style="{StaticResource BigButton}">
+                                    <controls:IconLabel Glyph="&#xE7C1;" Text="Finish the auction" />
                                 </Button>
                             </StackPanel>
-                        </StackPanel>
-                    </Grid>
-
-                    <!-- The auctioneer's controls -->
-                    <DockPanel Grid.Column="2">
-                        <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="6" />
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="6" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <Button HorizontalAlignment="Stretch" Click="SkippedButton_Click" IsEnabled="{Binding IsRunning}"
-                                        ToolTip="See every skipped player and put one back on the block">
-                                    <controls:IconLabel Glyph="&#xE8FD;" Text="{Binding SkippedCount, StringFormat='Skipped players ({0})'}" />
+                            <StackPanel VerticalAlignment="Center" Visibility="{Binding IsFinished, Converter={StaticResource BoolToVisibility}}">
+                                <Button Command="{Binding ShowTeamsCommand}" Style="{StaticResource BigAccentButton}">
+                                    <controls:IconLabel Glyph="&#xE902;" Text="Team compositions" />
                                 </Button>
-                                <Button Grid.Column="2" MinWidth="90" Command="{Binding UndoCommand}" ToolTip="{Binding UndoText}">
-                                    <controls:IconLabel Glyph="&#xE7A7;" Text="Undo" />
+                                <Button Margin="0,8,0,0" Command="{Binding ReopenCommand}" Style="{StaticResource BigButton}"
+                                        ToolTip="Continue the auction; unsold players go back to the skipped list">
+                                    <controls:IconLabel Glyph="&#xE72C;" Text="Reopen the auction" />
                                 </Button>
-                                <Button Grid.Column="4" MinWidth="90" Command="{Binding FinishCommand}" IsEnabled="{Binding IsRunning}">
-                                    <controls:IconLabel Glyph="&#xE7C1;" Text="Finish" />
-                                </Button>
-                            </Grid>
-                            <Grid Margin="0,6,0,0">
-                                <CheckBox VerticalAlignment="Center" Content="Half budget cap" IsChecked="{Binding HalfBudgetCap}" IsEnabled="{Binding IsRunning}"
-                                          ToolTip="While on, captains can only spend down to half of their starting budget; the other half stays reserved." />
-                                <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                                    <Run Text="Sold " /><Run FontWeight="SemiBold" Text="{Binding SoldCount, Mode=OneWay}" />
-                                    <Run Text=" · Remaining " /><Run FontWeight="SemiBold" Text="{Binding RemainingCount, Mode=OneWay}" />
-                                </TextBlock>
-                            </Grid>
-                        </StackPanel>
-
-                        <StackPanel VerticalAlignment="Top" Visibility="{Binding HasCurrentPlayer, Converter={StaticResource BoolToVisibility}}">
-                            <Grid>
-                                <ComboBox HorizontalAlignment="Stretch" DisplayMemberPath="Name" ItemsSource="{Binding Teams}"
-                                          SelectedItem="{Binding SelectedTeam}" ToolTip="Winning team (you can also click a team card)" />
-                                <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
-                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}" Text="Winning team: pick it here or click its card"
-                                           Visibility="{Binding SelectedTeam, Converter={StaticResource EmptyToVisibility}}" />
-                            </Grid>
-                            <Grid Margin="0,8,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="10" />
-                                    <ColumnDefinition Width="130" />
-                                    <ColumnDefinition Width="6" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <RepeatButton Width="40" Height="46" Command="{Binding ChangePriceCommand}" CommandParameter="-0.1" Content="−" FontSize="18" ToolTip="−0.1 (Down arrow)" />
-                                <TextBox x:Name="PriceBox" Grid.Column="1" Margin="4,0" VerticalContentAlignment="Center" FontSize="24" FontWeight="SemiBold"
-                                         HorizontalContentAlignment="Center" Text="{Binding PriceText, UpdateSourceTrigger=PropertyChanged}"
-                                         ToolTip="Price in millions. Enter sells, Up/Down change it by 0.1.">
-                                    <TextBox.InputBindings>
-                                        <KeyBinding Key="Enter" Command="{Binding SellCommand}" />
-                                        <KeyBinding Key="Up" Command="{Binding ChangePriceCommand}" CommandParameter="0.1" />
-                                        <KeyBinding Key="Down" Command="{Binding ChangePriceCommand}" CommandParameter="-0.1" />
-                                    </TextBox.InputBindings>
-                                </TextBox>
-                                <RepeatButton Grid.Column="2" Width="40" Height="46" Command="{Binding ChangePriceCommand}" CommandParameter="0.1" Content="+" FontSize="18" ToolTip="+0.1 (Up arrow)" />
-                                <Button Grid.Column="4" Height="46" HorizontalAlignment="Stretch" Command="{Binding SellCommand}" Style="{DynamicResource AccentButtonStyle}"
-                                        ToolTip="Sell to the selected team (Enter)">
-                                    <controls:IconLabel Glyph="&#xE8FB;" Text="Sold!" />
-                                </Button>
-                                <Button Grid.Column="6" Height="46" MinWidth="84" Command="{Binding SkipCommand}" ToolTip="Nobody bids: move to the skipped list">
-                                    <controls:IconLabel Glyph="&#xE893;" Text="Skip" />
-                                </Button>
-                            </Grid>
-                            <TextBlock Margin="0,6,0,0" Foreground="{DynamicResource SystemFillColorCautionBrush}" Text="{Binding SaleProblem}"
-                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding SaleProblem}" />
-                        </StackPanel>
+                            </StackPanel>
+                        </Grid>
                     </DockPanel>
+                </Border>
 
-                    <!-- The next few players: the rest of the queue stays hidden -->
-                    <Border Grid.Column="4" Padding="16,0,0,0" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="1,0,0,0">
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource PanelLabel}" Text="{Binding UpNextHeader}" Visibility="{Binding ShowsUpNext, Converter={StaticResource BoolToVisibility}}" />
-                            <TextBlock Style="{StaticResource Caption}" Text="Nobody else in the queue."
+                <!-- Center stage: the player on the block -->
+                <Border Grid.Column="2" MinHeight="200" Padding="20,14" Style="{StaticResource Card}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock VerticalAlignment="Center" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                            <Run FontWeight="SemiBold" Text="{Binding SoldCount, Mode=OneWay}" /><Run Text=" sold  ·  " /><Run FontWeight="SemiBold" Text="{Binding RemainingCount, Mode=OneWay}" /><Run Text=" to go" />
+                        </TextBlock>
+                        <TextBlock HorizontalAlignment="Center" Style="{StaticResource Overline}" Text="{Binding StageLabel}" />
+                        <Border HorizontalAlignment="Right" Style="{StaticResource Pill}" ToolTip="Captains can only spend down to half of their starting budget."
+                                Visibility="{Binding HalfBudgetCap, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Text="Half budget cap" />
+                        </Border>
+
+                        <StackPanel Grid.Row="1" Margin="0,8" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    Visibility="{Binding HasCurrentPlayer, Converter={StaticResource BoolToVisibility}}">
+                            <Viewbox MaxHeight="84" HorizontalAlignment="Center" Stretch="Uniform" StretchDirection="DownOnly">
+                                <TextBlock FontSize="64" FontWeight="Bold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding CurrentPlayerName}" />
+                            </Viewbox>
+                            <controls:ClassIconStrip Margin="0,10,0,0" HorizontalAlignment="Center" IconSize="44" ItemsSource="{Binding CurrentPlayerClasses}" />
+                        </StackPanel>
+                        <TextBlock Grid.Row="1" Margin="0,8" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" Style="{StaticResource SectionTitle}"
+                                   Text="{Binding StageMessage}" TextAlignment="Center" TextWrapping="Wrap"
+                                   Visibility="{Binding HasCurrentPlayer, Converter={StaticResource InverseBoolToVisibility}}" />
+
+                        <TextBlock Grid.Row="2" HorizontalAlignment="Center" Style="{StaticResource Caption}" Text="{Binding LastAction}"
+                                   TextTrimming="CharacterEllipsis" ToolTip="{Binding LastAction}" />
+                    </Grid>
+                </Border>
+
+                <!-- The next few players: the rest of the queue stays hidden -->
+                <Border Grid.Column="3" Width="300" Margin="12,0,0,0" Padding="18,14" Style="{StaticResource Card}"
+                        Visibility="{Binding ShowsUpNext, Converter={StaticResource BoolToVisibility}}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Style="{StaticResource PanelLabel}" Text="{Binding UpNextHeader}" />
+                        <Grid>
+                            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" Style="{StaticResource Caption}" Text="Nobody else in the queue."
                                        Visibility="{Binding UpNext.Count, Converter={StaticResource EmptyToVisibility}}" />
                             <ItemsControl Focusable="False" ItemsSource="{Binding UpNext}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <UniformGrid Columns="1" Rows="{Binding DataContext.UpNextRows, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="{x:Type vm:PlayerItemViewModel}">
-                                        <Grid Height="32">
+                                        <Grid MinHeight="30">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock VerticalAlignment="Center" FontSize="17" Style="{StaticResource Body}" Text="{Binding Name}" />
-                                            <controls:ClassIconStrip Grid.Column="1" IconSize="24" ItemsSource="{Binding Classes}" />
+                                            <TextBlock VerticalAlignment="Center" FontSize="18" Style="{StaticResource Body}" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                            <controls:ClassIconStrip Grid.Column="1" Margin="6,0,0,0" IconSize="24" ItemsSource="{Binding Classes}" />
                                         </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
-                            <TextBlock Margin="0,6,0,0" Style="{StaticResource Caption}" Text="{Binding LastAction}" TextTrimming="CharacterEllipsis"
-                                       TextWrapping="NoWrap" ToolTip="{Binding LastAction}" />
-                        </StackPanel>
-                    </Border>
-                </Grid>
-            </Border>
+                        </Grid>
+                    </DockPanel>
+                </Border>
+            </Grid>
 
             <!-- Rosters: every team, always fully visible -->
             <controls:ScaleToFit Grid.Row="2" VerticalAlignment="Top" MaxScale="1.25" MinScale="0.5">

@@ -75,6 +75,10 @@ public sealed partial class DivisionViewModel : ObservableObject
         {
             Results.Refresh();
         }
+        else if (value == AuctionPage)
+        {
+            Auction.OnPoolChanged(clearUndo: false);
+        }
     }
 
     /// <summary>Settings changed: saved shortly after.</summary>

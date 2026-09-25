@@ -13,13 +13,13 @@ The app works like a document editor: you open one **tournament** at a time. The
 A tournament holds:
 
 - **Player pool**: shared by the whole tournament. Players have classes (INF / ARC / CAV).
-  - Add players with the **Add a player** box (`Alice, inf cav`, then Enter). Use **Paste a list…** to add many at once from a spreadsheet, a sign-up form or a Discord message.
+  - Add players from the first row of the list: type the name, tick the classes (or type them: `Alice, inf cav`) and press Enter. Use **Paste a list…** to add many at once from a spreadsheet, a sign-up form or a Discord message.
   - The pool is shown **A–Z** by default, so opening it during an auction doesn't reveal who comes next.
   - Filter it with the search box (it narrows the list as you type), the class buttons, and **All / Available / Unavailable** (not bought yet / already bought). Click a player's class icons to switch those classes on or off.
   - **Auction order** shows the order used by divisions that don't shuffle. Drag the handles (or press Alt+↑/↓) to rearrange it.
   - Each player shows where they stand: available, in a running auction, or bought (division, team and price).
 - **Divisions**: one auction each, with its own:
-  - captains, each with their own budget;
+  - captains, each with the class they signed up with and their own budget;
   - team size (5 to 10 players besides the captain);
   - player order (shuffled, or the pool's auction order);
   - number of upcoming players revealed on screen (3 by default);
@@ -33,24 +33,30 @@ Each division has three pages, switched from the top bar: **Configure**, **Aucti
 
 The auction page is meant to be screen-shared (F11 for full screen). It shows only what viewers need, all at once and without scrolling:
 
-- at the top, the auction itself: the player on the block, the auctioneer's controls, and the next few players (the rest of the queue stays hidden);
-- below, every team, with its remaining budget, the most it can bid, its roster with prices, and its empty spots.
+- at the top, in three parts: the auctioneer's controls (left), the player on the block with their classes (center), and the next few players (right; the rest of the queue stays hidden);
+- below, every team: the captain and their class, the remaining budget, the most it can bid, the roster with prices, the empty spots, and how many players of each class it has (captain included).
 
 The layout is made for 8 teams (4 × 2) and adapts to 4–10 teams and to rosters of 5–10 players, shrinking only if the window is too small.
 
-- Pick the winning team (click its card, or choose it in the list at the top), type the price and press **Enter** (or click **Sold!**). The price box accepts `2.5` as well as `2,5`, and **−** / **+** change it by 0.1.
+- Click the winning team's card, type the price and press **Enter** (or click **Sold!**). The price box accepts `2.5` as well as `2,5`, and **−** / **+** change it by 0.1.
 - **Skip** a player nobody wants. **Skipped players** opens the full list: put one back on the block, or send them all back to the queue.
-- **Undo** (Ctrl+Z) reverts the last action. Hovering a bought player also lets you take them back.
+- Click a bought player to fix the sale:
+  - refund and put them back on the block, or send them to the skipped list;
+  - change the price;
+  - move them to another team (the first team is refunded);
+  - swap them with a player not bought yet, at the same price.
+- The **⋯** button has the half budget cap switch, **Undo** (also Ctrl+Z) and **Finish the auction**.
 - The pool can be edited mid-auction, and the auction follows along:
   - new players go to the skipped list, ready whenever you want them;
   - name and class changes show up immediately;
   - removing a player who was already sold takes them off the team and refunds the price.
+- Captains' classes can also be corrected during the auction, on the **Configure** page.
 
 Rules the app enforces:
 
 - A team can't buy more players than the division's team size.
 - Prices go in steps of 0.1 and can't exceed what the team has left.
-- **Half budget cap**: while it's on, a team can only spend down to half of its starting budget (rounded up to 0.1). It can be switched on and off at any time.
+- **Half budget cap**: while it's on, a team can only spend down to half of its starting budget (rounded up to 0.1). It can be switched on and off at any time, and the auction screen shows when it's on. Fixing a sale afterwards only checks that the team stays within its budget.
 
 When a division is done, share its teams from **Teams**: **Copy as text** (formatted for Discord) or a spreadsheet (CSV).
 

@@ -52,7 +52,7 @@
                 <TextBlock FontSize="16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Style="{StaticResource Glyph}" Text="&#xE72E;" />
                 <StackPanel Grid.Column="1" Margin="12,0">
                     <TextBlock Style="{StaticResource Strong}" Text="The auction has started, so this division's settings are locked." />
-                    <TextBlock Style="{StaticResource Caption}" Text="To change captains, budgets or the team size, reset the auction. That clears every sale in this division." />
+                    <TextBlock Style="{StaticResource Caption}" Text="Captains' classes can still be changed. To change captains, budgets or the team size, reset the auction. That clears every sale in this division." />
                 </StackPanel>
                 <Button Grid.Column="2" Command="{Binding ResetAuctionCommand}">
                     <controls:IconLabel Glyph="&#xE72C;" Text="Reset auction…" />
@@ -115,31 +115,42 @@
                         </Button>
                     </Grid>
                     <TextBlock DockPanel.Dock="Top" Margin="0,4,0,12" Style="{StaticResource Caption}"
-                               Text="Each captain leads a team and has their own budget (in millions), balanced against their skill. The order here is the order of the team cards." />
+                               Text="Each captain leads a team, with the class they signed up with and their own budget (in millions), balanced against their skill. The order here is the order of the team cards." />
                     <Grid DockPanel.Dock="Top" Margin="0,0,0,4">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="104" />
                             <ColumnDefinition Width="100" />
                             <ColumnDefinition Width="110" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Style="{StaticResource Caption}" Text="Name" />
-                        <TextBlock Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource Caption}" Text="Budget" />
+                        <TextBlock Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource Caption}" Text="Class" />
+                        <TextBlock Grid.Column="2" Margin="8,0,0,0" Style="{StaticResource Caption}" Text="Budget" />
                     </Grid>
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <ItemsControl Margin="0,0,8,0" Focusable="False" IsEnabled="{Binding IsEditable}" ItemsSource="{Binding Captains}">
+                        <!-- Captains' classes stay editable during the auction; the rest is locked. -->
+                        <ItemsControl Margin="0,0,8,0" Focusable="False" ItemsSource="{Binding Captains}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type vm:CaptainRowViewModel}">
                                     <Grid Margin="0,0,0,6">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="104" />
                                             <ColumnDefinition Width="100" />
                                             <ColumnDefinition Width="110" />
                                         </Grid.ColumnDefinitions>
-                                        <TextBox Loaded="CaptainName_Loaded" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
-                                        <Border Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource ErrorBorder}" Tag="{Binding HasBudgetError}">
+                                        <TextBox IsEnabled="{Binding Data.IsEditable, Source={StaticResource Proxy}}" Loaded="CaptainName_Loaded"
+                                                 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+                                        <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" Orientation="Horizontal" ToolTip="The class the captain signed up with">
+                                            <ToggleButton IsChecked="{Binding IsInfantry}" Style="{StaticResource ClassToggle}" Tag="inf" />
+                                            <ToggleButton IsChecked="{Binding IsArcher}" Style="{StaticResource ClassToggle}" Tag="arc" />
+                                            <ToggleButton IsChecked="{Binding IsCavalry}" Style="{StaticResource ClassToggle}" Tag="cav" />
+                                        </StackPanel>
+                                        <Border Grid.Column="2" Margin="8,0,0,0" IsEnabled="{Binding Data.IsEditable, Source={StaticResource Proxy}}"
+                                                Style="{StaticResource ErrorBorder}" Tag="{Binding HasBudgetError}">
                                             <TextBox HorizontalContentAlignment="Right" Text="{Binding BudgetText, UpdateSourceTrigger=PropertyChanged}" />
                                         </Border>
-                                        <StackPanel Grid.Column="2" Margin="4,0,0,0" Orientation="Horizontal">
+                                        <StackPanel Grid.Column="3" Margin="4,0,0,0" IsEnabled="{Binding Data.IsEditable, Source={StaticResource Proxy}}" Orientation="Horizontal">
                                             <Button Command="{Binding Data.MoveCaptainUpCommand, Source={StaticResource Proxy}}" CommandParameter="{Binding}"
                                                     Style="{StaticResource SubtleButton}" ToolTip="Move up">
                                                 <TextBlock Style="{StaticResource Glyph}" Text="&#xE70E;" />

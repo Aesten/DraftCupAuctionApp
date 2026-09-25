@@ -53,9 +53,19 @@ public sealed partial class PoolViewModel : ObservableObject
     [ObservableProperty]
     public partial string Summary { get; set; } = string.Empty;
 
-    /// <summary>The "add a player" box: a name, optionally followed by classes ("Alice, inf cav").</summary>
+    /// <summary>The "add a player" row: a name, optionally followed by classes ("Alice, inf cav").</summary>
     [ObservableProperty]
     public partial string NewPlayerText { get; set; } = string.Empty;
+
+    /// <summary>Classes ticked in the "add a player" row, added to whatever was typed.</summary>
+    [ObservableProperty]
+    public partial bool NewInfantry { get; set; }
+
+    [ObservableProperty]
+    public partial bool NewArcher { get; set; }
+
+    [ObservableProperty]
+    public partial bool NewCavalry { get; set; }
 
     /// <summary>Raised after a player is added, so the view can select and show them.</summary>
     public event Action<PoolPlayerRowViewModel>? PlayerAdded;
@@ -129,7 +139,8 @@ public sealed partial class PoolViewModel : ObservableObject
         UpdateShownCount();
     }
 
-    private void UpdateShownCount() => ShownCount = $"{PlayersView.Cast<object>().Count()}/{Players.Count}";
+    private void UpdateShownCount() =>
+        ShownCount = IsFiltered ? $"Showing {PlayersView.Cast<object>().Count()} of {Players.Count}" : string.Empty;
 
     /// <summary>A player shows when their name contains the search, they have one of the selected classes, and they match the availability.</summary>
     private bool MatchesFilters(PoolPlayerRowViewModel row)
@@ -313,9 +324,13 @@ public sealed partial class PoolViewModel : ObservableObject
         }
 
         EndPendingEdits();
-        var row = new PoolPlayerRowViewModel(new Player { Name = parsed.Name, Classes = parsed.Classes });
+        var ticked = new[] { (NewInfantry, PlayerClasses.Infantry), (NewArcher, PlayerClasses.Archer), (NewCavalry, PlayerClasses.Cavalry) }
+            .Where(entry => entry.Item1)
+            .Select(entry => entry.Item2);
+        var row = new PoolPlayerRowViewModel(new Player { Name = parsed.Name, Classes = PlayerClasses.Normalize(parsed.Classes.Concat(ticked)) });
         Players.Add(row);
         NewPlayerText = string.Empty;
+        NewInfantry = NewArcher = NewCavalry = false;
         PlayerAdded?.Invoke(row);
     }
 

@@ -66,7 +66,8 @@ public static class TournamentExporter
         foreach (var team in session.Teams)
         {
             text.AppendLine();
-            text.AppendLine($"**{team.CaptainName}** — spent {Money.Format(team.Spent, CultureInfo.InvariantCulture)} / {Money.Format(team.InitialBudget, CultureInfo.InvariantCulture)}");
+            var captainClass = division.CaptainClass(team.CaptainId) is { Length: > 0 } code ? $" ({PlayerClasses.ShortName(code)})" : string.Empty;
+            text.AppendLine($"**{team.CaptainName}**{captainClass} — spent {Money.Format(team.Spent, CultureInfo.InvariantCulture)} / {Money.Format(team.InitialBudget, CultureInfo.InvariantCulture)}");
             foreach (var pick in team.Picks)
             {
                 var classes = pick.Player.Classes.Count > 0 ? $" ({string.Join("/", pick.Player.Classes.Select(PlayerClasses.ShortName))})" : string.Empty;

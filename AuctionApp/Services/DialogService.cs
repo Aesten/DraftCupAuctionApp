@@ -16,12 +16,21 @@ public enum DialogChoice
     Cancel,
 }
 
+/// <summary>A player offered in <see cref="IDialogService.PickPlayer"/>; <paramref name="Where"/> says where they are now.</summary>
+public sealed record PlayerChoice(Guid Id, string Name, IReadOnlyList<string> Classes, string Where);
+
 /// <summary>Everything that talks to the user outside of the main window: dialogs, file pickers, clipboard.</summary>
 public interface IDialogService
 {
     DialogChoice Ask(string title, string message, string primary, string? secondary = null, string? cancel = "Cancel");
 
     void ShowError(string title, string message);
+
+    /// <summary>Asks for a price (steps of 0.1). Returns null when cancelled.</summary>
+    decimal? AskPrice(string title, string message, decimal initial);
+
+    /// <summary>Lets the user pick one player from a searchable list. Returns null when cancelled.</summary>
+    Guid? PickPlayer(string title, string message, IReadOnlyList<PlayerChoice> players);
 
     string? PickFileToOpen(string title, string filter);
 
@@ -51,6 +60,18 @@ public sealed class DialogService : IDialogService
     }
 
     public void ShowError(string title, string message) => Ask(title, message, "OK", cancel: null);
+
+    public decimal? AskPrice(string title, string message, decimal initial)
+    {
+        var dialog = new PriceDialog(title, message, initial) { Owner = Owner };
+        return dialog.ShowDialog() == true ? dialog.Price : null;
+    }
+
+    public Guid? PickPlayer(string title, string message, IReadOnlyList<PlayerChoice> players)
+    {
+        var dialog = new PlayerPickerDialog(title, message, players) { Owner = Owner };
+        return dialog.ShowDialog() == true ? dialog.Picked?.Id : null;
+    }
 
     public string? PickFileToOpen(string title, string filter)
     {

@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Threading;
 using AuctionApp.ViewModels;
 
@@ -32,6 +34,29 @@ public partial class AuctionView : UserControl
         if (DataContext is AuctionViewModel viewModel)
         {
             new SkippedDialog { DataContext = viewModel, Owner = Window.GetWindow(this) }.ShowDialog();
+        }
+    }
+
+    /// <summary>The ⋯ button opens its menu on a normal click.</summary>
+    private void MoreButton_Click(object sender, RoutedEventArgs e) => OpenMenu(MoreButton);
+
+    /// <summary>Clicking a bought player opens the menu to fix the sale (instead of selecting the team).</summary>
+    private void PickRow_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement row)
+        {
+            OpenMenu(row);
+            e.Handled = true;
+        }
+    }
+
+    private static void OpenMenu(FrameworkElement target)
+    {
+        if (target.ContextMenu is { } menu)
+        {
+            menu.PlacementTarget = target;
+            menu.Placement = PlacementMode.Bottom;
+            menu.IsOpen = true;
         }
     }
 

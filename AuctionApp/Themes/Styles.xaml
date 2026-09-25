@@ -1,6 +1,7 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:controls="clr-namespace:AuctionApp.Controls">
+                    xmlns:controls="clr-namespace:AuctionApp.Controls"
+                    xmlns:vm="clr-namespace:AuctionApp.ViewModels">
 
     <!--
         App-wide styles layered on top of the built-in Fluent theme. Colors always come from the theme's own
@@ -289,6 +290,42 @@
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- A team's class counts (framed icon + number); classes the team doesn't have yet are shown faded with a 0. -->
+    <DataTemplate x:Key="ClassCountTemplate" DataType="{x:Type vm:ClassCount}">
+        <StackPanel x:Name="Root" Margin="0,0,14,0" Orientation="Horizontal" ToolTip="{Binding Code, Converter={StaticResource ClassName}}">
+            <Border Width="20" Height="20" Padding="3" VerticalAlignment="Center"
+                    Background="{Binding Code, Converter={StaticResource ClassBrush}, ConverterParameter=0.28}"
+                    BorderBrush="{Binding Code, Converter={StaticResource ClassBrush}, ConverterParameter=0.9}"
+                    BorderThickness="1" CornerRadius="4">
+                <Rectangle Fill="{DynamicResource TextFillColorPrimaryBrush}">
+                    <Rectangle.OpacityMask>
+                        <ImageBrush ImageSource="{Binding Code, Converter={StaticResource ClassIcon}}" Stretch="Uniform" />
+                    </Rectangle.OpacityMask>
+                </Rectangle>
+            </Border>
+            <TextBlock Margin="6,0,0,0" VerticalAlignment="Center" FontSize="15" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding Count}" />
+        </StackPanel>
+        <DataTemplate.Triggers>
+            <DataTrigger Binding="{Binding IsZero}" Value="True">
+                <Setter TargetName="Root" Property="Opacity" Value="0.4" />
+            </DataTrigger>
+        </DataTemplate.Triggers>
+    </DataTemplate>
+
+    <Style x:Key="ClassCounts" TargetType="ItemsControl">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="ItemTemplate" Value="{StaticResource ClassCountTemplate}" />
+        <Setter Property="ItemsPanel">
+            <Setter.Value>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
             </Setter.Value>
         </Setter>
     </Style>
