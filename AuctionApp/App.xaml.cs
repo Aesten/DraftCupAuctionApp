@@ -48,7 +48,10 @@ public partial class App : Application
             args.Handled = true;
         };
 
-        var viewModel = new MainViewModel(store, new DialogService());
+        var settings = AppSettings.Load(store.RootDirectory);
+        settings.ApplyTheme();
+
+        var viewModel = new MainViewModel(store, new DialogService(), settings);
         var window = new MainWindow { DataContext = viewModel };
         MainWindow = window;
         window.Show();

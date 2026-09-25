@@ -345,8 +345,9 @@
                             <Run FontWeight="SemiBold" Text="{Binding SoldCount, Mode=OneWay}" /><Run Text=" sold  ·  " /><Run FontWeight="SemiBold" Text="{Binding RemainingCount, Mode=OneWay}" /><Run Text=" in the queue" />
                         </TextBlock>
                         <TextBlock HorizontalAlignment="Center" Style="{StaticResource Overline}" Text="{Binding StageLabel}" />
+                        <!-- Hidden rather than collapsed, so showing it never changes the card's layout -->
                         <Border HorizontalAlignment="Right" Style="{StaticResource Pill}" ToolTip="Captains can only spend down to half of their starting budget."
-                                Visibility="{Binding HalfBudgetCap, Converter={StaticResource BoolToVisibility}}">
+                                Visibility="{Binding HalfBudgetCap, Converter={StaticResource BoolToHidden}}">
                             <TextBlock FontSize="12" FontWeight="SemiBold" Text="Half budget cap" />
                         </Border>
 

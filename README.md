@@ -4,7 +4,7 @@ A Windows app for hosting draft cup auctions offline: captains bid on players wi
 
 ## Running it
 
-Download `DraftCupAuction.exe` (from the latest run of the **Build** workflow on GitHub, or from a release) and run it. It's a single file of under 1 MB, for 64-bit Windows 10 or 11. It follows the Windows light/dark setting and accent color.
+Download `DraftCupAuction.exe` (from the latest run of the **Build** workflow on GitHub, or from a release) and run it. It's a single file of under 1 MB, for 64-bit Windows 10 or 11. It follows the Windows light/dark setting and accent color, or can be set to always light or always dark (**Theme**, on the start page and in the menu; remembered on this PC).
 
 It needs the **.NET 10 Desktop Runtime**, a one-time install per PC (a newer version works too). If it's missing, the app says so when started and offers to open the download page: pick the **Desktop Runtime** for **x64**, install it, and start the app again. It can also be installed ahead of time from [dotnet.microsoft.com](https://dotnet.microsoft.com/download/dotnet/10.0), or from a terminal:
 
@@ -14,7 +14,7 @@ winget install Microsoft.DotNet.DesktopRuntime.10
 
 ## How it's organized
 
-The app works like a document editor: you open one **tournament** at a time. The start page lists the tournaments on this PC, and lets you create a new one or import one. The ☰ menu (top left) floats over the page: the open tournament (export, duplicate, close, delete), new tournament and import, and the recent tournaments. Click ☰ again (or press Esc) to close it.
+The app works like a document editor: you open one **tournament** at a time. The start page lists the tournaments on this PC, and lets you create a new one or import one. The ☰ menu (top left) floats over the page: the open tournament (export, duplicate, close, delete), the recent tournaments, and at the bottom new tournament, import, the data folder and the theme. Click ☰ again (or press Esc) to close it.
 
 A tournament holds:
 

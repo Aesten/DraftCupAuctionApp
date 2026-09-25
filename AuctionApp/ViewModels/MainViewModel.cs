@@ -19,11 +19,35 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly TournamentStore _store;
     private readonly IDialogService _dialogs;
 
-    public MainViewModel(TournamentStore store, IDialogService dialogs)
+    private readonly AppSettings _settings;
+
+    public MainViewModel(TournamentStore store, IDialogService dialogs, AppSettings settings)
     {
         _store = store;
         _dialogs = dialogs;
+        _settings = settings;
         RefreshRecent();
+    }
+
+    private static readonly string[] Themes = [AppSettings.SystemTheme, AppSettings.LightTheme, AppSettings.DarkTheme];
+
+    /// <summary>0: follow Windows, 1: light, 2: dark. Applied straight away and remembered on this PC.</summary>
+    public int ThemeIndex
+    {
+        get => Math.Max(0, Array.IndexOf(Themes, _settings.Theme));
+        set
+        {
+            var theme = Themes[Math.Clamp(value, 0, Themes.Length - 1)];
+            if (theme == _settings.Theme)
+            {
+                return;
+            }
+
+            _settings.Theme = theme;
+            _settings.Save();
+            _settings.ApplyTheme();
+            OnPropertyChanged();
+        }
     }
 
     /// <summary>The tournaments saved on this computer, most recently edited first.</summary>

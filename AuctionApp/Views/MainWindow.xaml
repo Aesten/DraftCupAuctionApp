@@ -58,6 +58,24 @@
             </DataTemplate.Triggers>
         </DataTemplate>
 
+        <!-- Light / dark: follow Windows, or force one (remembered on this PC) -->
+        <DataTemplate x:Key="ThemePicker">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Margin="0,0,10,0" VerticalAlignment="Center" Style="{StaticResource Caption}" Text="Theme" />
+                <ListBox SelectedIndex="{Binding DataContext.ThemeIndex, RelativeSource={RelativeSource AncestorType=Window}}" Style="{StaticResource SegmentedList}">
+                    <ListBoxItem ToolTip="Light or dark, like Windows">
+                        <TextBlock Text="Windows" />
+                    </ListBoxItem>
+                    <ListBoxItem>
+                        <TextBlock Text="Light" />
+                    </ListBoxItem>
+                    <ListBoxItem>
+                        <TextBlock Text="Dark" />
+                    </ListBoxItem>
+                </ListBox>
+            </StackPanel>
+        </DataTemplate>
+
         <!-- A large action button on the start page: icon, title and one line of explanation. -->
         <Style x:Key="StartTile" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -137,6 +155,7 @@
                     <Button Margin="0,16,0,0" HorizontalAlignment="Left" Command="{Binding OpenDataFolderCommand}" Style="{StaticResource SubtleButton}" ToolTip="{Binding DataFolder}">
                         <controls:IconLabel Glyph="&#xE8B7;" Text="Open the data folder" />
                     </Button>
+                    <ContentControl Margin="12,12,0,0" HorizontalAlignment="Left" ContentTemplate="{StaticResource ThemePicker}" Focusable="False" />
                 </StackPanel>
 
                 <!-- Known tournaments -->
@@ -202,7 +221,11 @@
                                 <Border Margin="0,8" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" />
                             </StackPanel>
 
-                            <!-- Other tournaments -->
+                            <TextBlock Style="{StaticResource MenuHeading}" Text="RECENT TOURNAMENTS" Visibility="{Binding HasRecent, Converter={StaticResource BoolToVisibility}}" />
+                        </StackPanel>
+
+                        <StackPanel DockPanel.Dock="Bottom">
+                            <Border Margin="0,0,0,8" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" />
                             <Button Command="{Binding NewTournamentCommand}" Style="{StaticResource MenuButton}">
                                 <controls:IconLabel Glyph="&#xE710;" Text="New tournament" />
                             </Button>
@@ -210,16 +233,11 @@
                                     ToolTip="A tournament exported from this app (.draftcup.json), on this PC or another one. You can also drop the file on the window.">
                                 <controls:IconLabel Glyph="&#xE8B5;" Text="Import a tournament…" />
                             </Button>
-                            <Border Margin="0,8,0,0" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" />
-                            <TextBlock Style="{StaticResource MenuHeading}" Text="RECENT TOURNAMENTS" Visibility="{Binding HasRecent, Converter={StaticResource BoolToVisibility}}" />
-                        </StackPanel>
-
-                        <StackPanel DockPanel.Dock="Bottom">
-                            <Border Margin="0,0,0,8" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" />
                             <Button Command="{Binding OpenDataFolderCommand}" Style="{StaticResource MenuButton}" ToolTip="{Binding DataFolder}">
                                 <controls:IconLabel Glyph="&#xE8B7;" Text="Open the data folder" />
                             </Button>
-                            <TextBlock Margin="12,6,0,0" Style="{StaticResource Caption}" Text="F11: full screen  ·  Esc: close this menu" />
+                            <ContentControl Margin="12,8,0,0" HorizontalAlignment="Left" ContentTemplate="{StaticResource ThemePicker}" Focusable="False" />
+                            <TextBlock Margin="12,10,0,0" Style="{StaticResource Caption}" Text="F11: full screen  ·  Esc: close this menu" />
                         </StackPanel>
 
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
