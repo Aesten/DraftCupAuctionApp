@@ -1,0 +1,16 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:AuctionApp.ViewModels"
+                    xmlns:views="clr-namespace:AuctionApp.Views">
+
+    <!-- Which view shows which page. -->
+
+    <DataTemplate DataType="{x:Type vm:HomeViewModel}">
+        <views:HomeView />
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:DraftViewModel}">
+        <views:DraftView />
+    </DataTemplate>
+
+</ResourceDictionary>

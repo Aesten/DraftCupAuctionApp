@@ -1,102 +1,43 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')"/>
-    <PropertyGroup>
-        <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-        <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-        <ProjectGuid>{B8598AAB-F627-42C4-B8A0-69C043FBCDC5}</ProjectGuid>
-        <OutputType>WinExe</OutputType>
-        <RootNamespace>AuctionApp</RootNamespace>
-        <AssemblyName>AuctionApp</AssemblyName>
-        <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
-        <FileAlignment>512</FileAlignment>
-        <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-        <Deterministic>true</Deterministic>
-    </PropertyGroup>
-    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-        <PlatformTarget>AnyCPU</PlatformTarget>
-        <DebugSymbols>true</DebugSymbols>
-        <DebugType>full</DebugType>
-        <Optimize>false</Optimize>
-        <OutputPath>bin\Debug\</OutputPath>
-        <DefineConstants>DEBUG;TRACE</DefineConstants>
-        <ErrorReport>prompt</ErrorReport>
-        <WarningLevel>4</WarningLevel>
-    </PropertyGroup>
-    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-        <PlatformTarget>AnyCPU</PlatformTarget>
-        <DebugType>pdbonly</DebugType>
-        <Optimize>true</Optimize>
-        <OutputPath>bin\Release\</OutputPath>
-        <DefineConstants>TRACE</DefineConstants>
-        <ErrorReport>prompt</ErrorReport>
-        <WarningLevel>4</WarningLevel>
-    </PropertyGroup>
-    <ItemGroup>
-        <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-          <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
-        </Reference>
-        <Reference Include="System"/>
-        <Reference Include="System.Core"/>
-        <Reference Include="System.Xml.Linq"/>
-        <Reference Include="System.Data.DataSetExtensions"/>
-        <Reference Include="Microsoft.CSharp"/>
-        <Reference Include="System.Data"/>
-        <Reference Include="System.Deployment"/>
-        <Reference Include="System.Drawing"/>
-        <Reference Include="System.Net.Http"/>
-        <Reference Include="System.Windows.Forms"/>
-        <Reference Include="System.Xml"/>
-    </ItemGroup>
-    <ItemGroup>
-        <Compile Include="AuctionForm.cs">
-            <SubType>Form</SubType>
-        </Compile>
-        <Compile Include="AuctionForm.Designer.cs">
-            <DependentUpon>AuctionForm.cs</DependentUpon>
-        </Compile>
-        <Compile Include="EditorForm.cs">
-          <SubType>Form</SubType>
-        </Compile>
-        <Compile Include="EditorForm.Designer.cs">
-          <DependentUpon>EditorForm.cs</DependentUpon>
-        </Compile>
-        <Compile Include="JsonObjects\Auction.cs" />
-        <Compile Include="JsonObjects\AuctionState.cs" />
-        <Compile Include="MainForm.cs">
-          <SubType>Form</SubType>
-        </Compile>
-        <Compile Include="MainForm.Designer.cs">
-          <DependentUpon>MainForm.cs</DependentUpon>
-        </Compile>
-        <Compile Include="Program.cs" />
-        <Compile Include="SkippedPlayersPopup.cs">
-          <SubType>Form</SubType>
-        </Compile>
-        <Compile Include="SkippedPlayersPopup.Designer.cs">
-          <DependentUpon>SkippedPlayersPopup.cs</DependentUpon>
-        </Compile>
-        <EmbeddedResource Include="AuctionForm.resx">
-          <DependentUpon>AuctionForm.cs</DependentUpon>
-        </EmbeddedResource>
-        <EmbeddedResource Include="EditorForm.resx">
-          <DependentUpon>EditorForm.cs</DependentUpon>
-        </EmbeddedResource>
-        <EmbeddedResource Include="MainForm.resx">
-          <DependentUpon>MainForm.cs</DependentUpon>
-        </EmbeddedResource>
-        <EmbeddedResource Include="SkippedPlayersPopup.resx">
-          <DependentUpon>SkippedPlayersPopup.cs</DependentUpon>
-        </EmbeddedResource>
-        <None Include="packages.config" />
-    </ItemGroup>
-    <ItemGroup>
-        <None Include="App.config" />
-    </ItemGroup>
-    <ItemGroup>
-      <EmbeddedResource Include="Icons\arc.png" />
-      <EmbeddedResource Include="Icons\cav.png" />
-      <EmbeddedResource Include="Icons\inf.png" />
-    </ItemGroup>
-    <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <!-- Lets the app compile on Linux/macOS too (CI, cloud editors). It still only runs on Windows. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RootNamespace>AuctionApp</RootNamespace>
+    <AssemblyName>DraftCupAuction</AssemblyName>
+    <Product>Draft Cup Auction</Product>
+    <Version>3.0.0</Version>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <!-- Release builds for players: one self-contained .exe, nothing to install. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AuctionApp.Core\AuctionApp.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\Classes\*.png" />
+    <Resource Include="Assets\app.ico" />
+  </ItemGroup>
+
 </Project>

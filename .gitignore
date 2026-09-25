@@ -1,9 +1,17 @@
-﻿Dependencies/
-Properties/
-.idea/
-packages/
-
+# Build output
 */bin/
 */obj/
-*.json
+publish/
 
+# IDEs
+.idea/
+.vs/
+*.user
+
+# Old NuGet packages folder (packages.config era)
+packages/
+Dependencies/
+
+# Auction data files never belong in the repository
+*.json
+!**/global.json
