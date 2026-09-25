@@ -21,18 +21,16 @@ A tournament holds:
 - **Player pool**: shared by the whole tournament. Players have classes (INF / ARC / CAV).
   - Add players from the first row of the list: type the name, tick the classes (or type them: `Alice, inf cav`) and press Enter.
   - **Import…** adds the players of a player list, for example from a sign-up sheet, and **Export…** saves the pool as one (see [Player lists](#player-lists)).
-  - The pool is shown **A–Z** by default, so opening it during an auction doesn't reveal who comes next.
+  - The pool is sorted **A–Z**, or by **Date added**. Auctions always shuffle the players, so neither reveals who comes next.
   - Filter it with the search box (it narrows the list as you type), the class buttons, and **All / Available / Unavailable** (not bought yet / already bought). Click a player's class icons to switch those classes on or off.
-  - **Auction order** shows the order used by divisions that don't shuffle. Drag the handles (or press Alt+↑/↓) to rearrange it.
   - Each player shows where they stand: available, in a running auction, or bought (division, team and price).
 - **Divisions**: one auction each, with its own:
   - captains, each with the class they signed up with and their own budget;
   - team size (5 to 10 players besides the captain);
-  - player order (shuffled, or the pool's auction order);
   - number of upcoming players revealed on screen (3 by default);
   - half budget cap setting.
 
-  Divisions can be auctioned in any order, on different days and different computers. **Whichever division starts first gets the whole pool; each later one gets the pool minus the players already bought.**
+  Players come up in a random order, shuffled when the auction starts. Divisions can be auctioned in any order, on different days and different computers. **Whichever division starts first gets the whole pool; each later one gets the pool minus the players already bought.**
 
 Each division has three pages, switched from the top bar: **Configure**, **Auction** and **Teams**.
 
@@ -77,7 +75,6 @@ When a division is done, share its teams from **Teams**: **Copy as text** (forma
 | Enter (in a text box) | Confirm and leave the box (in the price box: confirm the price, it doesn't sell) |
 | Up / Down (in the price box) | Price ±0.1 |
 | Ctrl+Z | Undo the last auction action |
-| Alt+Up / Alt+Down (pool, auction order) | Move the selected player |
 | F11 | Full screen on / off |
 | Escape | Close the menu, or leave full screen |
 

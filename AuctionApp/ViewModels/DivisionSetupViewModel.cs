@@ -64,18 +64,6 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
         set => Set(Division.TeamSize, value, v => Division.TeamSize = v);
     }
 
-    public bool ShuffleOrder
-    {
-        get => Division.ShuffleOrder;
-        set => Set(Division.ShuffleOrder, value, v => Division.ShuffleOrder = v);
-    }
-
-    public bool PoolOrder
-    {
-        get => !Division.ShuffleOrder;
-        set => ShuffleOrder = !value;
-    }
-
     public int UpcomingShown
     {
         get => Division.UpcomingShown;
@@ -97,12 +85,6 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
 
         apply(value);
         OnPropertyChanged(property);
-        if (property is nameof(ShuffleOrder) or nameof(PoolOrder))
-        {
-            OnPropertyChanged(nameof(ShuffleOrder));
-            OnPropertyChanged(nameof(PoolOrder));
-        }
-
         Changed();
     }
 
@@ -193,9 +175,6 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
         Division.Captains.Insert(to, row.Model);
         Changed();
     }
-
-    [RelayCommand]
-    private void ShowPool() => _owner.Owner.ShowPool();
 
     [RelayCommand]
     private void DeleteDivision() => _owner.Owner.RemoveDivision(_owner);

@@ -74,35 +74,24 @@ public sealed partial class PoolViewModel : ObservableObject
     [ObservableProperty]
     public partial bool IsFiltered { get; set; }
 
-    /// <summary>True: sorted by name (safe to show on stream). False: the pool's own order, which can be rearranged.</summary>
+    /// <summary>False: sorted by name. True: in the order the players were added (the pool's own order).</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsAuctionOrder))]
-    public partial bool IsSortedByName { get; set; } = true;
+    public partial bool IsSortedByDate { get; set; }
 
-    public bool IsAuctionOrder
-    {
-        get => !IsSortedByName;
-        set => IsSortedByName = !value;
-    }
-
-    partial void OnIsSortedByNameChanged(bool value) => ApplySort();
+    partial void OnIsSortedByDateChanged(bool value) => ApplySort();
 
     private void ApplySort()
     {
         EndPendingEdits();
         PlayersView.SortDescriptions.Clear();
-        if (IsSortedByName)
+        if (!IsSortedByDate)
         {
             PlayersView.SortDescriptions.Add(new SortDescription(nameof(PoolPlayerRowViewModel.Name), ListSortDirection.Ascending));
         }
     }
 
-    /// <summary>The pool tab was opened: back to the name order, so the auction order isn't shown by accident.</summary>
-    internal void OnShown()
-    {
-        IsSortedByName = true;
-        RefreshStatuses();
-    }
+    /// <summary>The pool tab was opened: statuses may have changed in the meantime.</summary>
+    internal void OnShown() => RefreshStatuses();
 
     // Filters: search by name, by class, and by availability.
 
@@ -169,10 +158,8 @@ public sealed partial class PoolViewModel : ObservableObject
     internal void RefreshStatuses()
     {
         var statuses = TournamentRules.PoolStatuses(Tournament);
-        for (var i = 0; i < Players.Count; i++)
+        foreach (var row in Players)
         {
-            var row = Players[i];
-            row.Position = i + 1;
             if (statuses.TryGetValue(row.Model.Id, out var status))
             {
                 row.SetStatus(status);
@@ -384,79 +371,7 @@ public sealed partial class PoolViewModel : ObservableObject
         Dialogs.Ask("Players imported", message, "OK", cancel: null);
     }
 
-    /// <summary>Moves a player before or after another one (drag and drop).</summary>
-    public void Move(PoolPlayerRowViewModel row, PoolPlayerRowViewModel? target, bool after)
-    {
-        EndPendingEdits();
-        var from = Players.IndexOf(row);
-        if (from < 0)
-        {
-            return;
-        }
-
-        int to;
-        if (target == null)
-        {
-            to = Players.Count - 1;
-        }
-        else
-        {
-            to = Players.IndexOf(target) + (after ? 1 : 0);
-            if (to > from)
-            {
-                to--;
-            }
-        }
-
-        to = Math.Clamp(to, 0, Players.Count - 1);
-        if (to != from)
-        {
-            Players.Move(from, to);
-        }
-    }
-
-    public void MoveBy(PoolPlayerRowViewModel row, int offset)
-    {
-        var from = Players.IndexOf(row);
-        var to = Math.Clamp(from + offset, 0, Players.Count - 1);
-        if (from >= 0 && to != from)
-        {
-            EndPendingEdits();
-            Players.Move(from, to);
-        }
-    }
-
-    [RelayCommand]
-    private void SortPoolOrderByName()
-    {
-        if (Dialogs.Ask("Put the auction order in alphabetical order?", "This replaces the current order of the pool, which divisions that don't shuffle use as their auction order.", "Sort") != DialogChoice.Primary)
-        {
-            return;
-        }
-
-        EndPendingEdits();
-        var sorted = Players.OrderBy(row => row.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
-        _syncing = true;
-        try
-        {
-            for (var i = 0; i < sorted.Count; i++)
-            {
-                var from = Players.IndexOf(sorted[i]);
-                if (from != i)
-                {
-                    Players.Move(from, i);
-                }
-            }
-        }
-        finally
-        {
-            _syncing = false;
-        }
-
-        Changed();
-    }
-
-    /// <summary>Saves the pool as a player list (names and classes only), in the pool's order. Format: "csv" or "json".</summary>
+    /// <summary>Saves the pool as a player list (names and classes only). Format: "csv" or "json".</summary>
     [RelayCommand]
     private void ExportPlayers(string format)
     {
@@ -489,9 +404,6 @@ public sealed partial class PoolPlayerRowViewModel : ObservableObject
     public Player Model { get; }
 
     internal PoolViewModel? Owner { get; set; }
-
-    [ObservableProperty]
-    public partial int Position { get; set; }
 
     [ObservableProperty]
     public partial string StatusText { get; set; } = string.Empty;

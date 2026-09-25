@@ -81,7 +81,6 @@ public sealed class Tournament
         {
             Name = division.Name,
             TeamSize = division.TeamSize,
-            ShuffleOrder = division.ShuffleOrder,
             UpcomingShown = division.UpcomingShown,
             HalfBudgetCapAtStart = division.HalfBudgetCapAtStart,
             Captains = division.Captains.Select(captain => new Captain { Name = captain.Name, Budget = captain.Budget, Class = captain.Class }).ToList(),
@@ -116,9 +115,6 @@ public sealed class Division
     public int TeamSize { get; set; } = 6;
 
     public List<Captain> Captains { get; set; } = [];
-
-    /// <summary>Shuffle the players when the auction starts. When off, they come up in the pool's order.</summary>
-    public bool ShuffleOrder { get; set; } = true;
 
     /// <summary>How many upcoming players the auction screen reveals (the rest of the queue stays hidden).</summary>
     public int UpcomingShown { get; set; } = 3;

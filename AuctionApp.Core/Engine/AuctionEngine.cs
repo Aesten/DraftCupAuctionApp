@@ -24,6 +24,9 @@ public sealed class AuctionEngine
 
     public Division Division { get; }
 
+    /// <summary>Players are always auctioned in random order; tests can keep the pool's order to know who comes up.</summary>
+    public bool KeepPoolOrder { get; init; }
+
     public AuctionSession Session => Division.Session ?? throw new AuctionException("The auction hasn't started.");
 
     /// <summary>Validates the division and creates its auction from the players still available in the pool.</summary>
@@ -303,7 +306,7 @@ public sealed class AuctionEngine
 
     private void Shuffle(List<SessionPlayer> players)
     {
-        if (Division.ShuffleOrder)
+        if (!KeepPoolOrder)
         {
             _random.Shuffle(CollectionsMarshal.AsSpan(players));
         }

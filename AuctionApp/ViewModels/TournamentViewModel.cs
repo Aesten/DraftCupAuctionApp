@@ -229,7 +229,6 @@ public sealed partial class TournamentViewModel : ObservableObject
         if (previous != null)
         {
             division.TeamSize = previous.TeamSize;
-            division.ShuffleOrder = previous.ShuffleOrder;
             division.UpcomingShown = previous.UpcomingShown;
             division.HalfBudgetCapAtStart = previous.HalfBudgetCapAtStart;
         }

@@ -20,8 +20,8 @@ public class AuctionEngineTests
     [Fact]
     public void Start_ShufflesWhenEnabled()
     {
-        var tournament = TestData.Tournament(players: 30, shuffle: true);
-        var engine = TestData.Start(tournament);
+        var tournament = TestData.Tournament(players: 30);
+        var engine = TestData.Start(tournament, shuffle: true);
 
         var order = engine.Session.Queue.Select(p => p.Name).ToList();
         Assert.NotEqual(tournament.Players.Select(p => p.Name).ToList(), order);

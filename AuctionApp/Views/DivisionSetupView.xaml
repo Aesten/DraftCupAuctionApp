@@ -57,7 +57,7 @@
                 <StackPanel Grid.Column="1" Margin="12,0">
                     <TextBlock Style="{StaticResource Strong}" Text="The auction has started" />
                     <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap"
-                               Text="Names and captains' classes can still be edited. Budgets, team size, order and the list of captains are locked until the auction is reset." />
+                               Text="Names and captains' classes can still be edited. Budgets, the team size and the list of captains are locked until the auction is reset." />
                 </StackPanel>
                 <Button Grid.Column="2" VerticalAlignment="Center" Command="{Binding ResetAuctionCommand}" ToolTip="Clears every sale of this division and unlocks its settings">
                     <controls:IconLabel Glyph="&#xE72C;" Text="Reset auction…" />
@@ -89,17 +89,6 @@
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
-
-                        <TextBlock Style="{StaticResource FieldLabel}" Text="Player order" />
-                        <RadioButton Content="Shuffled" GroupName="Order" IsChecked="{Binding ShuffleOrder}" ToolTip="Shuffled when the auction starts" />
-                        <StackPanel Orientation="Horizontal">
-                            <RadioButton Content="Pool order" GroupName="Order" IsChecked="{Binding PoolOrder}" ToolTip="The auction order set in the player pool" />
-                            <Button Margin="8,0,0,0" VerticalAlignment="Center" Command="{Binding ShowPoolCommand}" Style="{StaticResource SubtleButton}"
-                                    ToolTip="Arrange the auction order in the player pool"
-                                    Visibility="{Binding PoolOrder, Converter={StaticResource BoolToVisibility}}">
-                                <controls:IconLabel Glyph="&#xE8CB;" Text="Arrange…" />
-                            </Button>
-                        </StackPanel>
 
                         <TextBlock Style="{StaticResource FieldLabel}" Text="Upcoming players on screen" />
                         <ComboBox Width="200" HorizontalAlignment="Left" ItemsSource="{Binding UpcomingOptions}" SelectedItem="{Binding UpcomingShown}"
@@ -143,7 +132,7 @@
                                             <ColumnDefinition Width="90" />
                                             <ColumnDefinition Width="104" />
                                         </Grid.ColumnDefinitions>
-                                        <TextBox Loaded="CaptainName_Loaded" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox VerticalContentAlignment="Center" Loaded="CaptainName_Loaded" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
                                         <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" Orientation="Horizontal" ToolTip="The class the captain signed up with">
                                             <ToggleButton IsChecked="{Binding IsInfantry}" Style="{StaticResource ClassToggle}" Tag="inf" />
                                             <ToggleButton IsChecked="{Binding IsArcher}" Style="{StaticResource ClassToggle}" Tag="arc" />
@@ -151,7 +140,7 @@
                                         </StackPanel>
                                         <Border Grid.Column="2" Margin="8,0,0,0" IsEnabled="{Binding Data.IsEditable, Source={StaticResource Proxy}}"
                                                 Style="{StaticResource ErrorBorder}" Tag="{Binding HasBudgetError}">
-                                            <TextBox HorizontalContentAlignment="Right" Text="{Binding BudgetText, UpdateSourceTrigger=PropertyChanged}" />
+                                            <TextBox HorizontalContentAlignment="Right" VerticalContentAlignment="Center" Text="{Binding BudgetText, UpdateSourceTrigger=PropertyChanged}" />
                                         </Border>
                                         <StackPanel Grid.Column="3" Margin="4,0,0,0" IsEnabled="{Binding Data.IsEditable, Source={StaticResource Proxy}}" Orientation="Horizontal">
                                             <Button Command="{Binding Data.MoveCaptainUpCommand, Source={StaticResource Proxy}}" CommandParameter="{Binding}"

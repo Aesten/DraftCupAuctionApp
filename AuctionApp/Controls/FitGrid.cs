@@ -1,6 +1,5 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
 using System.Windows.Media;
 
 namespace AuctionApp.Controls;
@@ -78,28 +77,4 @@ public sealed class FitGrid : Panel
     }
 
     private static int Rows(int count, int columns) => (count + columns - 1) / columns;
-}
-
-/// <summary>The line showing where a dragged row will be dropped.</summary>
-public sealed class InsertionAdorner : Adorner
-{
-    private readonly Pen _pen;
-    private double _y;
-
-    public InsertionAdorner(UIElement adornedElement, Brush brush)
-        : base(adornedElement)
-    {
-        IsHitTestVisible = false;
-        _pen = new Pen(brush, 2);
-        _pen.Freeze();
-    }
-
-    public void MoveTo(double y)
-    {
-        _y = y;
-        InvalidateVisual();
-    }
-
-    protected override void OnRender(DrawingContext drawingContext) =>
-        drawingContext.DrawLine(_pen, new Point(4, _y), new Point(AdornedElement.RenderSize.Width - 4, _y));
 }

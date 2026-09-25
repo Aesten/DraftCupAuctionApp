@@ -13,13 +13,35 @@
              IsTabStop="False"
              mc:Ignorable="d">
     <UserControl.Resources>
-        <controls:BindingProxy x:Key="Proxy" Data="{Binding}" />
 
         <Style x:Key="CellText" TargetType="TextBlock">
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="Margin" Value="6,0" />
             <Setter Property="FontSize" Value="15" />
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+
+        <!--
+            Editing a name: same font, size and position as the name shown in the cell (CellText), in a light field
+            with an accent underline, instead of the default text box.
+        -->
+        <Style x:Key="CellEditor" TargetType="TextBox">
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="CaretBrush" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="Padding" Value="4,0" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Margin="0,6" Background="{DynamicResource ControlFillColorInputActiveBrush}" BorderBrush="{DynamicResource AccentFillColorDefaultBrush}"
+                                BorderThickness="0,0,0,2" CornerRadius="4">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" Focusable="False"
+                                          HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style x:Key="FilterToggle" TargetType="ToggleButton" BasedOn="{StaticResource ClassToggle}">
@@ -73,20 +95,15 @@
             </StackPanel>
 
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal">
-                <!-- Sorted by name unless the auction order is asked for, so the upcoming order isn't shown on stream by accident -->
-                <ListBox Style="{StaticResource SegmentedList}" SelectedIndex="{Binding IsAuctionOrder, Converter={x:Static controls:BoolToIndexConverter.Instance}}">
+                <ListBox Margin="0,0,8,0" SelectedIndex="{Binding IsSortedByDate, Converter={x:Static controls:BoolToIndexConverter.Instance}}" Style="{StaticResource SegmentedList}">
                     <ListBoxItem ToolTip="Sorted by name">
                         <TextBlock Text="A–Z" />
                     </ListBoxItem>
-                    <ListBoxItem ToolTip="The order divisions that don't shuffle auction the players in. Drag the handles or press Alt+↑/↓ to rearrange.">
-                        <TextBlock Text="Auction order" />
+                    <ListBoxItem ToolTip="In the order the players were added">
+                        <TextBlock Text="Date added" />
                     </ListBoxItem>
                 </ListBox>
-                <Button Margin="4,0,0,0" Command="{Binding SortPoolOrderByNameCommand}" Style="{StaticResource SubtleButton}" ToolTip="Put the auction order in alphabetical order"
-                        Visibility="{Binding IsAuctionOrder, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE8CB;" />
-                </Button>
-                <Button Margin="8,0,0,0" Command="{Binding RemovePlayersCommand}" CommandParameter="{Binding SelectedItems, ElementName=PlayersGrid}" Style="{StaticResource SubtleButton}"
+                <Button Command="{Binding RemovePlayersCommand}" CommandParameter="{Binding SelectedItems, ElementName=PlayersGrid}" Style="{StaticResource SubtleButton}"
                         ToolTip="Remove the selected players (Delete). Players already bought are taken off their team, which gets the money back.">
                     <controls:IconLabel Glyph="&#xE74D;" Text="Remove" />
                 </Button>
@@ -115,20 +132,15 @@
                 -->
                 <Border DockPanel.Dock="Top" Height="34" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
                     <StackPanel Orientation="Horizontal">
-                        <Border Width="{Binding Columns[0].ActualWidth, ElementName=PlayersGrid}" Visibility="{Binding IsAuctionOrder, Converter={StaticResource BoolToVisibility}}" />
-                        <TextBlock Width="{Binding Columns[1].ActualWidth, ElementName=PlayersGrid}" Padding="6,0" VerticalAlignment="Center" Style="{StaticResource Overline}" Text="#"
-                                   Visibility="{Binding IsAuctionOrder, Converter={StaticResource BoolToVisibility}}" />
-                        <TextBlock Width="{Binding Columns[2].ActualWidth, ElementName=PlayersGrid}" Padding="6,0" VerticalAlignment="Center" Style="{StaticResource Overline}" Text="NAME" />
-                        <TextBlock Width="{Binding Columns[3].ActualWidth, ElementName=PlayersGrid}" VerticalAlignment="Center" Style="{StaticResource Overline}" Text="CLASSES" />
+                        <TextBlock Width="{Binding Columns[0].ActualWidth, ElementName=PlayersGrid}" Padding="6,0" VerticalAlignment="Center" Style="{StaticResource Overline}" Text="NAME" />
+                        <TextBlock Width="{Binding Columns[1].ActualWidth, ElementName=PlayersGrid}" VerticalAlignment="Center" Style="{StaticResource Overline}" Text="CLASSES" />
                         <TextBlock Padding="6,0" VerticalAlignment="Center" Style="{StaticResource Overline}" Text="STATUS" />
                     </StackPanel>
                 </Border>
 
                 <Border DockPanel.Dock="Top" Height="48" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
                     <StackPanel Orientation="Horizontal">
-                        <Border Width="{Binding Columns[0].ActualWidth, ElementName=PlayersGrid}" Visibility="{Binding IsAuctionOrder, Converter={StaticResource BoolToVisibility}}" />
-                        <Border Width="{Binding Columns[1].ActualWidth, ElementName=PlayersGrid}" Visibility="{Binding IsAuctionOrder, Converter={StaticResource BoolToVisibility}}" />
-                        <Grid Width="{Binding Columns[2].ActualWidth, ElementName=PlayersGrid}" Margin="0,0,0,0">
+                        <Grid Width="{Binding Columns[0].ActualWidth, ElementName=PlayersGrid}">
                             <TextBox x:Name="NewPlayerBox" Margin="0,0,12,0" Padding="32,5,10,6" VerticalAlignment="Center" VerticalContentAlignment="Center"
                                      Text="{Binding NewPlayerText, UpdateSourceTrigger=PropertyChanged}"
                                      ToolTip="A name, optionally followed by classes (Alice, inf cav), or tick the classes on the right. Enter adds the player.">
@@ -142,7 +154,7 @@
                                        Foreground="{DynamicResource TextFillColorTertiaryBrush}" Text="Add a player"
                                        Visibility="{Binding NewPlayerText, Converter={StaticResource EmptyToVisibility}}" />
                         </Grid>
-                        <StackPanel Width="{Binding Columns[3].ActualWidth, ElementName=PlayersGrid}" VerticalAlignment="Center" Orientation="Horizontal">
+                        <StackPanel Width="{Binding Columns[1].ActualWidth, ElementName=PlayersGrid}" VerticalAlignment="Center" Orientation="Horizontal">
                             <ToggleButton Margin="0,0,4,0" IsChecked="{Binding NewInfantry}" Style="{StaticResource ClassToggle}" Tag="inf" />
                             <ToggleButton Margin="0,0,4,0" IsChecked="{Binding NewArcher}" Style="{StaticResource ClassToggle}" Tag="arc" />
                             <ToggleButton IsChecked="{Binding NewCavalry}" Style="{StaticResource ClassToggle}" Tag="cav" />
@@ -156,7 +168,6 @@
                 </Border>
 
                 <DataGrid x:Name="PlayersGrid"
-                          AllowDrop="True"
                           AutoGenerateColumns="False"
                           Background="Transparent"
                           CanUserAddRows="False"
@@ -164,16 +175,11 @@
                           CanUserReorderColumns="False"
                           CanUserResizeRows="False"
                           CanUserSortColumns="False"
-                          DragLeave="PlayersGrid_DragLeave"
-                          DragOver="PlayersGrid_DragOver"
-                          Drop="PlayersGrid_Drop"
                           GridLinesVisibility="Horizontal"
                           HeadersVisibility="None"
                           IsKeyboardFocusWithinChanged="PlayersGrid_IsKeyboardFocusWithinChanged"
                           ItemsSource="{Binding PlayersView}"
                           PreviewKeyDown="PlayersGrid_PreviewKeyDown"
-                          PreviewMouseLeftButtonUp="PlayersGrid_PreviewMouseLeftButtonUp"
-                          PreviewMouseMove="PlayersGrid_PreviewMouseMove"
                           RowHeight="44"
                           SelectionMode="Extended"
                           SelectionUnit="FullRow"
@@ -184,19 +190,7 @@
                         <SolidColorBrush x:Key="DataGridRowSelectedForegroundThemeBrush" Color="{DynamicResource TextFillColorPrimary}" />
                     </DataGrid.Resources>
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn Width="34" CanUserResize="False"
-                                                Visibility="{Binding Data.IsAuctionOrder, Source={StaticResource Proxy}, Converter={StaticResource BoolToVisibility}}">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <Border Background="Transparent" Cursor="SizeAll" PreviewMouseLeftButtonDown="Handle_PreviewMouseLeftButtonDown" ToolTip="Drag to move">
-                                        <TextBlock HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorTertiaryBrush}" Style="{StaticResource Glyph}" Text="&#xE76F;" />
-                                    </Border>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-                        <DataGridTextColumn Width="48" Binding="{Binding Position}" ElementStyle="{StaticResource CellText}" Header="#" IsReadOnly="True"
-                                            Visibility="{Binding Data.IsAuctionOrder, Source={StaticResource Proxy}, Converter={StaticResource BoolToVisibility}}" />
-                        <DataGridTextColumn Width="*" MinWidth="200" Binding="{Binding Name}" ElementStyle="{StaticResource CellText}" Header="NAME" />
+                        <DataGridTextColumn Width="*" MinWidth="200" Binding="{Binding Name}" EditingElementStyle="{StaticResource CellEditor}" ElementStyle="{StaticResource CellText}" Header="NAME" />
 
                         <DataGridTemplateColumn Width="130" Header="CLASSES">
                             <DataGridTemplateColumn.CellTemplate>
