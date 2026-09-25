@@ -101,8 +101,8 @@ public sealed class DialogService : IDialogService
         }
 
         return kind == ImportKind.Players
-            ? PickFileToOpen("Import players", "Player lists (*.csv;*.txt)|*.csv;*.txt|Tournaments (*.json)|*.json|All files (*.*)|*.*")
-            : PickFileToOpen("Import a tournament", "Tournaments and player lists (*.json;*.csv;*.txt)|*.json;*.csv;*.txt|All files (*.*)|*.*");
+            ? PickFileToOpen("Import players", "Player lists and auction plans (*.csv;*.json;*.txt)|*.csv;*.json;*.txt|All files (*.*)|*.*")
+            : PickFileToOpen("Import a tournament", "Tournaments, player lists and auction plans (*.json;*.csv;*.txt)|*.json;*.csv;*.txt|All files (*.*)|*.*");
     }
 
     public bool CopyToClipboard(string text)

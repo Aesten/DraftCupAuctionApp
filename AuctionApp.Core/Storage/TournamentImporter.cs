@@ -58,13 +58,16 @@ public static class TournamentImporter
         return tournament;
     }
 
-    /// <summary>A new tournament from a list of players, one per line: the name, then the classes.</summary>
+    /// <summary>
+    /// A new tournament from a list of players: the old app's CSV export (<c>Player,INF,ARC,CAV</c> with x marks),
+    /// or any list read by <see cref="RosterParser"/>.
+    /// </summary>
     private static Tournament FromPlayerList(string text, string title)
     {
         var players = RosterParser.Parse(text);
         if (players.Count == 0)
         {
-            throw new InvalidDataException("No players were found in this file. Put one player per line: the name, then the classes (e.g. Alice,inf cav).");
+            throw new InvalidDataException("No players were found in this file. Use one player per line, with a column per class marked x (Player,INF,ARC,CAV).");
         }
 
         var tournament = new Tournament { Title = title };
@@ -96,7 +99,12 @@ public static class TournamentImporter
 
         var division = tournament.AddDivision();
         division.TeamSize = ClampTeamSize(legacy.TeamSize);
-        division.Captains = (legacy.Captains ?? []).Select(c => new Captain { Name = c.Name ?? string.Empty, Budget = c.Budget }).ToList();
+        division.Captains = (legacy.Captains ?? []).Select(c => new Captain
+        {
+            Name = c.Name ?? string.Empty,
+            Budget = c.Budget,
+            Class = PlayerClasses.FromName(c.Class ?? string.Empty) ?? string.Empty,
+        }).ToList();
         return tournament;
     }
 
@@ -160,7 +168,12 @@ public static class TournamentImporter
     private sealed class LegacyCaptain
     {
         public string? Name { get; set; }
-        public decimal Budget { get; set; }
+
+        /// <summary>The old app's default budget.</summary>
+        public decimal Budget { get; set; } = 20m;
+
+        /// <summary>Not in the old app's files; accepted so captains' classes can be given in the same format.</summary>
+        public string? Class { get; set; }
     }
 
     private sealed class LegacyPlayer

@@ -154,6 +154,31 @@ public sealed class StorageTests : IDisposable
     }
 
     [Fact]
+    public void Import_ReadsTheOldAppsCsvExport()
+    {
+        var tournament = TournamentImporter.Import("Player,INF,ARC,CAV\r\nAlice,x,,\r\nBob,,x,x\r\n", "Spring Cup");
+
+        Assert.Equal(["Alice", "Bob"], tournament.Players.Select(p => p.Name));
+        Assert.Equal([PlayerClasses.Infantry], tournament.Players[0].Classes);
+        Assert.Equal([PlayerClasses.Archer, PlayerClasses.Cavalry], tournament.Players[1].Classes);
+    }
+
+    [Fact]
+    public void Import_ReadsCaptainClassesInOldAuctionPlans()
+    {
+        const string json = """
+            { "type": "Auction", "title": "Plan", "players": [], "captains": [ { "name": "Bob", "class": "cav" }, { "name": "Eve", "budget": 18 } ] }
+            """;
+
+        var captains = TournamentImporter.Import(json, "x").Divisions[0].Captains;
+
+        Assert.Equal(PlayerClasses.Cavalry, captains[0].Class);
+        Assert.Equal(20m, captains[0].Budget);
+        Assert.Equal(string.Empty, captains[1].Class);
+        Assert.Equal(18m, captains[1].Budget);
+    }
+
+    [Fact]
     public void Import_MakesATournamentFromAPlayerList()
     {
         var tournament = TournamentImporter.Import("\uFEFFName,Classes\r\nAlice,inf\r\nBob,arc cav\r\n\"Smith, Carol\",Cavalry\r\n", "Spring Cup");

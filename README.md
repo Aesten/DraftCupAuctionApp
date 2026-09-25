@@ -14,7 +14,7 @@ A tournament holds:
 
 - **Player pool**: shared by the whole tournament. Players have classes (INF / ARC / CAV).
   - Add players from the first row of the list: type the name, tick the classes (or type them: `Alice, inf cav`) and press Enter.
-  - **Import…** adds the players of a list file, for example one kept in Excel (see [Player lists](#player-lists)). **Export…** saves the pool as a spreadsheet, and that file can be imported again.
+  - **Import…** adds the players of a player list (CSV, e.g. from Excel) or an auction plan (see [Player lists](#player-lists)). **Export…** saves the pool as a spreadsheet in the same format, so it can be imported again.
   - The pool is shown **A–Z** by default, so opening it during an auction doesn't reveal who comes next.
   - Filter it with the search box (it narrows the list as you type), the class buttons, and **All / Available / Unavailable** (not bought yet / already bought). Click a player's class icons to switch those classes on or off.
   - **Auction order** shows the order used by divisions that don't shuffle. Drag the handles (or press Alt+↑/↓) to rearrange it.
@@ -86,18 +86,32 @@ When you import a copy of a tournament you already have, the two are **merged**.
 
 ### Player lists
 
-**Import** (start page or menu) turns a player list into a new tournament, and **Import…** in the player pool adds a list to the current pool. Both show the expected format before asking for the file: one player per line, the name, then the classes.
+**Import** (start page or menu) turns a player list or an auction plan into a new tournament, and **Import…** in the player pool adds its players to the current pool. Both show the expected formats before asking for the file. They are the formats of the previous version of the app:
 
-```csv
-Name,Classes
-Alice,inf
-Bob,arc cav
-Carol,cavalry
-```
+- **CSV** (e.g. from Excel: **File › Save As › CSV**): the player list the previous version exported, one column per class marked `x`. The pool's **Export…** file has the same columns (plus where each player ended up) and can be imported as it is.
 
-- Classes are `inf`, `arc` and `cav` (or `infantry`, `archer`, `cavalry`), separated by spaces.
-- Commas, semicolons and tabs all work between columns, and the header line is optional.
-- From Excel: **File › Save As › CSV**. The pool's **Export…** file (one column per class, marked `x`) can be imported as it is.
+  ```csv
+  Player,INF,ARC,CAV
+  Alice,x,,
+  Bob,,x,x
+  ```
+
+- **JSON**: an auction plan of the previous version. Captains can also have a `"class"` (the previous version didn't have one).
+
+  ```json
+  {
+    "type": "Auction",
+    "title": "Spring Cup",
+    "teamSize": 6,
+    "players": [
+      { "name": "Alice", "classes": ["inf"] },
+      { "name": "Bob", "classes": ["arc", "cav"] }
+    ],
+    "captains": [
+      { "name": "Dave", "budget": 20, "class": "cav" }
+    ]
+  }
+  ```
 
 Each save keeps the previous version as a backup. Deleted tournaments, and tournaments before a reset or an import, are copied to the `Deleted` folder rather than erased.
 

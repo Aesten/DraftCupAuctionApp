@@ -18,7 +18,18 @@
             <TextBlock x:Name="HeadingText" Style="{StaticResource SectionTitle}" />
             <TextBlock x:Name="IntroText" Margin="0,10,0,0" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextWrapping="Wrap" />
 
-            <TextBlock Margin="0,16,0,6" Style="{StaticResource Overline}" Text="PLAYER LIST FORMAT (CSV)" />
+            <!-- The formats of the previous version of the app: its CSV export and its auction plan files. -->
+            <Grid Margin="0,16,0,6">
+                <TextBlock VerticalAlignment="Center" Style="{StaticResource Overline}" Text="FILE FORMAT" />
+                <ListBox x:Name="FormatList" HorizontalAlignment="Right" SelectedIndex="0" SelectionChanged="FormatList_SelectionChanged" Style="{StaticResource SegmentedList}">
+                    <ListBoxItem>
+                        <TextBlock Text="CSV (Excel)" />
+                    </ListBoxItem>
+                    <ListBoxItem>
+                        <TextBlock Text="JSON" />
+                    </ListBoxItem>
+                </ListBox>
+            </Grid>
             <Border Padding="14,10" Background="{DynamicResource SubtleFillColorSecondaryBrush}" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                     BorderThickness="1" CornerRadius="6">
                 <Grid>
@@ -29,8 +40,7 @@
                     </Button>
                 </Grid>
             </Border>
-            <TextBlock Margin="0,8,0,0" Style="{StaticResource Caption}" TextWrapping="Wrap"
-                       Text="One player per line: the name, then the classes (inf, arc, cav, or infantry, archer, cavalry) separated by spaces. Commas, semicolons and tabs all work between columns, and the header line is optional. From Excel: File › Save As › CSV. The pool's Export file can be imported as it is." />
+            <TextBlock x:Name="FormatNote" Margin="0,8,0,0" Style="{StaticResource Caption}" TextWrapping="Wrap" />
         </StackPanel>
 
         <Border Grid.Row="1"
