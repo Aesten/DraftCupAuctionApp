@@ -29,6 +29,10 @@ public sealed class TournamentStore
         Directory.CreateDirectory(TournamentsDirectory);
     }
 
+    /// <summary>
+    /// %LOCALAPPDATA%\DraftCupAuction. Fixed on purpose, whatever the exe is called (it was DraftCupAuction.exe up to
+    /// 3.1.0), so tournaments saved by earlier versions are still found.
+    /// </summary>
     public static string DefaultRootDirectory =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DraftCupAuction");
 

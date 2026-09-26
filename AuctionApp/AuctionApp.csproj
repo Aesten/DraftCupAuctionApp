@@ -10,7 +10,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RootNamespace>AuctionApp</RootNamespace>
-    <AssemblyName>DraftCupAuction</AssemblyName>
+    <AssemblyName>DraftCupAuctionApp</AssemblyName>
     <Product>Draft Cup Auction</Product>
     <Version>3.1.1</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>

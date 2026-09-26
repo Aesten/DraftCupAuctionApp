@@ -187,12 +187,20 @@ public sealed class ClassBrushConverter : IValueConverter
         [PlayerClasses.Cavalry] = Color.FromRgb(0x4A, 0x8F, 0xE0),
     };
 
+    private static readonly Dictionary<(Color, double), SolidColorBrush> Brushes = new();
+
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
         var color = value is string code && Colors.TryGetValue(code, out var known) ? known : System.Windows.Media.Colors.Gray;
         var opacity = double.TryParse(parameter?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var o) ? o : 1.0;
-        var brush = new SolidColorBrush(color) { Opacity = opacity };
-        brush.Freeze();
+        if (!Brushes.TryGetValue((color, opacity), out var brush))
+        {
+            // Shared (frozen) brushes: the team cards and the board ask for the same few many times.
+            brush = new SolidColorBrush(color) { Opacity = opacity };
+            brush.Freeze();
+            Brushes[(color, opacity)] = brush;
+        }
+
         return brush;
     }
 

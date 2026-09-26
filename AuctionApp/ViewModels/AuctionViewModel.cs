@@ -22,6 +22,7 @@ public sealed partial class AuctionViewModel : ObservableObject
     private readonly UndoHistory _history = new();
     private AuctionEngine? _engine;
     private Guid? _lastOnBlock;
+    private string _boardSignature = string.Empty;
 
     public AuctionViewModel(DivisionViewModel owner)
     {
@@ -200,6 +201,7 @@ public sealed partial class AuctionViewModel : ObservableObject
             Skipped.Clear();
             Remaining.Clear();
             Board.Clear();
+            _boardSignature = string.Empty;
             LastAction = string.Empty;
             UpdateUndo();
             return;
@@ -279,10 +281,27 @@ public sealed partial class AuctionViewModel : ObservableObject
 
     /// <summary>
     /// Captain Pick: rebuilds the pick board, one card per tier with a column per class, names sorted alphabetically.
-    /// Players picked leave the board; the one on the block stays, highlighted, until they are sold.
+    /// Players picked leave the board; the one on the block stays, highlighted, until they are sold. When only the
+    /// player on the block changed, the tiles are updated in place: rebuilding the board is what costs time.
     /// </summary>
     private void RefreshBoard(AuctionSession session)
     {
+        var signature = session.CaptainPick && !session.IsFinished
+            ? string.Join("|", _owner.Tournament.TierMinimums) + "#" + string.Join(";", session.Queue
+                .OrderBy(player => player.Id)
+                .Select(player => $"{player.Id}:{player.Name}:{player.Tier}:{player.Classes.FirstOrDefault()}"))
+            : string.Empty;
+        if (signature == _boardSignature && Board.Count > 0)
+        {
+            foreach (var tile in Board.SelectMany(tier => tier.Columns).SelectMany(column => column.Players))
+            {
+                tile.IsOnBlock = tile.Id == session.OnBlockId;
+            }
+
+            return;
+        }
+
+        _boardSignature = signature;
         Board.Clear();
         if (!session.CaptainPick || session.IsFinished)
         {
@@ -779,21 +798,43 @@ public sealed partial class TeamCardViewModel(Guid captainId, AuctionViewModel o
         InitialBudget = (double)team.InitialBudget;
         Remaining = (double)team.Remaining;
         Reserved = (double)team.HalfBudgetReserve;
-        CaptainClasses = AuctionViewModel.CaptainClasses(engine.Division, CaptainId);
-        Composition = AuctionViewModel.Composition(engine.Division.CaptainClass(CaptainId), team.Picks);
-
-        Picks.Clear();
-        foreach (var pick in team.Picks)
+        // Lists are only replaced when their content changed: every card redrawing its roster after each sale is what
+        // made slower PCs lag.
+        var captainClasses = AuctionViewModel.CaptainClasses(engine.Division, CaptainId);
+        if (!captainClasses.SequenceEqual(CaptainClasses))
         {
-            Picks.Add(new PickItemViewModel(pick, !engine.Session.IsFinished, engine.Session.CaptainPick, this, owner));
+            CaptainClasses = captainClasses;
         }
 
-        EmptySlots.Clear();
-        for (var i = 0; i < slotsLeft; i++)
+        var composition = AuctionViewModel.Composition(engine.Division.CaptainClass(CaptainId), team.Picks);
+        if (!composition.SequenceEqual(Composition))
         {
-            EmptySlots.Add(i);
+            Composition = composition;
+        }
+
+        var rosterSignature = $"{engine.Session.IsFinished}|{engine.Session.CaptainPick}|{Name}|" + string.Join(";", team.Picks.Select(pick =>
+            $"{pick.Player.Id}:{pick.Player.Name}:{pick.Price}:{string.Join(",", pick.Player.Classes)}"));
+        if (rosterSignature != _rosterSignature)
+        {
+            _rosterSignature = rosterSignature;
+            Picks.Clear();
+            foreach (var pick in team.Picks)
+            {
+                Picks.Add(new PickItemViewModel(pick, !engine.Session.IsFinished, engine.Session.CaptainPick, this, owner));
+            }
+        }
+
+        if (EmptySlots.Count != slotsLeft)
+        {
+            EmptySlots.Clear();
+            for (var i = 0; i < slotsLeft; i++)
+            {
+                EmptySlots.Add(i);
+            }
         }
     }
+
+    private string _rosterSignature = string.Empty;
 
     [RelayCommand]
     private void Select() => owner.Select(this);
@@ -884,13 +925,14 @@ public sealed class BoardColumnViewModel(string code, IReadOnlyList<BoardPlayerV
 }
 
 /// <summary>Captain Pick: a player on the pick board. Clicking them puts them on the block.</summary>
-public sealed partial class BoardPlayerViewModel(SessionPlayer player, bool isOnBlock, AuctionViewModel auction)
+public sealed partial class BoardPlayerViewModel(SessionPlayer player, bool isOnBlock, AuctionViewModel auction) : ObservableObject
 {
     public Guid Id => player.Id;
 
     public string Name => player.Name;
 
-    public bool IsOnBlock => isOnBlock;
+    [ObservableProperty]
+    public partial bool IsOnBlock { get; set; } = isOnBlock;
 
     [RelayCommand]
     private void Pick() => auction.PutOnBlock(this);
