@@ -30,6 +30,24 @@ internal static class TestData
         return division;
     }
 
+    /// <summary>
+    /// Starts a division while another one is still running, as happens when copies auctioned on different computers
+    /// are merged (one PC can't start a second auction while one runs).
+    /// </summary>
+    public static AuctionEngine StartElsewhere(Tournament tournament, Division division)
+    {
+        var copy = Core.Storage.TournamentJson.Clone(tournament);
+        foreach (var other in copy.Divisions.Where(other => other.Id != division.Id && other.Status == DivisionStatus.InProgress))
+        {
+            other.Session = null;
+        }
+
+        var copyDivision = copy.FindDivision(division.Id)!;
+        new AuctionEngine(copy, copyDivision) { KeepPoolOrder = true }.Start();
+        division.Session = copyDivision.Session;
+        return new AuctionEngine(tournament, division) { KeepPoolOrder = true };
+    }
+
     /// <summary>Starts an auction, in pool order unless <paramref name="shuffle"/>, so tests know who comes up.</summary>
     public static AuctionEngine Start(Tournament tournament, Division? division = null, bool shuffle = false)
     {

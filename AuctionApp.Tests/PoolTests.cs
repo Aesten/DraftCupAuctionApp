@@ -126,15 +126,34 @@ public class PoolTests
     }
 
     [Fact]
-    public void Validator_WarnsWhenAnotherDivisionIsStillRunning()
+    public void OnlyOneAuctionRunsAtATime()
     {
         var tournament = TestData.Tournament(players: 12);
         var second = TestData.AddDivision(tournament);
-        TestData.Start(tournament);
+        var first = TestData.Start(tournament);
 
         var issues = DivisionValidator.Validate(tournament, second);
 
-        Assert.Contains(issues, issue => issue.Severity == IssueSeverity.Warning && issue.Message.Contains("isn't finished"));
+        Assert.Contains(issues, issue => issue.Severity == IssueSeverity.Error && issue.Message.Contains("still running"));
+        Assert.Throws<AuctionException>(() => TestData.Start(tournament, second));
+
+        first.Finish();
+        TestData.Start(tournament, second);
+    }
+
+    [Fact]
+    public void EachAuction_ShufflesItsOwnOrder()
+    {
+        var tournament = TestData.Tournament(players: 20);
+        var second = TestData.AddDivision(tournament);
+        var first = TestData.Start(tournament, shuffle: true);
+        var firstOrder = first.Session.Queue.Select(player => player.Name).ToList();
+        first.Finish();
+
+        var other = new AuctionEngine(tournament, second);
+        other.Start();
+
+        Assert.NotEqual(firstOrder, other.Session.Queue.Select(player => player.Name).ToList());
     }
 
     [Fact]
@@ -144,7 +163,7 @@ public class PoolTests
         var second = TestData.AddDivision(tournament);
         var a = TestData.Start(tournament);
         a.Skip();
-        var b = TestData.Start(tournament, second);
+        var b = TestData.StartElsewhere(tournament, second);
         b.Sell(b.Session.Teams[0].CaptainId, 1m); // Player 1, still in A's skipped list
         b.Sell(b.Session.Teams[0].CaptainId, 1m); // Player 2, on the block in A
 
@@ -163,7 +182,7 @@ public class PoolTests
         var second = TestData.AddDivision(tournament);
         // Both divisions auctioned in parallel on different computers, then merged.
         var a = TestData.Start(tournament);
-        var b = TestData.Start(tournament, second);
+        var b = TestData.StartElsewhere(tournament, second);
         a.Sell(a.Session.Teams[0].CaptainId, 1m);
         b.Sell(b.Session.Teams[0].CaptainId, 1m);
 

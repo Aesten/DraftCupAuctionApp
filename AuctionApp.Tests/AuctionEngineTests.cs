@@ -186,7 +186,8 @@ public class AuctionEngineTests
 
         var broke = engine.CheckSale(team.CaptainId, 5m)!;
         Assert.True(broke.CanOverride);
-        Assert.Contains("only has 4.0", broke.Message);
+        Assert.Contains("half budget cap", broke.Message); // the cards show what can be spent before the half
+        Assert.Contains("4.0 left in total", broke.Message);
         engine.Sell(team.CaptainId, 5m, overBudget: true);
         Assert.Equal(-1m, team.Remaining);
     }

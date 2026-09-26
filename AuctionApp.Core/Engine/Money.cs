@@ -7,6 +7,15 @@ public static class Money
 {
     public const decimal Step = 0.1m;
 
+    /// <summary>The highest amount anywhere: a budget, a bid, a price. Nothing in a draft cup goes past this.</summary>
+    public const decimal Max = 30m;
+
+    /// <summary>The smallest budget a captain can have.</summary>
+    public const decimal MinBudget = 0.1m;
+
+    /// <summary>Whether an amount typed for a budget is acceptable: 0.1 to 30.0, in steps of 0.1.</summary>
+    public static bool IsValidBudget(decimal amount) => amount is >= MinBudget and <= Max && IsWholeStep(amount);
+
     public static string Format(decimal amount, IFormatProvider? culture = null) =>
         amount.ToString("0.0", culture ?? CultureInfo.CurrentCulture);
 

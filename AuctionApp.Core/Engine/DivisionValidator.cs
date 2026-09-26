@@ -40,9 +40,15 @@ public static class DivisionValidator
             Error($"Captain \"{name}\" is listed more than once.");
         }
 
-        if (division.Captains.Any(captain => captain.Budget < 0))
+        if (division.Captains.Any(captain => !Money.IsValidBudget(captain.Budget)))
         {
-            Error("Budgets can't be negative.");
+            Error($"Budgets go from {Money.Format(Money.MinBudget)} to {Money.Format(Money.Max)}, in steps of {Money.Format(Money.Step)}.");
+        }
+
+        var classless = division.Captains.Where(captain => captain.Class.Length == 0 && !string.IsNullOrWhiteSpace(captain.Name)).Select(captain => captain.Name.Trim()).ToList();
+        if (classless.Count > 0)
+        {
+            Warning($"{(classless.Count == 1 ? "Captain" : "Captains")} {string.Join(", ", classless)} {(classless.Count == 1 ? "has" : "have")} no class: the team's class counts won't include them.");
         }
 
         var available = TournamentRules.AvailablePlayers(tournament, division);
@@ -81,9 +87,10 @@ public static class DivisionValidator
             Warning($"{unnamed} player(s) in the pool have no name and won't be auctioned.");
         }
 
+        // One auction at a time: two running at once would offer the same players.
         foreach (var other in tournament.Divisions.Where(other => other != division && other.Status == DivisionStatus.InProgress))
         {
-            Warning($"The auction of {other.Name} isn't finished. Players it hasn't sold yet are also available here.");
+            Error($"The {other.Name} auction is still running. Finish it first: only one auction can run at a time.");
         }
 
         return issues;

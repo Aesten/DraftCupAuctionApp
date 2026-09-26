@@ -116,9 +116,10 @@ public sealed class AuctionEngine
         var spendable = team.Spendable(Session.HalfBudgetCap);
         if (price > spendable)
         {
+            // While the cap is on, the team cards show what can be spent before the half: the warning says the same.
             return new(
-                Session.HalfBudgetCap && price <= team.Remaining
-                    ? $"{team.CaptainName} can only spend {Money.Format(Math.Max(0, spendable))} while the half budget cap is on."
+                Session.HalfBudgetCap
+                    ? $"{team.CaptainName} can only spend {Money.Format(Math.Max(0, spendable))} while the half budget cap is on ({Money.Format(team.Remaining)} left in total)."
                     : $"{team.CaptainName} only has {Money.Format(team.Remaining)} left.",
                 CanOverride: true);
         }
@@ -192,6 +193,31 @@ public sealed class AuctionEngine
         Log(ActivityKind.Returned, $"{player.Name} is back on the block");
     }
 
+    /// <summary>
+    /// Random Pick: puts a player waiting in the queue on the block now. The player who was on the block comes up
+    /// right after.
+    /// </summary>
+    public void BringToBlock(Guid playerId)
+    {
+        EnsureRunning();
+        EnsureRandomPick();
+        var index = Session.Queue.FindIndex(p => p.Id == playerId);
+        if (index < 0)
+        {
+            throw new AuctionException("That player isn't in the queue.");
+        }
+
+        if (index == 0)
+        {
+            return;
+        }
+
+        var player = Session.Queue[index];
+        Session.Queue.RemoveAt(index);
+        Session.Queue.Insert(0, player);
+        Log(ActivityKind.Returned, $"{player.Name} brought to the block");
+    }
+
     /// <summary>Sends every skipped player to the end of the queue for another round.</summary>
     public void RequeueSkipped()
     {
@@ -249,25 +275,73 @@ public sealed class AuctionEngine
     }
 
     /// <summary>
-    /// Corrects the price of a sale. Corrections only check that the team doesn't go over its budget: the half budget
-    /// cap applies to bids, not to fixing a typo afterwards.
+    /// Why this price correction needs the auctioneer's confirmation (the team would go over its budget), or null.
+    /// The half budget cap applies to bids, not to fixing a typo afterwards. A price out of range can't be used at all.
     /// </summary>
-    public void ChangePickPrice(Guid captainId, Guid playerId, decimal price)
+    public SaleIssue? CheckPickPrice(Guid captainId, Guid playerId, decimal price)
     {
         var (team, pick) = FindPick(captainId, playerId);
-        CheckPrice(price);
-        if (price > team.Remaining + pick.Price)
+        if (PriceProblem(price) is { } problem)
         {
-            throw new AuctionException($"{team.CaptainName} can't afford {Money.Format(price)} ({Money.Format(team.Remaining + pick.Price)} available).");
+            return new(problem, CanOverride: false);
         }
 
-        var old = pick.Price;
-        pick.Price = price;
-        Log(ActivityKind.Info, $"{pick.Player.Name}'s price changed from {Money.Format(old)} to {Money.Format(price)}");
+        var available = team.Remaining + pick.Price;
+        return price > available
+            ? new($"{team.CaptainName} would go over their budget: {Money.Format(price)} for {Money.Format(available)} available.", CanOverride: true)
+            : null;
     }
 
-    /// <summary>Gives a bought player to another team at the same price (the first team is refunded).</summary>
-    public void MovePick(Guid captainId, Guid playerId, Guid toCaptainId)
+    /// <summary>Corrects the price of a sale. <paramref name="overBudget"/>: the auctioneer allowed going over the budget.</summary>
+    public void ChangePickPrice(Guid captainId, Guid playerId, decimal price, bool overBudget = false)
+    {
+        var issue = CheckPickPrice(captainId, playerId, price);
+        if (issue != null && !(overBudget && issue.CanOverride))
+        {
+            throw new AuctionException(issue.Message);
+        }
+
+        var (_, pick) = FindPick(captainId, playerId);
+        var old = pick.Price;
+        pick.Price = price;
+        Log(ActivityKind.Info, $"{pick.Player.Name}'s price changed from {Money.Format(old)} to {Money.Format(price)}" + (issue != null ? " (over the budget, confirmed)" : string.Empty));
+    }
+
+    /// <summary>
+    /// The price a moved player costs the other team: the same, or nothing once the auction is finished (a trade
+    /// between teams, not a sale).
+    /// </summary>
+    public decimal MovePrice(Pick pick) => Session.IsFinished ? 0m : pick.Price;
+
+    /// <summary>
+    /// Why moving this player to the other team can't be done (a full team), or needs the auctioneer's confirmation
+    /// (the other team can't afford them), or null.
+    /// </summary>
+    public SaleIssue? CheckMovePick(Guid captainId, Guid playerId, Guid toCaptainId)
+    {
+        var (team, pick) = FindPick(captainId, playerId);
+        var target = GetTeam(toCaptainId);
+        if (target == team)
+        {
+            return null;
+        }
+
+        if (SlotsLeft(target) == 0)
+        {
+            return new($"{target.CaptainName}'s team is already full.", CanOverride: false);
+        }
+
+        var price = MovePrice(pick);
+        return price > target.Remaining
+            ? new($"{target.CaptainName} would go over their budget: {Money.Format(price)} for {Money.Format(target.Remaining)} left.", CanOverride: true)
+            : null;
+    }
+
+    /// <summary>
+    /// Gives a bought player to another team, which pays the same price (the first team is refunded). Once the auction
+    /// is finished, the player moves for free. <paramref name="overBudget"/>: the auctioneer allowed going over the budget.
+    /// </summary>
+    public void MovePick(Guid captainId, Guid playerId, Guid toCaptainId, bool overBudget = false)
     {
         var (team, pick) = FindPick(captainId, playerId);
         var target = GetTeam(toCaptainId);
@@ -276,19 +350,16 @@ public sealed class AuctionEngine
             return;
         }
 
-        if (SlotsLeft(target) == 0)
+        var issue = CheckMovePick(captainId, playerId, toCaptainId);
+        if (issue != null && !(overBudget && issue.CanOverride))
         {
-            throw new AuctionException($"{target.CaptainName}'s team is already full.");
+            throw new AuctionException(issue.Message);
         }
 
-        if (pick.Price > target.Remaining)
-        {
-            throw new AuctionException($"{target.CaptainName} can't afford {Money.Format(pick.Price)} ({Money.Format(target.Remaining)} left).");
-        }
-
+        pick.Price = MovePrice(pick);
         team.Picks.Remove(pick);
         target.Picks.Add(pick);
-        Log(ActivityKind.Info, $"{pick.Player.Name} moved from {team.CaptainName} to {target.CaptainName} ({Money.Format(pick.Price)})");
+        Log(ActivityKind.Info, $"{pick.Player.Name} moved from {team.CaptainName} to {target.CaptainName} ({Money.Format(pick.Price)})" + (issue != null ? " (over the budget, confirmed)" : string.Empty));
     }
 
     /// <summary>
@@ -353,16 +424,9 @@ public sealed class AuctionEngine
 
     private static string? PriceProblem(decimal price) =>
         price < 0 ? "The price can't be negative."
+        : price > Money.Max ? $"Prices go up to {Money.Format(Money.Max)}."
         : !Money.IsWholeStep(price) ? $"Prices go in steps of {Money.Format(Money.Step)}."
         : null;
-
-    private static void CheckPrice(decimal price)
-    {
-        if (PriceProblem(price) is { } problem)
-        {
-            throw new AuctionException(problem);
-        }
-    }
 
     private (SessionTeam Team, Pick Pick) FindPick(Guid captainId, Guid playerId)
     {
