@@ -174,7 +174,7 @@
                                         </StackPanel>
                                         <Border Grid.Column="2" Margin="8,0,0,0" IsEnabled="{Binding Data.IsEditable, Source={StaticResource Proxy}}"
                                                 Style="{StaticResource ErrorBorder}" Tag="{Binding HasBudgetError}">
-                                            <TextBox HorizontalContentAlignment="Right" VerticalContentAlignment="Center" Text="{Binding BudgetText, UpdateSourceTrigger=PropertyChanged}" />
+                                            <TextBox HorizontalContentAlignment="Right" Style="{StaticResource NumericTextBox}" Text="{Binding BudgetText, UpdateSourceTrigger=PropertyChanged}" />
                                         </Border>
                                         <StackPanel Grid.Column="3" Margin="4,0,0,0" IsEnabled="{Binding Data.IsEditable, Source={StaticResource Proxy}}" Orientation="Horizontal">
                                             <Button Command="{Binding Data.MoveCaptainUpCommand, Source={StaticResource Proxy}}" CommandParameter="{Binding}"
