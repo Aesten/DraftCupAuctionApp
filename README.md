@@ -103,6 +103,7 @@ In a Captain Pick tournament, players don't come up in a random order: captains 
 | Enter (in a text box) | Confirm and leave the box (in the price box: confirm the price, it doesn't sell) |
 | Up / Down (in the price box) | Price ±0.1 |
 | Ctrl+Enter (auction page) | Sold! to the selected team |
+| Enter / Escape (pick board) | Close the board and go back to the auction (Enter once a player is picked) |
 | Delete (in the player pool) | Remove the selected players |
 | 1 to 5 (in the player pool, Captain Pick) | Set the tier of the selected players |
 | Ctrl+Z | Undo the last auction action |

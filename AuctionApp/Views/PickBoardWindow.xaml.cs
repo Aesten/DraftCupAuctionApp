@@ -27,7 +27,10 @@ public partial class PickBoardWindow : Window
         }
     }
 
-    /// <summary>F11: full screen on / off; Esc leaves full screen.</summary>
+    /// <summary>
+    /// Enter: back to the auction once a player is on the block (the board closes). Esc: leaves full screen, else
+    /// closes the board. F11: full screen on / off.
+    /// </summary>
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
@@ -39,6 +42,11 @@ public partial class PickBoardWindow : Window
         else if (e.Key == Key.Escape && WindowStyle == WindowStyle.None)
         {
             SetFullScreen(false);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape || e.Key == Key.Enter && DataContext is AuctionViewModel { HasCurrentPlayer: true })
+        {
+            Close();
             e.Handled = true;
         }
     }
