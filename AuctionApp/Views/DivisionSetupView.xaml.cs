@@ -11,11 +11,23 @@ public partial class DivisionSetupView : UserControl
         InitializeComponent();
     }
 
-    private void DivisionName_LostKeyboardFocus(object sender, System.Windows.Input.KeyboardFocusChangedEventArgs e) =>
-        (DataContext as DivisionSetupViewModel)?.CommitName();
+    // A box counts as left once the focus is outside it and its clear (×) button, which takes the focus when clicked.
 
-    private void CaptainBox_LostKeyboardFocus(object sender, System.Windows.Input.KeyboardFocusChangedEventArgs e) =>
-        ((sender as FrameworkElement)?.DataContext as CaptainRowViewModel)?.CommitEdits();
+    private void DivisionName_FocusWithinChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.NewValue is false)
+        {
+            (DataContext as DivisionSetupViewModel)?.CommitName();
+        }
+    }
+
+    private void CaptainBox_FocusWithinChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.NewValue is false)
+        {
+            ((sender as FrameworkElement)?.DataContext as CaptainRowViewModel)?.CommitEdits();
+        }
+    }
 
     /// <summary>Puts the cursor in the name box of a captain that was just added.</summary>
     private void CaptainName_Loaded(object sender, RoutedEventArgs e)

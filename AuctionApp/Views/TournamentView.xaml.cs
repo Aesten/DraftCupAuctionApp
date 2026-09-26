@@ -1,5 +1,4 @@
 using System.Windows.Controls;
-using System.Windows.Input;
 using AuctionApp.ViewModels;
 
 namespace AuctionApp.Views;
@@ -11,5 +10,12 @@ public partial class TournamentView : UserControl
         InitializeComponent();
     }
 
-    private void Title_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e) => (DataContext as TournamentViewModel)?.CommitTitle();
+    /// <summary>The title box was left (the focus is outside it and its clear button): an emptied title comes back.</summary>
+    private void Title_FocusWithinChanged(object sender, System.Windows.DependencyPropertyChangedEventArgs e)
+    {
+        if (e.NewValue is false)
+        {
+            (DataContext as TournamentViewModel)?.CommitTitle();
+        }
+    }
 }
