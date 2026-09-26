@@ -86,10 +86,6 @@ public partial class AuctionView : UserControl
         _wheelDelta -= notches * Mouse.MouseWheelDeltaForOneLine;
         var step = (Keyboard.Modifiers & ModifierKeys.Control) != 0 ? 1.0m : 0.1m;
         viewModel.ChangePriceCommand.Execute((notches * step).ToString(System.Globalization.CultureInfo.InvariantCulture));
-        if (PriceBox.IsKeyboardFocusWithin)
-        {
-            PriceBox.SelectAll();
-        }
     }
 
     /// <summary>Leaving the price box (Enter, or a click elsewhere) shows the price as it will be used.</summary>
@@ -131,15 +127,20 @@ public partial class AuctionView : UserControl
         }
     }
 
-    /// <summary>After selecting the bidding team, the price box gets the focus so the price can be typed straight away.</summary>
+    /// <summary>
+    /// After selecting the bidding team, the page takes the keyboard focus (unless the price is being typed), so
+    /// Ctrl+Enter sells right away. The price box isn't selected: its highlighted text was distracting on stream.
+    /// </summary>
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(AuctionViewModel.SelectedTeam) && sender is AuctionViewModel { SelectedTeam: not null })
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
             {
-                PriceBox.Focus();
-                PriceBox.SelectAll();
+                if (!PriceBox.IsKeyboardFocusWithin && !IsKeyboardFocusWithin)
+                {
+                    Focus();
+                }
             });
         }
     }
