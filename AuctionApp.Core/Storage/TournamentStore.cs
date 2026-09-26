@@ -10,7 +10,8 @@ public sealed record TournamentSummary(
     int PlayerCount,
     int DivisionCount,
     int DivisionsInProgress,
-    int DivisionsFinished);
+    int DivisionsFinished,
+    AuctionFormat Format = AuctionFormat.RandomPick);
 
 /// <summary>
 /// The app's library of tournaments, kept in the user's local app data folder, one file per tournament. Writes are
@@ -116,7 +117,8 @@ public sealed class TournamentStore
         tournament.Players.Count,
         tournament.Divisions.Count,
         tournament.Divisions.Count(division => division.Status == DivisionStatus.InProgress),
-        tournament.Divisions.Count(division => division.Status == DivisionStatus.Finished));
+        tournament.Divisions.Count(division => division.Status == DivisionStatus.Finished),
+        tournament.Format);
 
     private static string Stamp() => DateTime.Now.ToString("yyyyMMdd-HHmmss");
 

@@ -20,6 +20,8 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
             Captains.Add(new CaptainRowViewModel(captain, this));
         }
 
+        TierMinimums = Tiers.All.Select(tier => new TierMinimumViewModel(tier, Division, this)).ToList();
+
         Refresh();
     }
 
@@ -34,6 +36,13 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
     public IReadOnlyList<int> UpcomingOptions { get; } = Enumerable.Range(0, 6).ToList();
 
     public ObservableCollection<CaptainRowViewModel> Captains { get; } = [];
+
+    /// <summary>Captain Pick: the minimum bid of each tier.</summary>
+    public IReadOnlyList<TierMinimumViewModel> TierMinimums { get; }
+
+    public bool IsCaptainPick => Tournament.IsCaptainPick;
+
+    public bool IsRandomPick => !IsCaptainPick;
 
     public ObservableCollection<ValidationIssue> Issues { get; } = [];
 
@@ -131,7 +140,7 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
         var available = TournamentRules.AvailablePlayers(Tournament, Division).Count;
         var picked = TournamentRules.PickedPlayerIds(Tournament, except: Division).Count;
         AvailabilityText = IsLocked
-            ? "Players added to the pool from now on go to this auction's skipped list."
+            ? $"Players added to the pool from now on go to this auction's {(IsCaptainPick ? "pick board" : "skipped list")}."
             : $"{available} of the {Tournament.Players.Count} players in the pool will be auctioned"
               + (picked > 0 ? $" ({picked} already bought in other divisions)." : ".");
         OnPropertyChanged(nameof(CaptainsHeader));
@@ -307,6 +316,41 @@ public sealed partial class CaptainRowViewModel : ObservableObject
         if (!HasBudgetError && Model.Budget != budget)
         {
             Model.Budget = budget;
+            _owner?.Changed();
+        }
+    }
+}
+
+/// <summary>Captain Pick: the minimum bid of one tier, typed like a budget ("1.5" or "1,5").</summary>
+public sealed partial class TierMinimumViewModel : ObservableObject
+{
+    private readonly Division _division;
+    private readonly DivisionSetupViewModel _owner;
+
+    public TierMinimumViewModel(int tier, Division division, DivisionSetupViewModel owner)
+    {
+        Tier = tier;
+        _division = division;
+        _owner = owner;
+        Text = Money.Format(division.TierMinimums[tier - 1]);
+    }
+
+    public int Tier { get; }
+
+    public string Label => Tiers.Name(Tier);
+
+    [ObservableProperty]
+    public partial string Text { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasError { get; set; }
+
+    partial void OnTextChanged(string value)
+    {
+        HasError = !Money.TryParse(value, out var minimum) || minimum < 0 || !Money.IsWholeStep(minimum);
+        if (!HasError && _division.TierMinimums[Tier - 1] != minimum)
+        {
+            _division.TierMinimums[Tier - 1] = minimum;
             _owner?.Changed();
         }
     }

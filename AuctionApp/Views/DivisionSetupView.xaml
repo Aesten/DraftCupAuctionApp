@@ -90,9 +90,33 @@
                             </ComboBox.ItemTemplate>
                         </ComboBox>
 
-                        <TextBlock Style="{StaticResource FieldLabel}" Text="Upcoming players on screen" />
-                        <ComboBox Width="200" HorizontalAlignment="Left" ItemsSource="{Binding UpcomingOptions}" SelectedItem="{Binding UpcomingShown}"
-                                  ToolTip="The rest of the queue stays hidden, so captains can't plan too far ahead" />
+                        <StackPanel Visibility="{Binding IsRandomPick, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="Upcoming players on screen" />
+                            <ComboBox Width="200" HorizontalAlignment="Left" ItemsSource="{Binding UpcomingOptions}" SelectedItem="{Binding UpcomingShown}"
+                                      ToolTip="The rest of the queue stays hidden, so captains can't plan too far ahead" />
+                        </StackPanel>
+
+                        <!-- Captain Pick: where bidding starts for each tier -->
+                        <StackPanel Visibility="{Binding IsCaptainPick, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="Minimum bid per tier"
+                                       ToolTip="The first captain to pick a player bids this amount; others can bid higher" />
+                            <ItemsControl Focusable="False" ItemsSource="{Binding TierMinimums}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,0,0,6">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="70" />
+                                                <ColumnDefinition Width="90" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock VerticalAlignment="Center" Style="{StaticResource Body}" Text="{Binding Label}" />
+                                            <Border Grid.Column="1" Style="{StaticResource ErrorBorder}" Tag="{Binding HasError}">
+                                                <TextBox HorizontalContentAlignment="Right" VerticalContentAlignment="Center" Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" />
+                                            </Border>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
 
                         <CheckBox Margin="0,20,0,0" Content="Half budget cap at the start" IsChecked="{Binding HalfBudgetCapAtStart}"
                                   ToolTip="Captains can only spend down to half of their budget until the cap is turned off during the auction" />

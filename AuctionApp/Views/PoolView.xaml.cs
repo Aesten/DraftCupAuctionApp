@@ -23,6 +23,9 @@ public partial class PoolView : UserControl
             if (e.NewValue is PoolViewModel newModel)
             {
                 newModel.PlayerAdded += ShowPlayer;
+
+                // Grid columns aren't in the visual tree, so the tier column is shown from here (Captain Pick only).
+                TierColumn.Visibility = newModel.IsCaptainPick ? Visibility.Visible : Visibility.Collapsed;
             }
         };
     }
@@ -48,10 +51,18 @@ public partial class PoolView : UserControl
         }
     }
 
-    /// <summary>Delete asks before removing players who were already bought.</summary>
+    /// <summary>
+    /// Delete asks before removing players who were already bought. In Captain Pick, 1 to 5 set the tier of the
+    /// selected players, to go through a list quickly.
+    /// </summary>
     private void PlayersGrid_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Delete && !IsEditingCell() && ViewModel is { } viewModel)
+        if (TierKey(e.Key) is { } tier && !IsEditingCell() && ViewModel is { IsCaptainPick: true } pool)
+        {
+            pool.SetTier(PlayersGrid.SelectedItems.OfType<PoolPlayerRowViewModel>(), tier);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Delete && !IsEditingCell() && ViewModel is { } viewModel)
         {
             var rows = PlayersGrid.SelectedItems.OfType<PoolPlayerRowViewModel>().ToList();
             if (!viewModel.ConfirmRemoval(rows))
@@ -60,6 +71,22 @@ public partial class PoolView : UserControl
             }
         }
     }
+
+    /// <summary>Keeps a tier key from also starting to edit the player's name (the grid edits a cell when you type).</summary>
+    private void PlayersGrid_PreviewTextInput(object sender, TextCompositionEventArgs e)
+    {
+        if (e.Text is ['1' or '2' or '3' or '4' or '5'] && !IsEditingCell() && ViewModel is { IsCaptainPick: true })
+        {
+            e.Handled = true;
+        }
+    }
+
+    private static int? TierKey(Key key) => key switch
+    {
+        >= Key.D1 and <= Key.D5 => key - Key.D0,
+        >= Key.NumPad1 and <= Key.NumPad5 => key - Key.NumPad0,
+        _ => null,
+    };
 
     private static bool IsEditingCell() => Keyboard.FocusedElement is TextBox box && FindAncestor<DataGridCell>(box) != null;
 

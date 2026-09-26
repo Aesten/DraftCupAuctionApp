@@ -3,6 +3,7 @@
 A Windows app for hosting draft cup auctions offline: captains bid on players with their own budget until every team is full. It's built to be shown on stream.
 
 - **Made for streaming**: the auction screen shows the player on the block, the next players and every team's roster and budget at once, without scrolling.
+- **Two formats**: **Random Pick** (players come up in a random order) or **Captain Pick** (captains name the player they want from a board sorted by tier and class).
 - **Tournaments with several divisions** sharing one player pool: players bought in one division are out of the next.
 - **Nothing to save**: every change is saved automatically. A tournament can be exported to a file, run on another PC, and merged back.
 - **Player lists** in CSV or JSON, to bring in a sign-up sheet.
@@ -22,7 +23,7 @@ winget install Microsoft.DotNet.DesktopRuntime.10
 
 ## How it's organized
 
-The app works like a document editor: you open one **tournament** at a time. The start page lists the tournaments on this PC, and lets you create a new one or import one.
+The app works like a document editor: you open one **tournament** at a time. The start page lists the tournaments on this PC, and lets you create a new one or import one. A new tournament asks for its format, **Random Pick** or **Captain Pick** (see [Captain Pick](#captain-pick)); it can be switched from the menu until an auction starts.
 
 Once a tournament is open, the ☰ menu (top left) has:
 
@@ -84,6 +85,17 @@ Rules the app enforces:
 
 When a division is done, share its teams from **Teams**: **Copy as text** (formatted for Discord) or a spreadsheet (CSV).
 
+### Captain Pick
+
+In a Captain Pick tournament, players don't come up in a random order: captains name the player they want.
+
+- In the player pool, each player has **one class** and a **tier**, from 1 (best) to 5. Click the tier's number, or select players and press **1** to **5**. The pool can also be sorted by tier.
+- On the **Configure** page, each division sets the **minimum bid per tier** (2.0, 1.5, 1.0, 0.5 and 0.1 by default). The captain who picks a player bids that amount; the others can bid higher.
+- During the auction, **Pick board** opens a separate window with every player still available: one column per tier, split by class, names in alphabetical order. It can go on another screen or be shown on stream (F11 for full screen), and it scales so nothing is ever cut or scrolled.
+- When a captain names a player, click them on the board: they go on the block, highlighted on the board, with the price set to their tier's minimum. Sell as usual. **Put back** returns them to the board if they were picked by mistake.
+- Selling under the minimum asks for confirmation (**Sell anyway**), like going over a budget. There's no queue or skipped list: players nobody buys stay on the board, and a sold player taken back returns to the block or to the board.
+- The auction screen shows how many players are left in each tier and class, where Random Pick shows the next players.
+
 ### Keyboard
 
 | Key | Action |
@@ -91,6 +103,7 @@ When a division is done, share its teams from **Teams**: **Copy as text** (forma
 | Enter (in a text box) | Confirm and leave the box (in the price box: confirm the price, it doesn't sell) |
 | Up / Down (in the price box) | Price ±0.1 |
 | Delete (in the player pool) | Remove the selected players |
+| 1 to 5 (in the player pool, Captain Pick) | Set the tier of the selected players |
 | Ctrl+Z | Undo the last auction action |
 | F11 | Full screen on / off |
 | Escape | Close the menu, or leave full screen |
@@ -129,6 +142,8 @@ A player list is only players, names and classes: the link between a sign-up she
     ]
   }
   ```
+
+In a Captain Pick tournament, lists also carry each player's tier: a `Tier` column after the classes (`Alice,x,,,1`, or a line like `Alice, inf, 1`), or `"tier": 1` in JSON. A player listed with several classes keeps only the first one.
 
 ## Building from source
 

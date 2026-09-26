@@ -37,7 +37,8 @@ public interface IDialogService
     string? PickFileToSave(string title, string filter, string suggestedName);
 
     /// <summary>Shows the player list formats, then the file picker. Returns the chosen file, or null.</summary>
-    string? PickPlayerListToImport();
+    /// <param name="withTiers">Captain Pick: the format shown includes each player's tier.</param>
+    string? PickPlayerListToImport(bool withTiers = false);
 
     bool CopyToClipboard(string text);
 
@@ -89,8 +90,8 @@ public sealed class DialogService : IDialogService
         return dialog.ShowDialog(Owner) == true ? dialog.FileName : null;
     }
 
-    public string? PickPlayerListToImport() =>
-        new PlayerListImportDialog { Owner = Owner }.ShowDialog() == true
+    public string? PickPlayerListToImport(bool withTiers = false) =>
+        new PlayerListImportDialog(withTiers) { Owner = Owner }.ShowDialog() == true
             ? PickFileToOpen("Import a player list", "Player lists (*.csv;*.json)|*.csv;*.json|All files (*.*)|*.*")
             : null;
 

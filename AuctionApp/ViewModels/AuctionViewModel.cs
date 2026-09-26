@@ -10,7 +10,9 @@ namespace AuctionApp.ViewModels;
 
 /// <summary>
 /// A division's live auction screen, meant to be streamed. Every action is checked by the engine, can be undone,
-/// and is saved immediately. Only the next few players are revealed so captains can't plan too far ahead.
+/// and is saved immediately. Random Pick: only the next few players are revealed so captains can't plan too far
+/// ahead. Captain Pick: the players still available are on the pick board, by tier and class, and the auctioneer puts
+/// the one a captain names on the block.
 /// </summary>
 public sealed partial class AuctionViewModel : ObservableObject
 {
@@ -19,6 +21,7 @@ public sealed partial class AuctionViewModel : ObservableObject
     private readonly DivisionViewModel _owner;
     private readonly UndoHistory _history = new();
     private AuctionEngine? _engine;
+    private Guid? _lastOnBlock;
 
     public AuctionViewModel(DivisionViewModel owner)
     {
@@ -38,6 +41,28 @@ public sealed partial class AuctionViewModel : ObservableObject
 
     /// <summary>Everyone still in the queue after the player on the block, sorted by name so the order stays hidden.</summary>
     public ObservableCollection<PlayerItemViewModel> Remaining { get; } = [];
+
+    /// <summary>Captain Pick: the players still available, by tier and class.</summary>
+    public ObservableCollection<BoardTierViewModel> Board { get; } = [];
+
+    public bool IsCaptainPick => _owner.Tournament.IsCaptainPick;
+
+    public bool IsRandomPick => !IsCaptainPick;
+
+    /// <summary>Captain Pick: how many players are on the board (not bought yet).</summary>
+    [ObservableProperty]
+    public partial int BoardCount { get; set; }
+
+    /// <summary>Captain Pick, while nobody is on the block: the button that opens the pick board.</summary>
+    [ObservableProperty]
+    public partial bool ShowsBoardButton { get; set; }
+
+    /// <summary>Captain Pick: the tier of the player on the block and where bidding starts ("TIER 2 · FROM 1.5").</summary>
+    [ObservableProperty]
+    public partial string CurrentTierText { get; set; } = string.Empty;
+
+    /// <summary>What the second counter above the stage counts: the queue, or the pick board.</summary>
+    public string RemainingLabel => IsCaptainPick ? " on the board" : " in the queue";
 
     [ObservableProperty]
     public partial bool HasSession { get; set; }
@@ -162,6 +187,7 @@ public sealed partial class AuctionViewModel : ObservableObject
             UpNext.Clear();
             Skipped.Clear();
             Remaining.Clear();
+            Board.Clear();
             LastAction = string.Empty;
             UpdateUndo();
             return;
@@ -175,20 +201,48 @@ public sealed partial class AuctionViewModel : ObservableObject
         IsQueueEmpty = IsRunning && current == null;
         CurrentPlayerName = current?.Name ?? string.Empty;
         CurrentPlayerClasses = current != null ? KnownClasses(current.Classes) : [];
-        QueueEmptyText = session.Skipped.Count > 0
-            ? $"Nobody is left in the queue, but {session.Skipped.Count} skipped player(s) can get another chance."
-            : "Everyone has been auctioned.";
-        StageLabel = IsFinished ? "ALL DONE" : IsQueueEmpty ? "QUEUE EMPTY" : "NOW ON THE BLOCK";
+        CurrentTierText = current != null && session.CaptainPick && Tiers.IsValid(current.Tier)
+            ? $"{Tiers.Name(current.Tier!.Value).ToUpperInvariant()}  ·  FROM {Money.Format(_engine.MinimumBid(current))}"
+            : string.Empty;
+        if (session.CaptainPick)
+        {
+            QueueEmptyText = session.Queue.Count > 0 ? "Waiting for a captain to pick a player." : "Everyone has been picked.";
+            StageLabel = IsFinished ? "ALL DONE" : IsQueueEmpty ? "NEXT PICK" : "NOW ON THE BLOCK";
+        }
+        else
+        {
+            QueueEmptyText = session.Skipped.Count > 0
+                ? $"Nobody is left in the queue, but {session.Skipped.Count} skipped player(s) can get another chance."
+                : "Everyone has been auctioned.";
+            StageLabel = IsFinished ? "ALL DONE" : IsQueueEmpty ? "QUEUE EMPTY" : "NOW ON THE BLOCK";
+        }
+
         StageMessage = IsFinished ? "The auction is finished." : QueueEmptyText;
 
+        // Captain Pick: a newly picked player starts at their tier's minimum, with no winner chosen yet.
+        if (session.CaptainPick && current?.Id != _lastOnBlock)
+        {
+            if (current != null)
+            {
+                PriceText = Money.Format(_engine.MinimumBid(current));
+                SelectedTeam = null;
+            }
+
+            _lastOnBlock = current?.Id;
+        }
+
         SoldCount = session.SoldCount;
-        RemainingCount = Math.Max(0, session.Queue.Count - (current != null ? 1 : 0));
+        // Captain Pick: the player on the block stays on the board (highlighted) until sold.
+        RemainingCount = session.CaptainPick ? session.Queue.Count : Math.Max(0, session.Queue.Count - (current != null ? 1 : 0));
+        BoardCount = session.CaptainPick && IsRunning ? session.Queue.Count : 0;
+        ShowsBoardButton = session.CaptainPick && IsQueueEmpty && BoardCount > 0;
+        RefreshBoard(session);
         SkippedCount = session.Skipped.Count;
         HasSkipped = SkippedCount > 0;
 
         // Only the next few players are revealed on stream.
         var shown = Division.UpcomingShown;
-        ShowsUpNext = shown > 0 && IsRunning;
+        ShowsUpNext = shown > 0 && IsRunning && !session.CaptainPick;
         UpNextHeader = shown == 1 ? "NEXT UP" : $"NEXT {shown}";
         UpNextRows = Math.Max(1, shown);
         Replace(UpNext, session.Queue.Skip(1).Take(shown).Select((player, i) => new PlayerItemViewModel(player, i + 1)));
@@ -206,6 +260,43 @@ public sealed partial class AuctionViewModel : ObservableObject
         OnPropertyChanged(nameof(HalfBudgetCap));
         SellCommand.NotifyCanExecuteChanged();
         UpdateUndo();
+    }
+
+    /// <summary>
+    /// Captain Pick: rebuilds the pick board, one card per tier with a column per class, names sorted alphabetically.
+    /// Players picked leave the board; the one on the block stays, highlighted, until they are sold.
+    /// </summary>
+    private void RefreshBoard(AuctionSession session)
+    {
+        Board.Clear();
+        if (!session.CaptainPick || session.IsFinished)
+        {
+            return;
+        }
+
+        foreach (var tier in Tiers.All)
+        {
+            var players = session.Queue.Where(player => player.Tier == tier).ToList();
+            var columns = PlayerClasses.All
+                .Select(code => new BoardColumnViewModel(
+                    code,
+                    players.Where(player => player.Classes.FirstOrDefault() == code)
+                        .OrderBy(player => player.Name, StringComparer.CurrentCultureIgnoreCase)
+                        .Select(player => new BoardPlayerViewModel(player, player.Id == session.OnBlockId, this))
+                        .ToList()))
+                .ToList();
+            Board.Add(new BoardTierViewModel(tier, Money.Format(Division.MinimumBid(tier)), columns));
+        }
+
+        // Players without a tier or class (edited in the pool mid-auction) still need to be pickable.
+        var others = session.Queue.Where(player => !Tiers.IsValid(player.Tier) || !PlayerClasses.All.Contains(player.Classes.FirstOrDefault() ?? string.Empty)).ToList();
+        if (others.Count > 0)
+        {
+            var list = others.OrderBy(player => player.Name, StringComparer.CurrentCultureIgnoreCase)
+                .Select(player => new BoardPlayerViewModel(player, player.Id == session.OnBlockId, this))
+                .ToList();
+            Board.Add(new BoardTierViewModel(0, string.Empty, [new BoardColumnViewModel(string.Empty, list)]));
+        }
     }
 
     /// <summary>
@@ -391,6 +482,25 @@ public sealed partial class AuctionViewModel : ObservableObject
         }
     }
 
+    /// <summary>Captain Pick: the player a captain named goes on the block (from the pick board).</summary>
+    internal void PutOnBlock(BoardPlayerViewModel player)
+    {
+        if (IsRunning && !player.IsOnBlock)
+        {
+            Apply($"pick {player.Name}", engine => engine.PutOnBlock(player.Id));
+        }
+    }
+
+    /// <summary>Captain Pick: nobody wants the player after all, back on the board.</summary>
+    [RelayCommand]
+    private void ReturnToBoard()
+    {
+        if (HasCurrentPlayer)
+        {
+            Apply($"put {CurrentPlayerName} back on the board", engine => engine.ReturnToBoard());
+        }
+    }
+
     [RelayCommand]
     private void BringBack(PlayerItemViewModel player) =>
         Apply($"bring back {player.Name}", engine => engine.BringBack(player.Id));
@@ -407,7 +517,7 @@ public sealed partial class AuctionViewModel : ObservableObject
         Apply($"take {pick.Name} back from {team.Name}", engine => engine.ReturnPick(team.CaptainId, pick.PlayerId));
 
     internal void ReturnToSkipped(TeamCardViewModel team, PickItemViewModel pick) =>
-        Apply($"send {pick.Name} to the skipped list", engine => engine.ReturnPickToSkipped(team.CaptainId, pick.PlayerId));
+        Apply(IsCaptainPick ? $"put {pick.Name} back on the board" : $"send {pick.Name} to the skipped list", engine => engine.ReturnPickToSkipped(team.CaptainId, pick.PlayerId));
 
     internal void ChangePickPrice(TeamCardViewModel team, PickItemViewModel pick)
     {
@@ -429,7 +539,7 @@ public sealed partial class AuctionViewModel : ObservableObject
         }
 
         var session = _engine.Session;
-        var choices = session.Queue.Select((player, i) => Choice(player, i == 0 ? "On the block" : "In the queue"))
+        var choices = session.Queue.Select(player => Choice(player, player == session.CurrentPlayer ? "On the block" : session.CaptainPick ? "On the board" : "In the queue"))
             .Concat(session.Skipped.Select(player => Choice(player, "Skipped")))
             .Concat(session.Unsold.Select(player => Choice(player, "Not sold")))
             .ToList();
@@ -586,7 +696,7 @@ public sealed partial class TeamCardViewModel(Guid captainId, AuctionViewModel o
         Picks.Clear();
         foreach (var pick in team.Picks)
         {
-            Picks.Add(new PickItemViewModel(pick, !engine.Session.IsFinished, this, owner));
+            Picks.Add(new PickItemViewModel(pick, !engine.Session.IsFinished, engine.Session.CaptainPick, this, owner));
         }
 
         EmptySlots.Clear();
@@ -601,8 +711,11 @@ public sealed partial class TeamCardViewModel(Guid captainId, AuctionViewModel o
 }
 
 /// <summary>A bought player on a team card. Clicking it opens a menu to fix the sale.</summary>
-public sealed partial class PickItemViewModel(Pick pick, bool isRunning, TeamCardViewModel team, AuctionViewModel auction)
+public sealed partial class PickItemViewModel(Pick pick, bool isRunning, bool captainPick, TeamCardViewModel team, AuctionViewModel auction)
 {
+    /// <summary>The second way to take a player back: to the skipped list, or to the pick board in Captain Pick.</summary>
+    public string ReturnToListText => captainPick ? "Refund and put back on the board" : "Refund and send to the skipped list";
+
     public Guid PlayerId => pick.Player.Id;
 
     public string Name => pick.Player.Name;
@@ -652,4 +765,44 @@ public sealed class PlayerItemViewModel(SessionPlayer player, int position)
     public int Position => position;
 
     public IReadOnlyList<string> Classes { get; } = AuctionViewModel.KnownClasses(player.Classes);
+}
+
+/// <summary>Captain Pick: one tier of the pick board (tier 0: players missing a tier or a class).</summary>
+public sealed class BoardTierViewModel(int tier, string minimumText, IReadOnlyList<BoardColumnViewModel> columns)
+{
+    public int Tier => tier;
+
+    public string Title => tier > 0 ? Tiers.Name(tier) : "No tier or class";
+
+    public string MinimumText => tier > 0 ? $"from {minimumText}" : string.Empty;
+
+    public IReadOnlyList<BoardColumnViewModel> Columns => columns;
+
+    public int Count => columns.Sum(column => column.Players.Count);
+
+    /// <summary>How many players of each class are left in this tier (for the summary on the auction screen).</summary>
+    public IReadOnlyList<ClassCount> Counts { get; } = columns.Where(column => column.Code.Length > 0).Select(column => new ClassCount(column.Code, column.Players.Count)).ToList();
+}
+
+/// <summary>Captain Pick: the players of one class in a tier of the pick board.</summary>
+public sealed class BoardColumnViewModel(string code, IReadOnlyList<BoardPlayerViewModel> players)
+{
+    public string Code => code;
+
+    public IReadOnlyList<BoardPlayerViewModel> Players => players;
+
+    public int Count => players.Count;
+}
+
+/// <summary>Captain Pick: a player on the pick board. Clicking them puts them on the block.</summary>
+public sealed partial class BoardPlayerViewModel(SessionPlayer player, bool isOnBlock, AuctionViewModel auction)
+{
+    public Guid Id => player.Id;
+
+    public string Name => player.Name;
+
+    public bool IsOnBlock => isOnBlock;
+
+    [RelayCommand]
+    private void Pick() => auction.PutOnBlock(this);
 }

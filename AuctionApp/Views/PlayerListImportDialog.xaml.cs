@@ -27,8 +27,31 @@ public partial class PlayerListImportDialog : Window
 
     private const string JsonNote = "Players the way the previous version of the app stored them. Classes are inf, arc and cav.";
 
-    public PlayerListImportDialog()
+    // Captain Pick: one class per player, and a tier from 1 to 5.
+    private const string TieredCsvExample = "Player,INF,ARC,CAV,Tier\nAlice,x,,,1\nBob,,x,,3\nCarol,,,x,5";
+
+    private const string TieredCsvNote =
+        "One player per line: a column per class marked x (one class per player), then the tier, 1 to 5. "
+        + "From Excel: File › Save As › CSV. Lines like \"Alice, inf, 3\" work too.";
+
+    private const string TieredJsonExample = """
+        {
+          "players": [
+            { "name": "Alice", "classes": ["inf"], "tier": 1 },
+            { "name": "Bob", "classes": ["arc"], "tier": 3 },
+            { "name": "Carol", "classes": ["cav"], "tier": 5 }
+          ]
+        }
+        """;
+
+    private const string TieredJsonNote = "Classes are inf, arc and cav (one per player); tiers go from 1 to 5.";
+
+    private readonly bool _withTiers;
+
+    /// <param name="withTiers">Captain Pick: the examples show a tier and a single class per player.</param>
+    public PlayerListImportDialog(bool withTiers = false)
     {
+        _withTiers = withTiers;
         InitializeComponent();
         Title = "Import a player list";
         HeadingText.Text = Title;
@@ -49,8 +72,20 @@ public partial class PlayerListImportDialog : Window
 
     private void ShowFormat()
     {
-        ExampleText.Text = IsJson ? JsonExample : CsvExample;
-        FormatNote.Text = IsJson ? JsonNote : CsvNote;
+        ExampleText.Text = (IsJson, _withTiers) switch
+        {
+            (true, true) => TieredJsonExample,
+            (true, false) => JsonExample,
+            (false, true) => TieredCsvExample,
+            _ => CsvExample,
+        };
+        FormatNote.Text = (IsJson, _withTiers) switch
+        {
+            (true, true) => TieredJsonNote,
+            (true, false) => JsonNote,
+            (false, true) => TieredCsvNote,
+            _ => CsvNote,
+        };
         CopyLabel.Text = "Copy";
     }
 

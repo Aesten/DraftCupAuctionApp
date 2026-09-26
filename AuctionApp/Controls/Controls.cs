@@ -211,3 +211,18 @@ public sealed class BoolToIndexConverter : IValueConverter
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => value is 1;
 }
+
+/// <summary>
+/// Binds a toggle to "this number is the selected one" (ConverterParameter = the number): checking it selects the
+/// number, unchecking it clears the selection (null).
+/// </summary>
+public sealed class IntEqualsConverter : IValueConverter
+{
+    public static IntEqualsConverter Instance { get; } = new();
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+        value is int number && number == System.Convert.ToInt32(parameter, CultureInfo.InvariantCulture);
+
+    public object? ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        value is true ? System.Convert.ToInt32(parameter, CultureInfo.InvariantCulture) : null;
+}
