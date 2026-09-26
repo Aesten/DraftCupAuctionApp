@@ -61,6 +61,33 @@ public partial class AuctionView : UserControl
         _board.Show();
     }
 
+    // Wheel notches not turned into price steps yet (touchpads send small deltas).
+    private int _wheelDelta;
+
+    /// <summary>
+    /// Scrolling over the price (the box or its −/+ buttons) changes it: 0.1 per notch, 1.0 with Ctrl held. Works on
+    /// hover, without clicking the box first.
+    /// </summary>
+    private void PriceRow_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (DataContext is not AuctionViewModel { HasCurrentPlayer: true } viewModel)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        _wheelDelta += e.Delta;
+        var notches = _wheelDelta / Mouse.MouseWheelDeltaForOneLine;
+        if (notches == 0)
+        {
+            return;
+        }
+
+        _wheelDelta -= notches * Mouse.MouseWheelDeltaForOneLine;
+        var step = (Keyboard.Modifiers & ModifierKeys.Control) != 0 ? 1.0m : 0.1m;
+        viewModel.ChangePriceCommand.Execute((notches * step).ToString(System.Globalization.CultureInfo.InvariantCulture));
+    }
+
     /// <summary>Leaving the price box (Enter, or a click elsewhere) shows the price as it will be used.</summary>
     private void PriceBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e) => (DataContext as AuctionViewModel)?.CommitPrice();
 
@@ -70,8 +97,10 @@ public partial class AuctionView : UserControl
         {
             new PlayerListDialog(
                 $"Remaining players ({viewModel.Remaining.Count})",
-                "Everyone still in the queue, in alphabetical order so the auction order stays hidden. Skipped players aren't included.",
-                viewModel.Remaining) { Owner = Window.GetWindow(this) }.ShowDialog();
+                "Everyone still in the queue, in alphabetical order so the auction order stays hidden. Skipped players aren't included. "
+                + "Put one on the block to auction them now; the player on the block comes up right after.",
+                viewModel.Remaining,
+                viewModel.BringToBlock) { Owner = Window.GetWindow(this) }.ShowDialog();
         }
     }
 
@@ -98,15 +127,20 @@ public partial class AuctionView : UserControl
         }
     }
 
-    /// <summary>After picking the winning team, the price box gets the focus so the price can be typed straight away.</summary>
+    /// <summary>
+    /// After selecting the bidding team, the page takes the keyboard focus (unless the price is being typed), so
+    /// Ctrl+Enter sells right away. The price box isn't selected: its highlighted text was distracting on stream.
+    /// </summary>
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(AuctionViewModel.SelectedTeam) && sender is AuctionViewModel { SelectedTeam: not null })
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
             {
-                PriceBox.Focus();
-                PriceBox.SelectAll();
+                if (!PriceBox.IsKeyboardFocusWithin && !IsKeyboardFocusWithin)
+                {
+                    Focus();
+                }
             });
         }
     }

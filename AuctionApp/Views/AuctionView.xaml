@@ -16,7 +16,7 @@
         Designed to be screen-shared: everything viewers need is on screen at once (the player on the block, the next
         few players, every team with its budget and roster), with no scrolling and nothing they shouldn't see.
         Top: the auctioneer's controls, the player on the block (center stage) and the next players. Below: the rosters.
-        The winning team is picked by clicking its card; a bought player can be clicked to fix the sale.
+        The bidding team is selected by clicking its card; a bought player can be clicked to fix the sale.
     -->
     <UserControl.InputBindings>
         <KeyBinding Command="{Binding UndoCommand}" Gesture="Ctrl+Z" />
@@ -110,7 +110,7 @@
                     BorderThickness="1"
                     CornerRadius="8"
                     Cursor="Hand"
-                    ToolTip="Click to pick this team as the winner">
+                    ToolTip="Click to select this team as the one bidding">
                 <Border.InputBindings>
                     <MouseBinding Command="{Binding SelectCommand}" MouseAction="LeftClick" />
                 </Border.InputBindings>
@@ -278,30 +278,31 @@
                                 <Border x:Name="WinnerBox" Height="48" Padding="12,0" CornerRadius="6" BorderThickness="1"
                                         Background="{DynamicResource SubtleFillColorSecondaryBrush}" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
                                     <Grid VerticalAlignment="Center">
-                                        <TextBlock FontSize="14" Foreground="{DynamicResource TextFillColorTertiaryBrush}" Text="Click the winning team"
+                                        <TextBlock FontSize="14" Foreground="{DynamicResource TextFillColorTertiaryBrush}" Text="Click the bidding team"
                                                    Visibility="{Binding SelectedTeam, Converter={StaticResource EmptyToVisibility}}" />
                                         <TextBlock FontSize="18" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Style="{StaticResource Strong}"
                                                    Text="{Binding SelectedTeam.Name}" TextTrimming="CharacterEllipsis"
                                                    Visibility="{Binding SelectedTeam, Converter={StaticResource NotEmptyToVisibility}}" />
                                     </Grid>
                                 </Border>
-                                <Grid Margin="0,8,0,0">
+                                <!-- The price: typed, −/+, Up/Down, or the mouse wheel anywhere over this row -->
+                                <Grid Margin="0,8,0,0" Background="Transparent" PreviewMouseWheel="PriceRow_PreviewMouseWheel">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <RepeatButton Width="44" Height="44" Command="{Binding ChangePriceCommand}" CommandParameter="-0.1" Content="−" FontSize="18" ToolTip="−0.1 (Down arrow)" />
+                                    <RepeatButton Width="44" Height="44" Command="{Binding ChangePriceCommand}" CommandParameter="-0.1" Content="−" FontSize="18" ToolTip="−0.1 (Down arrow, or scroll down)" />
                                     <TextBox x:Name="PriceBox" Grid.Column="1" Margin="6,0" Style="{StaticResource NumericTextBox}" FontSize="24" FontWeight="SemiBold"
                                              HorizontalContentAlignment="Center" LostKeyboardFocus="PriceBox_LostKeyboardFocus"
                                              Text="{Binding PriceText, UpdateSourceTrigger=PropertyChanged}"
-                                             ToolTip="Price in millions. Up/Down change it by 0.1, Enter confirms it, Ctrl+Enter sells.">
+                                             ToolTip="Price in millions&#x0a;Scroll or Up/Down: ±0.1  ·  Ctrl+scroll: ±1.0&#x0a;Enter: confirm the price  ·  Ctrl+Enter: sell">
                                         <TextBox.InputBindings>
                                             <KeyBinding Key="Up" Command="{Binding ChangePriceCommand}" CommandParameter="0.1" />
                                             <KeyBinding Key="Down" Command="{Binding ChangePriceCommand}" CommandParameter="-0.1" />
                                         </TextBox.InputBindings>
                                     </TextBox>
-                                    <RepeatButton Grid.Column="2" Width="44" Height="44" Command="{Binding ChangePriceCommand}" CommandParameter="0.1" Content="+" FontSize="18" ToolTip="+0.1 (Up arrow)" />
+                                    <RepeatButton Grid.Column="2" Width="44" Height="44" Command="{Binding ChangePriceCommand}" CommandParameter="0.1" Content="+" FontSize="18" ToolTip="+0.1 (Up arrow, or scroll up)" />
                                 </Grid>
                                 <Grid Margin="0,8,0,0">
                                     <Grid.ColumnDefinitions>

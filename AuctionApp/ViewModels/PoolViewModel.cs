@@ -368,7 +368,7 @@ public sealed partial class PoolViewModel : ObservableObject
             .Where(entry => entry.Item1)
             .Select(entry => entry.Item2);
         var classes = PlayerClasses.Normalize(ticked.Concat(parsed.Classes));
-        var player = new Player { Name = parsed.Name, Classes = IsCaptainPick ? classes.Take(1).ToList() : classes };
+        var player = new Player { Name = Tournament.CleanName(parsed.Name), Classes = IsCaptainPick ? classes.Take(1).ToList() : classes };
         if (IsCaptainPick)
         {
             player.Tier = NewTier ?? parsed.Tier;
@@ -395,7 +395,10 @@ public sealed partial class PoolViewModel : ObservableObject
         List<ParsedPlayer> parsed;
         try
         {
-            parsed = PlayerList.Parse(File.ReadAllText(path));
+            parsed = PlayerList.Parse(FileLimits.ReadText(path))
+                .Select(player => player with { Name = Tournament.CleanName(player.Name) })
+                .Where(player => player.Name.Length > 0)
+                .ToList();
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
         {
@@ -483,13 +486,15 @@ public sealed partial class PoolPlayerRowViewModel : ObservableObject
         get => Model.Name;
         set
         {
-            var trimmed = value?.Trim() ?? string.Empty;
-            if (Model.Name == trimmed)
+            // An emptied name isn't applied: the cell shows the previous one again when the edit ends.
+            var clean = Tournament.CleanName(value);
+            if (clean.Length == 0 || Model.Name == clean)
             {
+                OnPropertyChanged();
                 return;
             }
 
-            Model.Name = trimmed;
+            Model.Name = clean;
             OnPropertyChanged();
             Owner?.PlayerEdited(this);
         }

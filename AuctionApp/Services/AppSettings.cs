@@ -19,6 +19,16 @@ public sealed class AppSettings
     /// <summary>"Light" or "Dark" once chosen; empty until then, meaning: like Windows.</summary>
     public string Theme { get; set; } = string.Empty;
 
+    /// <summary>Where the main window was last time.</summary>
+    public WindowPlacement? MainWindow { get; set; }
+
+    /// <summary>Where the pick board was last time (e.g. full screen on a second monitor).</summary>
+    public WindowPlacement? PickBoard { get; set; }
+
+    /// <summary>The settings of this PC, once loaded at startup.</summary>
+    [JsonIgnore]
+    public static AppSettings? Current { get; private set; }
+
     /// <summary>The theme in use: the one chosen, or the one Windows uses for apps.</summary>
     [JsonIgnore]
     public bool IsDark => Theme == DarkTheme || Theme.Length == 0 && !WindowsUsesLightTheme();
@@ -37,6 +47,7 @@ public sealed class AppSettings
         }
 
         settings._path = path;
+        Current = settings;
         if (settings.Theme is not (LightTheme or DarkTheme))
         {
             settings.Theme = string.Empty;

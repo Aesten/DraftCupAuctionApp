@@ -39,6 +39,7 @@
                 <!-- The title is edited in place -->
                 <TextBox Grid.Column="1" MinWidth="120" MaxWidth="360" Margin="4,0,12,6" Padding="4,2" VerticalAlignment="Center"
                          Background="Transparent" BorderThickness="0" FontSize="18" FontWeight="Bold"
+                         IsKeyboardFocusWithinChanged="Title_FocusWithinChanged" MaxLength="80"
                          Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}" ToolTip="Tournament name (click to rename)" />
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal">

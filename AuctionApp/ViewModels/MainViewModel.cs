@@ -159,7 +159,7 @@ public sealed partial class MainViewModel : ObservableObject
         Tournament incoming;
         try
         {
-            incoming = TournamentImporter.Import(File.ReadAllText(path), TitleFromFileName(path));
+            incoming = TournamentImporter.Import(FileLimits.ReadText(path), TitleFromFileName(path));
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException or UnauthorizedAccessException)
         {

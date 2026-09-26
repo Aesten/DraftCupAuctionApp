@@ -48,9 +48,53 @@ public class PickCorrectionTests
         engine.ChangePickPrice(first.CaptainId, sold.Id, 15m);
         Assert.Equal(5m, first.Remaining);
 
+        Assert.True(engine.CheckPickPrice(first.CaptainId, sold.Id, 20.1m)!.CanOverride);
         Assert.Throws<AuctionException>(() => engine.ChangePickPrice(first.CaptainId, sold.Id, 20.1m));
-        Assert.Throws<AuctionException>(() => engine.ChangePickPrice(first.CaptainId, sold.Id, 1.25m));
+        Assert.Throws<AuctionException>(() => engine.ChangePickPrice(first.CaptainId, sold.Id, 1.25m, overBudget: true));
+        Assert.Throws<AuctionException>(() => engine.ChangePickPrice(first.CaptainId, sold.Id, 30.1m, overBudget: true));
         Assert.Equal(15m, first.Picks.Single().Price);
+
+        engine.ChangePickPrice(first.CaptainId, sold.Id, 20.1m, overBudget: true);
+        Assert.Equal(-0.1m, first.Remaining);
+    }
+
+    [Fact]
+    public void MovePick_OverTheOtherTeamsBudget_NeedsConfirmation()
+    {
+        var (engine, first, second, sold) = SellFirstPlayer(price: 4m);
+        engine.Sell(second.CaptainId, 17m, overBudget: true);
+
+        Assert.True(engine.CheckMovePick(first.CaptainId, sold.Id, second.CaptainId)!.CanOverride);
+        Assert.Throws<AuctionException>(() => engine.MovePick(first.CaptainId, sold.Id, second.CaptainId));
+
+        engine.MovePick(first.CaptainId, sold.Id, second.CaptainId, overBudget: true);
+        Assert.Equal(-1m, second.Remaining);
+    }
+
+    [Fact]
+    public void MovePick_AfterTheAuction_IsFree()
+    {
+        var (engine, first, second, sold) = SellFirstPlayer(price: 4m);
+        engine.Finish();
+
+        engine.MovePick(first.CaptainId, sold.Id, second.CaptainId);
+
+        Assert.Equal(20m, first.Remaining);
+        Assert.Equal(20m, second.Remaining);
+        Assert.Equal(0m, second.Picks.Single().Price);
+    }
+
+    [Fact]
+    public void BringToBlock_PutsAQueuedPlayerFirst()
+    {
+        var engine = TestData.Start(TestData.Tournament());
+        var wanted = engine.Session.Queue[5];
+
+        engine.BringToBlock(wanted.Id);
+
+        Assert.Same(wanted, engine.Session.CurrentPlayer);
+        Assert.Equal("Player 1", engine.Session.Queue[1].Name);
+        Assert.Equal(12, engine.Session.Queue.Count);
     }
 
     [Fact]
@@ -165,5 +209,63 @@ public class UnlockedSettingsTests
         Assert.Single(engine.Session.Teams);
         Assert.Contains(sold, engine.Session.Skipped);
         Assert.Contains("left the auction", engine.Session.Activity[^1].Text);
+    }
+}
+
+public class SaleLimitTests
+{
+    [Fact]
+    public void HalfBudgetCap_WarnsAboutTheCapEvenPastTheWholeBudget()
+    {
+        var engine = TestData.Start(TestData.Tournament(budget: 1m));
+        var team = engine.Session.Teams[0];
+
+        var issue = engine.CheckSale(team.CaptainId, 1.1m)!;
+
+        Assert.Contains("half budget cap", issue.Message);
+        Assert.Contains("0.5", issue.Message.Replace(',', '.'));
+    }
+
+    [Fact]
+    public void Prices_GoUpTo30()
+    {
+        var engine = TestData.Start(TestData.Tournament(budget: 30m));
+        var team = engine.Session.Teams[0];
+        engine.SetHalfBudgetCap(false);
+
+        Assert.Null(engine.CheckSale(team.CaptainId, 30m));
+        Assert.False(engine.CheckSale(team.CaptainId, 30.1m)!.CanOverride);
+    }
+
+    [Fact]
+    public void Validator_ChecksBudgetsAndWarnsAboutCaptainsWithoutAClass()
+    {
+        var tournament = TestData.Tournament();
+        var division = tournament.Divisions[0];
+        division.Captains[0].Budget = 30.5m;
+
+        var issues = DivisionValidator.Validate(tournament, division);
+
+        Assert.Contains(issues, issue => issue.Severity == IssueSeverity.Error && issue.Message.Contains("Budgets go from"));
+        Assert.Contains(issues, issue => issue.Severity == IssueSeverity.Warning && issue.Message.Contains("no class"));
+    }
+}
+
+public class RunningAuctionWarningTests
+{
+    [Fact]
+    public void ValidateRunning_WarnsAboutUnnamedAndDuplicateCaptains()
+    {
+        var tournament = TestData.Tournament(captains: 3);
+        var division = tournament.Divisions[0];
+        TestData.Start(tournament);
+        division.Captains[0].Name = string.Empty;
+        division.Captains[2].Name = division.Captains[1].Name;
+
+        var issues = DivisionValidator.ValidateRunning(division);
+
+        Assert.All(issues, issue => Assert.Equal(IssueSeverity.Warning, issue.Severity));
+        Assert.Contains(issues, issue => issue.Message.StartsWith("Captain 1 has no name"));
+        Assert.Contains(issues, issue => issue.Message.Contains("more than once"));
     }
 }

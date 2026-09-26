@@ -22,6 +22,7 @@ public sealed partial class AuctionViewModel : ObservableObject
     private readonly UndoHistory _history = new();
     private AuctionEngine? _engine;
     private Guid? _lastOnBlock;
+    private string _boardSignature = string.Empty;
 
     public AuctionViewModel(DivisionViewModel owner)
     {
@@ -46,6 +47,14 @@ public sealed partial class AuctionViewModel : ObservableObject
     public ObservableCollection<BoardTierViewModel> Board { get; } = [];
 
     public bool IsCaptainPick => _owner.Tournament.IsCaptainPick;
+
+    /// <summary>
+    /// Raised when this auction's page goes away (its tournament was closed, or its division deleted), so windows
+    /// still showing it, like the pick board, close instead of editing an auction nobody sees any more.
+    /// </summary>
+    public event Action? Detached;
+
+    internal void Detach() => Detached?.Invoke();
 
     public bool IsRandomPick => !IsCaptainPick;
 
@@ -192,6 +201,7 @@ public sealed partial class AuctionViewModel : ObservableObject
             Skipped.Clear();
             Remaining.Clear();
             Board.Clear();
+            _boardSignature = string.Empty;
             LastAction = string.Empty;
             UpdateUndo();
             return;
@@ -223,13 +233,16 @@ public sealed partial class AuctionViewModel : ObservableObject
 
         StageMessage = IsFinished ? "The auction is finished." : QueueEmptyText;
 
-        // Captain Pick: a newly picked player starts at their tier's minimum, with no winner chosen yet.
-        if (session.CaptainPick && current?.Id != _lastOnBlock)
+        // Whenever a different player is on the block (sold, skipped, removed from the pool, brought up, undone...),
+        // the bidding starts over: no winner chosen, and the starting price (the tier minimum in Captain Pick), so a
+        // price meant for someone else can't be used by mistake.
+        if (current?.Id != _lastOnBlock)
         {
             if (current != null)
             {
-                PriceText = Money.Format(_engine.MinimumBid(current));
+                PriceText = session.CaptainPick ? Money.Format(_engine.MinimumBid(current)) : DefaultPrice;
                 SelectedTeam = null;
+                IsSaleWarningOpen = false;
             }
 
             _lastOnBlock = current?.Id;
@@ -268,10 +281,27 @@ public sealed partial class AuctionViewModel : ObservableObject
 
     /// <summary>
     /// Captain Pick: rebuilds the pick board, one card per tier with a column per class, names sorted alphabetically.
-    /// Players picked leave the board; the one on the block stays, highlighted, until they are sold.
+    /// Players picked leave the board; the one on the block stays, highlighted, until they are sold. When only the
+    /// player on the block changed, the tiles are updated in place: rebuilding the board is what costs time.
     /// </summary>
     private void RefreshBoard(AuctionSession session)
     {
+        var signature = session.CaptainPick && !session.IsFinished
+            ? string.Join("|", _owner.Tournament.TierMinimums) + "#" + string.Join(";", session.Queue
+                .OrderBy(player => player.Id)
+                .Select(player => $"{player.Id}:{player.Name}:{player.Tier}:{player.Classes.FirstOrDefault()}"))
+            : string.Empty;
+        if (signature == _boardSignature && Board.Count > 0)
+        {
+            foreach (var tile in Board.SelectMany(tier => tier.Columns).SelectMany(column => column.Players))
+            {
+                tile.IsOnBlock = tile.Id == session.OnBlockId;
+            }
+
+            return;
+        }
+
+        _boardSignature = signature;
         Board.Clear();
         if (!session.CaptainPick || session.IsFinished)
         {
@@ -478,7 +508,7 @@ public sealed partial class AuctionViewModel : ObservableObject
         }
 
         var current = Money.TryParse(PriceText, out var price) ? price : 0m;
-        PriceText = Money.Format(Math.Max(0, decimal.Round(current, 1) + step));
+        PriceText = Money.Format(Math.Clamp(decimal.Round(current, 1) + step, 0, Money.Max));
     }
 
     [RelayCommand]
@@ -509,6 +539,10 @@ public sealed partial class AuctionViewModel : ObservableObject
         }
     }
 
+    /// <summary>Random Pick: a player from the queue goes on the block now (from the remaining players list).</summary>
+    internal void BringToBlock(PlayerItemViewModel player) =>
+        Apply($"bring {player.Name} to the block", engine => engine.BringToBlock(player.Id));
+
     [RelayCommand]
     private void BringBack(PlayerItemViewModel player) =>
         Apply($"bring back {player.Name}", engine => engine.BringBack(player.Id));
@@ -527,17 +561,71 @@ public sealed partial class AuctionViewModel : ObservableObject
     internal void ReturnToSkipped(TeamCardViewModel team, PickItemViewModel pick) =>
         Apply(IsCaptainPick ? $"put {pick.Name} back on the board" : $"send {pick.Name} to the skipped list", engine => engine.ReturnPickToSkipped(team.CaptainId, pick.PlayerId));
 
+    /// <summary>Corrects a sale's price; going over the team's budget is allowed once the auctioneer confirms it.</summary>
     internal void ChangePickPrice(TeamCardViewModel team, PickItemViewModel pick)
     {
-        if (Dialogs.AskPrice($"Change {pick.Name}'s price", $"{team.Name} paid {pick.PriceText}. The difference is refunded or charged to {team.Name}.", pick.Price) is { } price
-            && price != pick.Price)
+        if (_engine == null
+            || Dialogs.AskPrice($"Change {pick.Name}'s price", $"{team.Name} paid {pick.PriceText}. The difference is refunded or charged to {team.Name}.", pick.Price) is not { } price
+            || price == pick.Price)
         {
-            Apply($"change {pick.Name}'s price", engine => engine.ChangePickPrice(team.CaptainId, pick.PlayerId, price));
+            return;
+        }
+
+        var issue = _engine.CheckPickPrice(team.CaptainId, pick.PlayerId, price);
+        if (Confirm(issue, $"Change {pick.Name}'s price anyway?", "Change anyway") is { } overBudget)
+        {
+            Apply($"change {pick.Name}'s price", engine => engine.ChangePickPrice(team.CaptainId, pick.PlayerId, price, overBudget));
         }
     }
 
-    internal void MovePick(TeamCardViewModel team, PickItemViewModel pick, TeamCardViewModel target) =>
-        Apply($"move {pick.Name} to {target.Name}", engine => engine.MovePick(team.CaptainId, pick.PlayerId, target.CaptainId));
+    /// <summary>
+    /// Moves a bought player to another team, which pays the same price (going over its budget needs the
+    /// auctioneer's confirmation). Once the auction is finished, the move is free.
+    /// </summary>
+    internal void MovePick(TeamCardViewModel team, PickItemViewModel pick, TeamCardViewModel target)
+    {
+        if (_engine == null)
+        {
+            return;
+        }
+
+        var issue = _engine.CheckMovePick(team.CaptainId, pick.PlayerId, target.CaptainId);
+        if (Confirm(issue, $"Move {pick.Name} to {target.Name} anyway?", "Move anyway") is not { } overBudget)
+        {
+            return;
+        }
+
+        if (IsFinished && issue == null && pick.Price > 0
+            && Dialogs.Ask(
+                $"Move {pick.Name} to {target.Name}?",
+                $"The auction is finished, so the move is free: {team.Name} gets {pick.PriceText} back and {target.Name} pays nothing.",
+                "Move") != DialogChoice.Primary)
+        {
+            return;
+        }
+
+        Apply($"move {pick.Name} to {target.Name}", engine => engine.MovePick(team.CaptainId, pick.PlayerId, target.CaptainId, overBudget));
+    }
+
+    /// <summary>
+    /// For a correction that breaks a rule: null when it can't be done (the reason is shown) or the auctioneer
+    /// declines; otherwise whether the budget limit is being overridden.
+    /// </summary>
+    private bool? Confirm(SaleIssue? issue, string question, string confirm)
+    {
+        if (issue == null)
+        {
+            return false;
+        }
+
+        if (!issue.CanOverride)
+        {
+            Dialogs.ShowError("That can't be done", issue.Message);
+            return null;
+        }
+
+        return Dialogs.Ask(question, issue.Message, confirm) == DialogChoice.Primary ? true : null;
+    }
 
     internal void SwapPick(TeamCardViewModel team, PickItemViewModel pick)
     {
@@ -617,6 +705,18 @@ public sealed partial class AuctionViewModel : ObservableObject
         var wasFinished = Division.Session?.IsFinished;
         Division.Session = snapshot;
         _engine = new AuctionEngine(_owner.Tournament, Division);
+
+        // The snapshot has names, classes and tiers as they were then: the pool and the captains may have been edited since.
+        foreach (var player in _owner.Tournament.Players)
+        {
+            TournamentRules.SyncPlayer(_owner.Tournament, player);
+        }
+
+        foreach (var captain in Division.Captains)
+        {
+            Division.SyncCaptain(captain);
+        }
+
         _owner.AuctionChanged();
         Refresh();
         if (wasFinished != snapshot.IsFinished)
@@ -698,21 +798,43 @@ public sealed partial class TeamCardViewModel(Guid captainId, AuctionViewModel o
         InitialBudget = (double)team.InitialBudget;
         Remaining = (double)team.Remaining;
         Reserved = (double)team.HalfBudgetReserve;
-        CaptainClasses = AuctionViewModel.CaptainClasses(engine.Division, CaptainId);
-        Composition = AuctionViewModel.Composition(engine.Division.CaptainClass(CaptainId), team.Picks);
-
-        Picks.Clear();
-        foreach (var pick in team.Picks)
+        // Lists are only replaced when their content changed: every card redrawing its roster after each sale is what
+        // made slower PCs lag.
+        var captainClasses = AuctionViewModel.CaptainClasses(engine.Division, CaptainId);
+        if (!captainClasses.SequenceEqual(CaptainClasses))
         {
-            Picks.Add(new PickItemViewModel(pick, !engine.Session.IsFinished, engine.Session.CaptainPick, this, owner));
+            CaptainClasses = captainClasses;
         }
 
-        EmptySlots.Clear();
-        for (var i = 0; i < slotsLeft; i++)
+        var composition = AuctionViewModel.Composition(engine.Division.CaptainClass(CaptainId), team.Picks);
+        if (!composition.SequenceEqual(Composition))
         {
-            EmptySlots.Add(i);
+            Composition = composition;
+        }
+
+        var rosterSignature = $"{engine.Session.IsFinished}|{engine.Session.CaptainPick}|{Name}|" + string.Join(";", team.Picks.Select(pick =>
+            $"{pick.Player.Id}:{pick.Player.Name}:{pick.Price}:{string.Join(",", pick.Player.Classes)}"));
+        if (rosterSignature != _rosterSignature)
+        {
+            _rosterSignature = rosterSignature;
+            Picks.Clear();
+            foreach (var pick in team.Picks)
+            {
+                Picks.Add(new PickItemViewModel(pick, !engine.Session.IsFinished, engine.Session.CaptainPick, this, owner));
+            }
+        }
+
+        if (EmptySlots.Count != slotsLeft)
+        {
+            EmptySlots.Clear();
+            for (var i = 0; i < slotsLeft; i++)
+            {
+                EmptySlots.Add(i);
+            }
         }
     }
+
+    private string _rosterSignature = string.Empty;
 
     [RelayCommand]
     private void Select() => owner.Select(this);
@@ -803,13 +925,14 @@ public sealed class BoardColumnViewModel(string code, IReadOnlyList<BoardPlayerV
 }
 
 /// <summary>Captain Pick: a player on the pick board. Clicking them puts them on the block.</summary>
-public sealed partial class BoardPlayerViewModel(SessionPlayer player, bool isOnBlock, AuctionViewModel auction)
+public sealed partial class BoardPlayerViewModel(SessionPlayer player, bool isOnBlock, AuctionViewModel auction) : ObservableObject
 {
     public Guid Id => player.Id;
 
     public string Name => player.Name;
 
-    public bool IsOnBlock => isOnBlock;
+    [ObservableProperty]
+    public partial bool IsOnBlock { get; set; } = isOnBlock;
 
     [RelayCommand]
     private void Pick() => auction.PutOnBlock(this);

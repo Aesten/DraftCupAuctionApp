@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Input;
+using AuctionApp.Services;
 using AuctionApp.ViewModels;
 
 namespace AuctionApp.Views;
@@ -7,11 +8,35 @@ namespace AuctionApp.Views;
 /// <summary>Captain Pick: the pick board, in its own window so it can sit on another screen or be shared on stream.</summary>
 public partial class PickBoardWindow : Window
 {
+    private const long DoubleClickMilliseconds = 500;
+
+    private Guid _lastClickedId;
+    private long _lastClickAt;
+
     public PickBoardWindow(AuctionViewModel auction)
     {
         InitializeComponent();
         DataContext = auction;
+        auction.Detached += Close;
+        Closed += (_, _) => auction.Detached -= Close;
         Title = $"Pick board — {auction.Title}";
+
+        // Opens where it was last time, e.g. full screen on the streaming monitor.
+        if (AppSettings.Current?.PickBoard is { } placement)
+        {
+            placement.ApplyTo(this);
+            SourceInitialized += (_, _) =>
+            {
+                if (placement.FullScreen)
+                {
+                    SetFullScreen(true);
+                }
+                else if (placement.Maximized)
+                {
+                    WindowState = WindowState.Maximized;
+                }
+            };
+        }
     }
 
     /// <summary>
@@ -21,15 +46,25 @@ public partial class PickBoardWindow : Window
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
         base.OnClosing(e);
-        if (!e.Cancel && IsActive)
+        if (e.Cancel)
+        {
+            return;
+        }
+
+        if (AppSettings.Current is { } settings)
+        {
+            settings.PickBoard = WindowPlacement.Capture(this);
+            settings.Save();
+        }
+
+        if (IsActive)
         {
             Owner?.Activate();
         }
     }
 
     /// <summary>
-    /// Enter: back to the auction once a player is on the block (the board closes). Esc: leaves full screen, else
-    /// closes the board. F11: full screen on / off.
+    /// Esc: leaves full screen, else closes the board. F11: full screen on / off.
     /// </summary>
     protected override void OnKeyDown(KeyEventArgs e)
     {
@@ -44,10 +79,35 @@ public partial class PickBoardWindow : Window
             SetFullScreen(false);
             e.Handled = true;
         }
-        else if (e.Key == Key.Escape || e.Key == Key.Enter && DataContext is AuctionViewModel { HasCurrentPlayer: true })
+        else if (e.Key == Key.Escape)
         {
             Close();
             e.Handled = true;
+        }
+    }
+
+    /// <summary>
+    /// Double-clicking a player picks them and goes back to the auction: the first click already put them on the
+    /// block, the second one closes the board.
+    /// </summary>
+    protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
+    {
+        base.OnPreviewMouseLeftButtonDown(e);
+        if (e.OriginalSource is not FrameworkElement { DataContext: BoardPlayerViewModel player })
+        {
+            return;
+        }
+
+        // The first click rebuilds the board (the player gets highlighted), so the second one may land on a new tile:
+        // the time between the two clicks on the same player is checked too.
+        var now = Environment.TickCount64;
+        var isDoubleClick = e.ClickCount >= 2 || player.Id == _lastClickedId && now - _lastClickAt <= DoubleClickMilliseconds;
+        _lastClickedId = player.Id;
+        _lastClickAt = now;
+        if (isDoubleClick)
+        {
+            e.Handled = true;
+            Close();
         }
     }
 

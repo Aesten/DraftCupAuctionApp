@@ -40,9 +40,15 @@ public static class DivisionValidator
             Error($"Captain \"{name}\" is listed more than once.");
         }
 
-        if (division.Captains.Any(captain => captain.Budget < 0))
+        if (division.Captains.Any(captain => !Money.IsValidBudget(captain.Budget)))
         {
-            Error("Budgets can't be negative.");
+            Error($"Budgets go from {Money.Format(Money.MinBudget)} to {Money.Format(Money.Max)}, in steps of {Money.Format(Money.Step)}.");
+        }
+
+        var classless = division.Captains.Where(captain => captain.Class.Length == 0 && !string.IsNullOrWhiteSpace(captain.Name)).Select(captain => captain.Name.Trim()).ToList();
+        if (classless.Count > 0)
+        {
+            Warning($"{(classless.Count == 1 ? "Captain" : "Captains")} {string.Join(", ", classless)} {(classless.Count == 1 ? "has" : "have")} no class: the team's class counts won't include them.");
         }
 
         var available = TournamentRules.AvailablePlayers(tournament, division);
@@ -75,15 +81,48 @@ public static class DivisionValidator
             }
         }
 
+        foreach (var name in Duplicates(available.Select(player => player.Name)))
+        {
+            Warning($"\"{name}\" is in the pool more than once: viewers won't be able to tell them apart.");
+        }
+
         var unnamed = tournament.Players.Count(player => string.IsNullOrWhiteSpace(player.Name));
         if (unnamed > 0)
         {
             Warning($"{unnamed} player(s) in the pool have no name and won't be auctioned.");
         }
 
+        // One auction at a time: two running at once would offer the same players.
         foreach (var other in tournament.Divisions.Where(other => other != division && other.Status == DivisionStatus.InProgress))
         {
-            Warning($"The auction of {other.Name} isn't finished. Players it hasn't sold yet are also available here.");
+            Error($"The {other.Name} auction is still running. Finish it first: only one auction can run at a time.");
+        }
+
+        return issues;
+    }
+
+    /// <summary>
+    /// While the auction runs, only the captains can still change (names always, the rest once unlocked): warnings
+    /// about what would look wrong on stream.
+    /// </summary>
+    public static IReadOnlyList<ValidationIssue> ValidateRunning(Division division)
+    {
+        var issues = new List<ValidationIssue>();
+        var unnamed = division.Captains
+            .Select((captain, index) => (captain, number: index + 1))
+            .Where(entry => string.IsNullOrWhiteSpace(entry.captain.Name))
+            .Select(entry => entry.number.ToString())
+            .ToList();
+        if (unnamed.Count > 0)
+        {
+            issues.Add(new ValidationIssue(
+                IssueSeverity.Warning,
+                $"{(unnamed.Count == 1 ? "Captain" : "Captains")} {string.Join(", ", unnamed)} {(unnamed.Count == 1 ? "has" : "have")} no name: {(unnamed.Count == 1 ? "their team shows" : "their teams show")} without one."));
+        }
+
+        foreach (var name in Duplicates(division.Captains.Select(captain => captain.Name)))
+        {
+            issues.Add(new ValidationIssue(IssueSeverity.Warning, $"Captain \"{name}\" is listed more than once: viewers won't be able to tell the teams apart."));
         }
 
         return issues;

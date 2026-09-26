@@ -99,10 +99,33 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
 
     public string CaptainsHeader => $"Captains ({Captains.Count})";
 
+    private string? _nameText;
+
+    /// <summary>
+    /// The division's name as typed. It's applied as long as it isn't empty; an emptied box gets the name back when
+    /// it's left (see <see cref="CommitName"/>).
+    /// </summary>
     public string Name
     {
-        get => Division.Name;
-        set => Set(Division.Name, value, v => Division.Name = v);
+        get => _nameText ?? Division.Name;
+        set
+        {
+            _nameText = value;
+            OnPropertyChanged();
+            var clean = Tournament.CleanName(value);
+            if (clean.Length > 0 && clean != Division.Name)
+            {
+                Division.Name = clean;
+                Changed();
+            }
+        }
+    }
+
+    /// <summary>The name box was left: shows the name as kept (trimmed, or the previous one if it was emptied).</summary>
+    internal void CommitName()
+    {
+        _nameText = null;
+        OnPropertyChanged(nameof(Name));
     }
 
     public int TeamSize
@@ -177,12 +200,10 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
         OnPropertyChanged(nameof(IsEditable));
         OnPropertyChanged(nameof(MinimumBidsText));
         Issues.Clear();
-        if (!IsLocked)
+        var issues = IsLocked ? DivisionValidator.ValidateRunning(Division) : DivisionValidator.Validate(Tournament, Division);
+        foreach (var issue in issues.OrderByDescending(issue => issue.Severity))
         {
-            foreach (var issue in DivisionValidator.Validate(Tournament, Division).OrderByDescending(issue => issue.Severity))
-            {
-                Issues.Add(issue);
-            }
+            Issues.Add(issue);
         }
 
         CanStart = !IsLocked && Issues.All(issue => issue.Severity != IssueSeverity.Error);
@@ -201,8 +222,13 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
     [RelayCommand]
     private void AddCaptain()
     {
-        // Budgets are balanced per captain; start from the last one entered as a guess.
-        var captain = new Captain { Budget = Division.Captains.LastOrDefault()?.Budget ?? 20m };
+        // Budgets are balanced per captain; start from the last one entered as a guess. During the auction (settings
+        // unlocked), the new team needs a name straight away.
+        var captain = new Captain
+        {
+            Budget = Division.Captains.LastOrDefault()?.Budget ?? 20m,
+            Name = IsLocked ? $"Captain {Division.Captains.Count + 1}" : string.Empty,
+        };
         Division.Captains.Add(captain);
         Captains.Add(new CaptainRowViewModel(captain, this) { FocusRequested = true });
         Changed();
@@ -315,18 +341,27 @@ public sealed partial class CaptainRowViewModel : ObservableObject
     /// <summary>Set for rows the user just added, so the view can put the cursor in the name box.</summary>
     public bool FocusRequested { get; set; }
 
+    private string? _nameText;
+
+    /// <summary>
+    /// The captain's name as typed (trimmed, up to 40 characters). It can be emptied, e.g. to retype it: the box shows
+    /// in red and the Configure page lists it (a warning during the auction, where the team then shows without a name).
+    /// </summary>
     public string Name
     {
-        get => Model.Name;
+        get => _nameText ?? Model.Name;
         set
         {
-            if (Model.Name == value)
+            _nameText = value;
+            OnPropertyChanged();
+            var clean = Tournament.CleanName(value);
+            HasNameError = clean.Length == 0;
+            if (clean == Model.Name)
             {
                 return;
             }
 
-            Model.Name = value;
-            OnPropertyChanged();
+            Model.Name = clean;
             _owner.CaptainChanged(Model);
         }
     }
@@ -371,13 +406,33 @@ public sealed partial class CaptainRowViewModel : ObservableObject
     [ObservableProperty]
     public partial bool HasBudgetError { get; set; }
 
-    partial void OnBudgetTextChanged(string value)
+    [ObservableProperty]
+    public partial bool HasNameError { get; set; }
+
+    /// <summary>
+    /// The boxes were left (or Enter pressed): the name shows as kept (trimmed), a valid budget is applied, and a budget
+    /// out of range is put back. Budgets wait until then, so "25" never passes through a budget of 2.
+    /// </summary>
+    internal void CommitEdits()
     {
-        HasBudgetError = !Money.TryParse(value, out var budget) || budget < 0 || !Money.IsWholeStep(budget);
-        if (!HasBudgetError && Model.Budget != budget)
+        _nameText = null;
+        OnPropertyChanged(nameof(Name));
+        HasNameError = Model.Name.Length == 0;
+
+        if (Money.TryParse(BudgetText, out var budget) && Money.IsValidBudget(budget))
         {
-            Model.Budget = budget;
-            _owner?.Changed();
+            if (Model.Budget != budget)
+            {
+                Model.Budget = budget;
+                _owner.Changed();
+            }
         }
+
+        HasBudgetError = false;
+        BudgetText = Money.Format(Model.Budget);
     }
+
+    /// <summary>0.1 to 30.0, in steps of 0.1: anything else shows the box in red while typing.</summary>
+    partial void OnBudgetTextChanged(string value) =>
+        HasBudgetError = !Money.TryParse(value, out var budget) || !Money.IsValidBudget(budget);
 }

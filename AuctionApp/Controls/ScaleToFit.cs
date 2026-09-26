@@ -18,6 +18,8 @@ public sealed class ScaleToFit : Decorator
         nameof(MaxScale), typeof(double), typeof(ScaleToFit), new FrameworkPropertyMetadata(1.0, FrameworkPropertyMetadataOptions.AffectsMeasure));
 
     private double _scale = 1;
+    private Size _lastConstraint = Size.Empty;
+    private double _lastHeight;
 
     public double MaxScale
     {
@@ -38,9 +40,30 @@ public sealed class ScaleToFit : Decorator
             return default;
         }
 
+        if (double.IsInfinity(constraint.Height))
+        {
+            _scale = 1;
+            var natural = HeightAt(constraint.Width, 1);
+            return new Size(double.IsInfinity(constraint.Width) ? Child.DesiredSize.Width : constraint.Width, natural);
+        }
+
+        // Fast path, the usual case during an auction (a sale, a player picked...): same space as last time, and the
+        // content still fits at the current scale without having shrunk (which could leave room to grow). One measure
+        // instead of a search; the search runs again when the window is resized or the content grows or shrinks.
+        if (constraint == _lastConstraint)
+        {
+            var current = HeightAt(constraint.Width, _scale) * _scale;
+            if (current <= constraint.Height + 0.5 && current >= _lastHeight - 1)
+            {
+                _lastHeight = current;
+                return new Size(constraint.Width, Math.Min(current, constraint.Height));
+            }
+        }
+
+        _lastConstraint = constraint;
         _scale = 1;
         var height = HeightAt(constraint.Width, 1);
-        if (!double.IsInfinity(constraint.Height) && height > 0)
+        if (height > 0)
         {
             // Scaled, the content gets a different width, which can change its layout (wrapping, columns): look for
             // the largest scale at which it fits, between the limits.
@@ -54,7 +77,7 @@ public sealed class ScaleToFit : Decorator
                 }
                 else
                 {
-                    for (var i = 0; i < 8 && high - low > 0.005; i++)
+                    for (var i = 0; i < 7 && high - low > 0.01; i++)
                     {
                         var middle = (low + high) / 2;
                         (low, high) = Fits(constraint, middle) ? (middle, high) : (low, middle);
@@ -66,9 +89,10 @@ public sealed class ScaleToFit : Decorator
             }
         }
 
+        _lastHeight = height * _scale;
         return new Size(
             double.IsInfinity(constraint.Width) ? Child.DesiredSize.Width * _scale : constraint.Width,
-            Math.Min(height * _scale, double.IsInfinity(constraint.Height) ? double.MaxValue : constraint.Height));
+            Math.Min(height * _scale, constraint.Height));
     }
 
     /// <summary>The content's height, unscaled, when laid out for this width at this scale.</summary>

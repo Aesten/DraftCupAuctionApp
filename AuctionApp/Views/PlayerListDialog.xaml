@@ -27,13 +27,18 @@
                 <ItemsControl x:Name="PlayersList" Margin="0,0,12,0" Focusable="False">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type vm:PlayerItemViewModel}">
-                            <Grid Height="36" Margin="12,0,0,0">
+                            <Grid Height="40" Margin="12,0,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock VerticalAlignment="Center" FontSize="15" Style="{StaticResource Body}" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                                <controls:ClassIconStrip Grid.Column="1" Margin="8,0,0,0" IconSize="22" ItemsSource="{Binding Classes}" />
+                                <controls:ClassIconStrip Grid.Column="1" Margin="8,0" IconSize="22" ItemsSource="{Binding Classes}" />
+                                <Button Grid.Column="2" Click="BringToBlock_Click" ToolTip="Put this player on the block now; the current one comes up right after"
+                                        Visibility="{Binding CanBringToBlock, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}">
+                                    <controls:IconLabel Glyph="&#xE7A7;" Text="On the block" />
+                                </Button>
                             </Grid>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
