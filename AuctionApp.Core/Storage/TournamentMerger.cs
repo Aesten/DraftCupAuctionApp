@@ -37,7 +37,13 @@ public static class TournamentMerger
                 changes.Add($"Player pool updated ({incoming.Players.Count} players)");
             }
 
+            if (result.Format != incoming.Format)
+            {
+                changes.Add(incoming.IsCaptainPick ? "Format changed to Captain Pick" : "Format changed to Random Pick");
+            }
+
             result.Title = incoming.Title;
+            result.Format = incoming.Format;
             result.Players = incoming.Players;
             result.PoolUpdatedAt = incoming.PoolUpdatedAt;
         }
@@ -77,5 +83,6 @@ public static class TournamentMerger
         && a.Players.Zip(b.Players).All(pair =>
             pair.First.Id == pair.Second.Id
             && pair.First.Name == pair.Second.Name
-            && pair.First.Classes.SequenceEqual(pair.Second.Classes));
+            && pair.First.Classes.SequenceEqual(pair.Second.Classes)
+            && pair.First.Tier == pair.Second.Tier);
 }

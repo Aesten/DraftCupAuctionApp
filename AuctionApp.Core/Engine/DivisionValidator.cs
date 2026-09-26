@@ -60,6 +60,21 @@ public static class DivisionValidator
             Warning($"Only {available.Count} players are available for {needed} spots, so some teams won't be full.");
         }
 
+        if (tournament.IsCaptainPick)
+        {
+            var noTier = available.Where(player => !Tiers.IsValid(player.Tier)).Select(player => player.Name).ToList();
+            if (noTier.Count > 0)
+            {
+                Error($"{Count(noTier.Count)} {(noTier.Count == 1 ? "has" : "have")} no tier yet: {Names(noTier)}.");
+            }
+
+            var noClass = available.Where(player => player.Classes.Count == 0).Select(player => player.Name).ToList();
+            if (noClass.Count > 0)
+            {
+                Error($"{Count(noClass.Count)} {(noClass.Count == 1 ? "has" : "have")} no class yet: {Names(noClass)}.");
+            }
+        }
+
         var unnamed = tournament.Players.Count(player => string.IsNullOrWhiteSpace(player.Name));
         if (unnamed > 0)
         {
@@ -73,6 +88,11 @@ public static class DivisionValidator
 
         return issues;
     }
+
+    private static string Count(int players) => players == 1 ? "1 player" : $"{players} players";
+
+    private static string Names(List<string> names) =>
+        string.Join(", ", names.Take(5)) + (names.Count > 5 ? $" and {names.Count - 5} more" : string.Empty);
 
     private static IEnumerable<string> Duplicates(IEnumerable<string> names) =>
         names.Where(name => !string.IsNullOrWhiteSpace(name))

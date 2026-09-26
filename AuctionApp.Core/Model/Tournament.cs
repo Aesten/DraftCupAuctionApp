@@ -17,6 +17,16 @@ public sealed class Tournament
 
     public string Title { get; set; } = "New tournament";
 
+    /// <summary>How players come up for auction. Part of the pool: it decides whether players have a tier and one class.</summary>
+    public AuctionFormat Format { get; set; } = AuctionFormat.RandomPick;
+
+    [JsonIgnore]
+    public bool IsCaptainPick => Format == AuctionFormat.CaptainPick;
+
+    /// <summary>The format can change until a division's auction starts.</summary>
+    [JsonIgnore]
+    public bool CanChangeFormat => Divisions.All(division => division.Session == null);
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.Now;
 
     /// <summary>Last change anywhere in the tournament.</summary>
@@ -64,6 +74,11 @@ public sealed class Tournament
         {
             player.Name ??= string.Empty;
             player.Classes = PlayerClasses.Normalize(player.Classes ?? []);
+            player.Tier = Tiers.IsValid(player.Tier) ? player.Tier : null;
+            if (IsCaptainPick && player.Classes.Count > 1)
+            {
+                player.Classes = [player.Classes[0]];
+            }
         }
 
         foreach (var division in Divisions)
@@ -72,17 +87,50 @@ public sealed class Tournament
         }
     }
 
+    /// <summary>
+    /// Switches between Random Pick and Captain Pick. In Captain Pick a player plays one class, so players with
+    /// several keep only the first one. Returns how many players lost a class.
+    /// </summary>
+    public int SetFormat(AuctionFormat format)
+    {
+        if (format == Format)
+        {
+            return 0;
+        }
+
+        if (!CanChangeFormat)
+        {
+            throw new InvalidOperationException("The format can't change once an auction has started.");
+        }
+
+        Format = format;
+        var trimmed = 0;
+        if (IsCaptainPick)
+        {
+            foreach (var player in Players.Where(player => player.Classes.Count > 1))
+            {
+                player.Classes = [player.Classes[0]];
+                trimmed++;
+            }
+        }
+
+        TouchPool();
+        return trimmed;
+    }
+
     /// <summary>A fresh copy with the same pool and division settings but no auction results, for the next event.</summary>
     public Tournament CloneWithoutResults(string title) => new()
     {
         Title = title,
-        Players = Players.Select(player => new Player { Name = player.Name, Classes = [.. player.Classes] }).ToList(),
+        Format = Format,
+        Players = Players.Select(player => new Player { Name = player.Name, Classes = [.. player.Classes], Tier = player.Tier }).ToList(),
         Divisions = Divisions.Select(division => new Division
         {
             Name = division.Name,
             TeamSize = division.TeamSize,
             UpcomingShown = division.UpcomingShown,
             HalfBudgetCapAtStart = division.HalfBudgetCapAtStart,
+            TierMinimums = [.. division.TierMinimums],
             Captains = division.Captains.Select(captain => new Captain { Name = captain.Name, Budget = captain.Budget, Class = captain.Class }).ToList(),
         }).ToList(),
     };
@@ -94,8 +142,35 @@ public sealed class Player
 
     public string Name { get; set; } = string.Empty;
 
-    /// <summary>Class codes, see <see cref="PlayerClasses"/>.</summary>
+    /// <summary>Class codes, see <see cref="PlayerClasses"/>. In Captain Pick, a single class.</summary>
     public List<string> Classes { get; set; } = [];
+
+    /// <summary>Captain Pick only: the player's tier, 1 (best) to <see cref="Tiers.Count"/>, which sets their minimum bid.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? Tier { get; set; }
+}
+
+public enum AuctionFormat
+{
+    /// <summary>Players come up in a random order; nobody bid on them → skipped.</summary>
+    RandomPick,
+
+    /// <summary>Captains name the player they want; bidding starts at the minimum of the player's tier.</summary>
+    CaptainPick,
+}
+
+/// <summary>Captain Pick tiers: 1 is the best. Each tier has a minimum bid, set per division.</summary>
+public static class Tiers
+{
+    public const int Count = 5;
+
+    public static IReadOnlyList<decimal> DefaultMinimums { get; } = [2.0m, 1.5m, 1.0m, 0.5m, 0.1m];
+
+    public static IEnumerable<int> All => Enumerable.Range(1, Count);
+
+    public static bool IsValid(int? tier) => tier is >= 1 and <= Count;
+
+    public static string Name(int tier) => $"Tier {tier}";
 }
 
 /// <summary>One auction of the tournament: its captains, rules and (once started) its live session.</summary>
@@ -120,6 +195,12 @@ public sealed class Division
     public int UpcomingShown { get; set; } = 3;
 
     public bool HalfBudgetCapAtStart { get; set; } = true;
+
+    /// <summary>Captain Pick: the minimum bid for each tier (index 0 is tier 1).</summary>
+    public List<decimal> TierMinimums { get; set; } = [.. Tiers.DefaultMinimums];
+
+    /// <summary>Captain Pick: the price bidding starts at for a player of this tier (0 without a tier).</summary>
+    public decimal MinimumBid(int? tier) => Tiers.IsValid(tier) ? TierMinimums[tier!.Value - 1] : 0m;
 
     public AuctionSession? Session { get; set; }
 
@@ -159,6 +240,9 @@ public sealed class Division
         }
 
         UpcomingShown = Math.Clamp(UpcomingShown, 0, 10);
+        TierMinimums ??= [];
+        TierMinimums = TierMinimums.Take(Tiers.Count).Select(minimum => Math.Max(0m, decimal.Round(minimum, 1))).ToList();
+        TierMinimums.AddRange(Tiers.DefaultMinimums.Skip(TierMinimums.Count));
         Session?.Normalize();
     }
 }
