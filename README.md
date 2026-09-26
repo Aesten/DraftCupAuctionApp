@@ -90,8 +90,8 @@ When a division is done, share its teams from **Teams**: **Copy as text** (forma
 In a Captain Pick tournament, players don't come up in a random order: captains name the player they want.
 
 - In the player pool, each player has **one class** and a **tier**, from 1 (best) to 5. Click the tier's number, or select players and press **1** to **5**. The pool can also be sorted by tier.
-- On the **Configure** page, each division sets the **minimum bid per tier** (2.0, 1.5, 1.0, 0.5 and 0.1 by default). The captain who picks a player bids that amount; the others can bid higher.
-- During the auction, **Pick board** opens a separate window with every player still available: one column per tier, split by class, names in alphabetical order. It can go on another screen or be shown on stream (F11 for full screen), and it scales so nothing is ever cut or scrolled.
+- Each tier has a **minimum bid**: 2.0, 1.5, 1.0, 0.5 and 0.1 by default, for the whole tournament (☰ menu › **Minimum bids…** to change them). The captain who picks a player bids that amount; the others can bid higher.
+- During the auction, **Pick board** opens a separate window with every player still available, as one grid: a row per tier, a column per class, names in alphabetical order. It can go on another screen or be shown on stream (F11 for full screen), and it scales so nothing is ever cut or scrolled.
 - When a captain names a player, click them on the board: they go on the block, highlighted on the board, with the price set to their tier's minimum. Sell as usual. **Put back** returns them to the board if they were picked by mistake.
 - Selling under the minimum asks for confirmation (**Sell anyway**), like going over a budget. There's no queue or skipped list: players nobody buys stay on the board, and a sold player taken back returns to the block or to the board.
 - The auction screen shows how many players are left in each tier and class, where Random Pick shows the next players.
@@ -102,6 +102,7 @@ In a Captain Pick tournament, players don't come up in a random order: captains 
 | --- | --- |
 | Enter (in a text box) | Confirm and leave the box (in the price box: confirm the price, it doesn't sell) |
 | Up / Down (in the price box) | Price ±0.1 |
+| Ctrl+Enter (auction page) | Sold! to the selected team |
 | Delete (in the player pool) | Remove the selected players |
 | 1 to 5 (in the player pool, Captain Pick) | Set the tier of the selected players |
 | Ctrl+Z | Undo the last auction action |

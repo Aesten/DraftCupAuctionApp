@@ -11,6 +11,7 @@
     <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     <controls:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility" />
     <controls:BoolToHiddenConverter x:Key="BoolToHidden" />
+    <controls:InverseBoolToHiddenConverter x:Key="InverseBoolToHidden" />
     <controls:ClassIconConverter x:Key="ClassIcon" />
     <controls:ClassNameConverter x:Key="ClassName" />
     <controls:ClassBrushConverter x:Key="ClassBrush" />

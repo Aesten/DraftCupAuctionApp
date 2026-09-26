@@ -23,6 +23,12 @@ public sealed class Tournament
     [JsonIgnore]
     public bool IsCaptainPick => Format == AuctionFormat.CaptainPick;
 
+    /// <summary>Captain Pick: the minimum bid for each tier (index 0 is tier 1). Part of the pool, like the tiers.</summary>
+    public List<decimal> TierMinimums { get; set; } = [.. Tiers.DefaultMinimums];
+
+    /// <summary>Captain Pick: the price bidding starts at for a player of this tier (0 without a tier).</summary>
+    public decimal MinimumBid(int? tier) => Tiers.IsValid(tier) ? TierMinimums[tier!.Value - 1] : 0m;
+
     /// <summary>The format can change until a division's auction starts.</summary>
     [JsonIgnore]
     public bool CanChangeFormat => Divisions.All(division => division.Session == null);
@@ -70,6 +76,9 @@ public sealed class Tournament
         Title ??= string.Empty;
         Players ??= [];
         Divisions ??= [];
+        TierMinimums ??= [];
+        TierMinimums = TierMinimums.Take(Tiers.Count).Select(minimum => Math.Max(0m, decimal.Round(minimum, 1))).ToList();
+        TierMinimums.AddRange(Tiers.DefaultMinimums.Skip(TierMinimums.Count));
         foreach (var player in Players)
         {
             player.Name ??= string.Empty;
@@ -123,6 +132,7 @@ public sealed class Tournament
     {
         Title = title,
         Format = Format,
+        TierMinimums = [.. TierMinimums],
         Players = Players.Select(player => new Player { Name = player.Name, Classes = [.. player.Classes], Tier = player.Tier }).ToList(),
         Divisions = Divisions.Select(division => new Division
         {
@@ -130,7 +140,6 @@ public sealed class Tournament
             TeamSize = division.TeamSize,
             UpcomingShown = division.UpcomingShown,
             HalfBudgetCapAtStart = division.HalfBudgetCapAtStart,
-            TierMinimums = [.. division.TierMinimums],
             Captains = division.Captains.Select(captain => new Captain { Name = captain.Name, Budget = captain.Budget, Class = captain.Class }).ToList(),
         }).ToList(),
     };
@@ -159,7 +168,7 @@ public enum AuctionFormat
     CaptainPick,
 }
 
-/// <summary>Captain Pick tiers: 1 is the best. Each tier has a minimum bid, set per division.</summary>
+/// <summary>Captain Pick tiers: 1 is the best. Each tier has a minimum bid, set for the whole tournament.</summary>
 public static class Tiers
 {
     public const int Count = 5;
@@ -195,12 +204,6 @@ public sealed class Division
     public int UpcomingShown { get; set; } = 3;
 
     public bool HalfBudgetCapAtStart { get; set; } = true;
-
-    /// <summary>Captain Pick: the minimum bid for each tier (index 0 is tier 1).</summary>
-    public List<decimal> TierMinimums { get; set; } = [.. Tiers.DefaultMinimums];
-
-    /// <summary>Captain Pick: the price bidding starts at for a player of this tier (0 without a tier).</summary>
-    public decimal MinimumBid(int? tier) => Tiers.IsValid(tier) ? TierMinimums[tier!.Value - 1] : 0m;
 
     public AuctionSession? Session { get; set; }
 
@@ -240,9 +243,6 @@ public sealed class Division
         }
 
         UpcomingShown = Math.Clamp(UpcomingShown, 0, 10);
-        TierMinimums ??= [];
-        TierMinimums = TierMinimums.Take(Tiers.Count).Select(minimum => Math.Max(0m, decimal.Round(minimum, 1))).ToList();
-        TierMinimums.AddRange(Tiers.DefaultMinimums.Skip(TierMinimums.Count));
         Session?.Normalize();
     }
 }

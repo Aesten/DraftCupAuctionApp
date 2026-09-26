@@ -49,6 +49,10 @@ public sealed partial class AuctionViewModel : ObservableObject
 
     public bool IsRandomPick => !IsCaptainPick;
 
+    /// <summary>Captain Pick: how many players of each class are left on the board (the board's column headers).</summary>
+    [ObservableProperty]
+    public partial IReadOnlyList<ClassCount> BoardClassTotals { get; set; } = [];
+
     /// <summary>Captain Pick: how many players are on the board (not bought yet).</summary>
     [ObservableProperty]
     public partial int BoardCount { get; set; }
@@ -285,7 +289,7 @@ public sealed partial class AuctionViewModel : ObservableObject
                         .Select(player => new BoardPlayerViewModel(player, player.Id == session.OnBlockId, this))
                         .ToList()))
                 .ToList();
-            Board.Add(new BoardTierViewModel(tier, Money.Format(Division.MinimumBid(tier)), columns));
+            Board.Add(new BoardTierViewModel(tier, Money.Format(_owner.Tournament.MinimumBid(tier)), columns));
         }
 
         // Players without a tier or class (edited in the pool mid-auction) still need to be pickable.
@@ -297,6 +301,10 @@ public sealed partial class AuctionViewModel : ObservableObject
                 .ToList();
             Board.Add(new BoardTierViewModel(0, string.Empty, [new BoardColumnViewModel(string.Empty, list)]));
         }
+
+        BoardClassTotals = PlayerClasses.All
+            .Select(code => new ClassCount(code, Board.Sum(tier => tier.Counts.FirstOrDefault(count => count.Code == code)?.Count ?? 0)))
+            .ToList();
     }
 
     /// <summary>

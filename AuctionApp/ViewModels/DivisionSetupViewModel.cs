@@ -20,8 +20,6 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
             Captains.Add(new CaptainRowViewModel(captain, this));
         }
 
-        TierMinimums = Tiers.All.Select(tier => new TierMinimumViewModel(tier, Division, this)).ToList();
-
         Refresh();
     }
 
@@ -37,8 +35,8 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
 
     public ObservableCollection<CaptainRowViewModel> Captains { get; } = [];
 
-    /// <summary>Captain Pick: the minimum bid of each tier.</summary>
-    public IReadOnlyList<TierMinimumViewModel> TierMinimums { get; }
+    /// <summary>Captain Pick: the tournament's minimum bids, shown for reference (changed from the menu).</summary>
+    public string MinimumBidsText => string.Join("  ·  ", Tiers.All.Select(tier => $"T{tier} {Money.Format(Tournament.MinimumBid(tier))}"));
 
     public bool IsCaptainPick => Tournament.IsCaptainPick;
 
@@ -124,6 +122,7 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(IsLocked));
         OnPropertyChanged(nameof(IsEditable));
+        OnPropertyChanged(nameof(MinimumBidsText));
         Issues.Clear();
         if (!IsLocked)
         {
@@ -316,41 +315,6 @@ public sealed partial class CaptainRowViewModel : ObservableObject
         if (!HasBudgetError && Model.Budget != budget)
         {
             Model.Budget = budget;
-            _owner?.Changed();
-        }
-    }
-}
-
-/// <summary>Captain Pick: the minimum bid of one tier, typed like a budget ("1.5" or "1,5").</summary>
-public sealed partial class TierMinimumViewModel : ObservableObject
-{
-    private readonly Division _division;
-    private readonly DivisionSetupViewModel _owner;
-
-    public TierMinimumViewModel(int tier, Division division, DivisionSetupViewModel owner)
-    {
-        Tier = tier;
-        _division = division;
-        _owner = owner;
-        Text = Money.Format(division.TierMinimums[tier - 1]);
-    }
-
-    public int Tier { get; }
-
-    public string Label => Tiers.Name(Tier);
-
-    [ObservableProperty]
-    public partial string Text { get; set; }
-
-    [ObservableProperty]
-    public partial bool HasError { get; set; }
-
-    partial void OnTextChanged(string value)
-    {
-        HasError = !Money.TryParse(value, out var minimum) || minimum < 0 || !Money.IsWholeStep(minimum);
-        if (!HasError && _division.TierMinimums[Tier - 1] != minimum)
-        {
-            _division.TierMinimums[Tier - 1] = minimum;
             _owner?.Changed();
         }
     }

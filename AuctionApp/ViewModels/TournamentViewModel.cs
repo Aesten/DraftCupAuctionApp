@@ -123,6 +123,18 @@ public sealed partial class TournamentViewModel : ObservableObject
 
     public string SwitchFormatText => IsCaptainPick ? "Switch to Random Pick…" : "Switch to Captain Pick…";
 
+    /// <summary>Captain Pick: the minimum bid of each tier, for the whole tournament (from the menu).</summary>
+    [RelayCommand]
+    private void EditMinimumBids()
+    {
+        _main.IsMenuOpen = false;
+        if (Dialogs.EditTierMinimums(Tournament.TierMinimums) is { } minimums && !minimums.SequenceEqual(Tournament.TierMinimums))
+        {
+            Tournament.TierMinimums = [.. minimums];
+            PoolChanged();
+        }
+    }
+
     /// <summary>The menu opened: what it shows about the tournament may have changed (an auction started...).</summary>
     internal void RefreshMenu()
     {
@@ -280,7 +292,6 @@ public sealed partial class TournamentViewModel : ObservableObject
             division.TeamSize = previous.TeamSize;
             division.UpcomingShown = previous.UpcomingShown;
             division.HalfBudgetCapAtStart = previous.HalfBudgetCapAtStart;
-            division.TierMinimums = [.. previous.TierMinimums];
         }
 
         var page = new DivisionViewModel(division, this);

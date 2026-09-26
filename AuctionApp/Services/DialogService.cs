@@ -40,6 +40,9 @@ public interface IDialogService
     /// <param name="withTiers">Captain Pick: the format shown includes each player's tier.</param>
     string? PickPlayerListToImport(bool withTiers = false);
 
+    /// <summary>Captain Pick: edits the minimum bid of each tier; null when cancelled.</summary>
+    IReadOnlyList<decimal>? EditTierMinimums(IReadOnlyList<decimal> minimums);
+
     bool CopyToClipboard(string text);
 
     void OpenFolder(string path);
@@ -94,6 +97,12 @@ public sealed class DialogService : IDialogService
         new PlayerListImportDialog(withTiers) { Owner = Owner }.ShowDialog() == true
             ? PickFileToOpen("Import a player list", "Player lists (*.csv;*.json)|*.csv;*.json|All files (*.*)|*.*")
             : null;
+
+    public IReadOnlyList<decimal>? EditTierMinimums(IReadOnlyList<decimal> minimums)
+    {
+        var dialog = new TierMinimumsDialog(minimums) { Owner = Owner };
+        return dialog.ShowDialog() == true ? dialog.Minimums : null;
+    }
 
     public bool CopyToClipboard(string text)
     {

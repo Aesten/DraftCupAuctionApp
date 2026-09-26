@@ -110,6 +110,15 @@ public sealed class BoolToHiddenConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
 }
 
+/// <summary>Hidden (still taking its space) when true, visible when false.</summary>
+public sealed class InverseBoolToHiddenConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+        value is true ? Visibility.Hidden : Visibility.Visible;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
+}
+
 /// <summary>Visible when the value is set (non-null, non-empty string), collapsed otherwise.</summary>
 public sealed class NotEmptyToVisibilityConverter : IValueConverter
 {

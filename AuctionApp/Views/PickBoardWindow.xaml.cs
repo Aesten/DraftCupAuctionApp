@@ -14,6 +14,19 @@ public partial class PickBoardWindow : Window
         Title = $"Pick board — {auction.Title}";
     }
 
+    /// <summary>
+    /// Hands the focus back to the app before closing: otherwise Windows activates whatever window was used before,
+    /// and the app ends up behind it.
+    /// </summary>
+    protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+    {
+        base.OnClosing(e);
+        if (!e.Cancel && IsActive)
+        {
+            Owner?.Activate();
+        }
+    }
+
     /// <summary>F11: full screen on / off; Esc leaves full screen.</summary>
     protected override void OnKeyDown(KeyEventArgs e)
     {

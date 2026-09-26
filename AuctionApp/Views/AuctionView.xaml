@@ -20,6 +20,7 @@
     -->
     <UserControl.InputBindings>
         <KeyBinding Command="{Binding UndoCommand}" Gesture="Ctrl+Z" />
+        <KeyBinding Command="{Binding SellCommand}" Gesture="Ctrl+Enter" />
     </UserControl.InputBindings>
 
     <UserControl.Resources>
@@ -38,6 +39,29 @@
             <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="FontSize" Value="15" />
         </Style>
+
+        <!-- Captain Pick: players left of one class in a tier (framed class icon + number) -->
+        <DataTemplate x:Key="BoardCount" DataType="{x:Type vm:ClassCount}">
+            <StackPanel x:Name="Root" VerticalAlignment="Center" Orientation="Horizontal" ToolTip="{Binding Code, Converter={StaticResource ClassName}}">
+                <Border Width="20" Height="20" Padding="3" VerticalAlignment="Center"
+                        Background="{Binding Code, Converter={StaticResource ClassBrush}, ConverterParameter=0.28}"
+                        BorderBrush="{Binding Code, Converter={StaticResource ClassBrush}, ConverterParameter=0.9}"
+                        BorderThickness="1" CornerRadius="4">
+                    <Rectangle Fill="{DynamicResource TextFillColorPrimaryBrush}">
+                        <Rectangle.OpacityMask>
+                            <ImageBrush ImageSource="{Binding Code, Converter={StaticResource ClassIcon}}" Stretch="Uniform" />
+                        </Rectangle.OpacityMask>
+                    </Rectangle>
+                </Border>
+                <TextBlock Margin="6,0,0,0" VerticalAlignment="Center" FontSize="15" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding Count}" />
+            </StackPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsZero}" Value="True">
+                    <Setter TargetName="Root" Property="Opacity" Value="0.4" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
 
         <!-- The menu of a bought player: fixing a sale without undoing everything after it. -->
         <ContextMenu x:Key="PickMenu" x:Shared="False">
@@ -249,7 +273,8 @@
 
                         <Grid>
                             <!-- Selling the player on the block -->
-                            <StackPanel VerticalAlignment="Top" Visibility="{Binding HasCurrentPlayer, Converter={StaticResource BoolToVisibility}}">
+                            <!-- The three states share one cell and are hidden rather than collapsed: the top band never changes height. -->
+                            <StackPanel VerticalAlignment="Top" Visibility="{Binding HasCurrentPlayer, Converter={StaticResource BoolToHidden}}">
                                 <Border x:Name="WinnerBox" Height="48" Padding="12,0" CornerRadius="6" BorderThickness="1"
                                         Background="{DynamicResource SubtleFillColorSecondaryBrush}" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
                                     <Grid VerticalAlignment="Center">
@@ -270,7 +295,7 @@
                                     <TextBox x:Name="PriceBox" Grid.Column="1" Margin="6,0" VerticalContentAlignment="Center" FontSize="24" FontWeight="SemiBold"
                                              HorizontalContentAlignment="Center" LostKeyboardFocus="PriceBox_LostKeyboardFocus"
                                              Text="{Binding PriceText, UpdateSourceTrigger=PropertyChanged}"
-                                             ToolTip="Price in millions. Up/Down change it by 0.1, Enter confirms it.">
+                                             ToolTip="Price in millions. Up/Down change it by 0.1, Enter confirms it, Ctrl+Enter sells.">
                                         <TextBox.InputBindings>
                                             <KeyBinding Key="Up" Command="{Binding ChangePriceCommand}" CommandParameter="0.1" />
                                             <KeyBinding Key="Down" Command="{Binding ChangePriceCommand}" CommandParameter="-0.1" />
@@ -284,7 +309,7 @@
                                         <ColumnDefinition Width="8" />
                                         <ColumnDefinition Width="110" />
                                     </Grid.ColumnDefinitions>
-                                    <Button x:Name="SoldButton" Command="{Binding SellCommand}" Style="{StaticResource BigAccentButton}" ToolTip="Sell to the selected team">
+                                    <Button x:Name="SoldButton" Command="{Binding SellCommand}" Style="{StaticResource BigAccentButton}" ToolTip="Sell to the selected team (Ctrl+Enter)">
                                         <controls:IconLabel Glyph="&#xE8FB;" Text="Sold!" />
                                     </Button>
 
@@ -321,7 +346,7 @@
                             </StackPanel>
 
                             <!-- Nobody on the block -->
-                            <StackPanel VerticalAlignment="Center" Visibility="{Binding IsQueueEmpty, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel VerticalAlignment="Center" Visibility="{Binding IsQueueEmpty, Converter={StaticResource BoolToHidden}}">
                                 <Button Command="{Binding RequeueSkippedCommand}" Style="{StaticResource BigAccentButton}"
                                         Visibility="{Binding HasSkipped, Converter={StaticResource BoolToVisibility}}">
                                     <controls:IconLabel Glyph="&#xE72C;" Text="Auction the skipped players again" />
@@ -334,7 +359,7 @@
                                     <controls:IconLabel Glyph="&#xE7C1;" Text="Finish the auction" />
                                 </Button>
                             </StackPanel>
-                            <StackPanel VerticalAlignment="Center" Visibility="{Binding IsFinished, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel VerticalAlignment="Center" Visibility="{Binding IsFinished, Converter={StaticResource BoolToHidden}}">
                                 <Button Command="{Binding ShowTeamsCommand}" Style="{StaticResource BigAccentButton}">
                                     <controls:IconLabel Glyph="&#xE902;" Text="Team compositions" />
                                 </Button>
@@ -367,19 +392,22 @@
                         </Border>
 
                         <StackPanel Grid.Row="1" Margin="0,8" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                    Visibility="{Binding HasCurrentPlayer, Converter={StaticResource BoolToVisibility}}">
+                                    Visibility="{Binding HasCurrentPlayer, Converter={StaticResource BoolToHidden}}">
                             <Viewbox MaxHeight="84" HorizontalAlignment="Center" Stretch="Uniform" StretchDirection="DownOnly">
                                 <TextBlock FontSize="64" FontWeight="Bold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding CurrentPlayerName}" />
                             </Viewbox>
-                            <controls:ClassIconStrip Margin="0,10,0,0" HorizontalAlignment="Center" IconSize="44" ItemsSource="{Binding CurrentPlayerClasses}" />
-                            <Border Margin="0,12,0,0" HorizontalAlignment="Center" Style="{StaticResource Pill}"
-                                    Visibility="{Binding CurrentTierText, Converter={StaticResource NotEmptyToVisibility}}">
-                                <TextBlock FontSize="15" FontWeight="SemiBold" Text="{Binding CurrentTierText}" />
-                            </Border>
+                            <!-- Classes, and in Captain Pick the tier and minimum bid on the same line (a fixed height, so nothing moves) -->
+                            <StackPanel Height="44" Margin="0,10,0,0" HorizontalAlignment="Center" Orientation="Horizontal">
+                                <controls:ClassIconStrip VerticalAlignment="Center" IconSize="44" ItemsSource="{Binding CurrentPlayerClasses}" />
+                                <Border Margin="14,0,0,0" VerticalAlignment="Center" Style="{StaticResource Pill}"
+                                        Visibility="{Binding CurrentTierText, Converter={StaticResource NotEmptyToVisibility}}">
+                                    <TextBlock FontSize="15" FontWeight="SemiBold" Text="{Binding CurrentTierText}" />
+                                </Border>
+                            </StackPanel>
                         </StackPanel>
                         <TextBlock Grid.Row="1" Margin="0,8" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" Style="{StaticResource SectionTitle}"
                                    Text="{Binding StageMessage}" TextAlignment="Center" TextWrapping="Wrap"
-                                   Visibility="{Binding HasCurrentPlayer, Converter={StaticResource InverseBoolToVisibility}}" />
+                                   Visibility="{Binding HasCurrentPlayer, Converter={StaticResource InverseBoolToHidden}}" />
 
                         <TextBlock Grid.Row="2" HorizontalAlignment="Center" Style="{StaticResource Caption}" Text="{Binding LastAction}"
                                    TextTrimming="CharacterEllipsis" ToolTip="{Binding LastAction}" />
@@ -436,10 +464,15 @@
                                         <Grid x:Name="Row" Height="30">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="58" />
+                                                <ColumnDefinition Width="58" />
+                                                <ColumnDefinition Width="44" />
                                             </Grid.ColumnDefinitions>
                                             <TextBlock VerticalAlignment="Center" FontSize="15" Style="{StaticResource Strong}" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-                                            <ItemsControl Grid.Column="1" VerticalAlignment="Center" ItemsSource="{Binding Counts}" Style="{StaticResource ClassCounts}" />
+                                            <!-- One fixed column per class, so icons line up from one tier to the next -->
+                                            <ContentControl Grid.Column="1" Content="{Binding Counts[0]}" ContentTemplate="{StaticResource BoardCount}" Focusable="False" />
+                                            <ContentControl Grid.Column="2" Content="{Binding Counts[1]}" ContentTemplate="{StaticResource BoardCount}" Focusable="False" />
+                                            <ContentControl Grid.Column="3" Content="{Binding Counts[2]}" ContentTemplate="{StaticResource BoardCount}" Focusable="False" />
                                         </Grid>
                                         <DataTemplate.Triggers>
                                             <DataTrigger Binding="{Binding Count}" Value="0">

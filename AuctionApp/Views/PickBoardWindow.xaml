@@ -14,13 +14,16 @@
         WindowStartupLocation="CenterOwner"
         mc:Ignorable="d">
     <!--
-        Captain Pick: every player still available, one card per tier with a column per class, like the spreadsheet it
-        replaces. Picked players leave the board. Clicking a name puts that player on the block. It can be moved to
-        another screen or shared on stream; everything stays visible without scrolling.
+        Captain Pick: every player still available, as one regular grid: a row per tier, a column per class, and the
+        players of each cell as equal-width tiles in alphabetical order. Picked players leave the board. Clicking a
+        name puts that player on the block. It can be moved to another screen or shared on stream; it scales to the
+        window so nothing is ever cut or scrolled.
     -->
     <Window.Resources>
+        <!-- A player: a fixed-size tile, so every cell of the board lines up -->
         <DataTemplate x:Key="BoardPlayer" DataType="{x:Type vm:BoardPlayerViewModel}">
-            <Border x:Name="Row" Height="28" Margin="0,1" Padding="6,0" Background="Transparent" CornerRadius="4" Cursor="Hand"
+            <Border x:Name="Tile" Width="164" Height="32" Margin="0,0,6,6" Padding="10,0"
+                    Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="5" Cursor="Hand"
                     ToolTip="{Binding Name, StringFormat='Put {0} on the block'}">
                 <Border.InputBindings>
                     <MouseBinding Command="{Binding PickCommand}" MouseAction="LeftClick" />
@@ -29,72 +32,97 @@
                            Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
             </Border>
             <DataTemplate.Triggers>
-                <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
-                    <Setter TargetName="Row" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                <Trigger SourceName="Tile" Property="IsMouseOver" Value="True">
+                    <Setter TargetName="Tile" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
                 </Trigger>
                 <DataTrigger Binding="{Binding IsOnBlock}" Value="True">
-                    <Setter TargetName="Row" Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
-                    <Setter TargetName="Row" Property="ToolTip" Value="On the block" />
+                    <Setter TargetName="Tile" Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                    <Setter TargetName="Tile" Property="ToolTip" Value="On the block" />
                     <Setter TargetName="Name" Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
                     <Setter TargetName="Name" Property="FontWeight" Value="SemiBold" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
 
-        <!-- One class of a tier: the class icon and how many are left, then the names -->
-        <DataTemplate x:Key="BoardColumn" DataType="{x:Type vm:BoardColumnViewModel}">
-            <DockPanel MinWidth="64" Margin="3,0">
-                <Border DockPanel.Dock="Top" Height="32" Margin="0,0,0,6" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
-                    <StackPanel x:Name="Header" HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal">
-                        <Rectangle x:Name="Icon" Width="20" Height="20" Fill="{DynamicResource TextFillColorPrimaryBrush}"
-                                   ToolTip="{Binding Code, Converter={StaticResource ClassName}}">
-                            <Rectangle.OpacityMask>
-                                <ImageBrush ImageSource="{Binding Code, Converter={StaticResource ClassIcon}}" Stretch="Uniform" />
-                            </Rectangle.OpacityMask>
-                        </Rectangle>
-                        <TextBlock Margin="6,0,0,0" VerticalAlignment="Center" FontSize="14" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{Binding Count}" />
-                    </StackPanel>
-                </Border>
-                <ItemsControl Focusable="False" ItemTemplate="{StaticResource BoardPlayer}" ItemsSource="{Binding Players}" />
-            </DockPanel>
+        <!-- The players of one class in one tier; an empty cell shows a dash -->
+        <DataTemplate x:Key="BoardCell" DataType="{x:Type vm:BoardColumnViewModel}">
+            <Grid Margin="12,0,0,0">
+                <TextBlock x:Name="Empty" Height="32" Margin="4,0,0,6" FontSize="16" Foreground="{DynamicResource TextFillColorDisabledBrush}" Text="—" Visibility="Collapsed" />
+                <ItemsControl Focusable="False" ItemTemplate="{StaticResource BoardPlayer}" ItemsSource="{Binding Players}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+            </Grid>
             <DataTemplate.Triggers>
-                <DataTrigger Binding="{Binding Code}" Value="">
-                    <Setter TargetName="Icon" Property="Visibility" Value="Collapsed" />
-                </DataTrigger>
                 <DataTrigger Binding="{Binding Count}" Value="0">
-                    <Setter TargetName="Header" Property="Opacity" Value="0.4" />
+                    <Setter TargetName="Empty" Property="Visibility" Value="Visible" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
 
+        <!-- One tier: its name and minimum bid, then a cell per class -->
         <DataTemplate x:Key="BoardTier" DataType="{x:Type vm:BoardTierViewModel}">
-            <Border Margin="6" Padding="10,12" VerticalAlignment="Stretch" Style="{StaticResource Card}">
-                <DockPanel>
-                    <Grid DockPanel.Dock="Top" Margin="4,0,4,8">
-                        <TextBlock FontSize="24" FontWeight="Bold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-                        <TextBlock HorizontalAlignment="Right" VerticalAlignment="Bottom" FontSize="16" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Text="{Binding MinimumText}" ToolTip="Minimum bid" />
-                    </Grid>
-                    <ItemsControl Focusable="False" ItemTemplate="{StaticResource BoardColumn}" ItemsSource="{Binding Columns}">
+            <Border Padding="0,10,0,4" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="130" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel x:Name="Label" Margin="4,0,0,0">
+                        <TextBlock FontSize="22" FontWeight="Bold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding Title}" TextWrapping="Wrap" />
+                        <TextBlock FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Text="{Binding MinimumText}" ToolTip="Minimum bid" />
+                    </StackPanel>
+                    <ItemsControl Grid.Column="1" Focusable="False" ItemTemplate="{StaticResource BoardCell}" ItemsSource="{Binding Columns}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal" />
+                                <UniformGrid Columns="3" Rows="1" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                     </ItemsControl>
-                </DockPanel>
+                </Grid>
             </Border>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Count}" Value="0">
+                    <Setter TargetName="Label" Property="Opacity" Value="0.45" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- A class column's header: framed class icon, name, and how many are left -->
+        <DataTemplate x:Key="BoardClassHeader" DataType="{x:Type vm:ClassCount}">
+            <StackPanel x:Name="Root" Margin="12,0,0,0" Orientation="Horizontal">
+                <Border Width="26" Height="26" Padding="4" VerticalAlignment="Center"
+                        Background="{Binding Code, Converter={StaticResource ClassBrush}, ConverterParameter=0.28}"
+                        BorderBrush="{Binding Code, Converter={StaticResource ClassBrush}, ConverterParameter=0.9}"
+                        BorderThickness="1" CornerRadius="5">
+                    <Rectangle Fill="{DynamicResource TextFillColorPrimaryBrush}">
+                        <Rectangle.OpacityMask>
+                            <ImageBrush ImageSource="{Binding Code, Converter={StaticResource ClassIcon}}" Stretch="Uniform" />
+                        </Rectangle.OpacityMask>
+                    </Rectangle>
+                </Border>
+                <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                           Text="{Binding Code, Converter={StaticResource ClassName}}" />
+                <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" FontSize="16" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{Binding Count}" />
+            </StackPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsZero}" Value="True">
+                    <Setter TargetName="Root" Property="Opacity" Value="0.45" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
         </DataTemplate>
     </Window.Resources>
 
-    <Grid Margin="12,10,12,12">
+    <Grid Margin="16,10,16,12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Grid Margin="6,0,6,4">
+        <Grid Margin="4,0,4,8">
             <StackPanel Orientation="Horizontal">
                 <TextBlock VerticalAlignment="Center" FontSize="20" Style="{StaticResource Strong}" Text="Pick board" />
                 <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" FontSize="14" Style="{StaticResource Caption}"
@@ -106,18 +134,27 @@
         <TextBlock Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Style="{StaticResource SectionTitle}"
                    Text="The auction is finished." Visibility="{Binding IsFinished, Converter={StaticResource BoolToVisibility}}" />
 
-        <!--
-            Every tier side by side, each as wide as its longest names, and the whole board scaled to fit the window
-            (never scrolled, never cut).
-        -->
-        <controls:ScaleToFit Grid.Row="1" VerticalAlignment="Top" FitWidth="True" MaxScale="1.4" MinScale="0.3">
-            <ItemsControl Focusable="False" ItemTemplate="{StaticResource BoardTier}" ItemsSource="{Binding Board}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel Orientation="Horizontal" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-            </ItemsControl>
-        </controls:ScaleToFit>
+        <!-- The whole board, class headers included, scaled to the window's height if it runs long (never scrolled) -->
+        <Border Grid.Row="1" Padding="16,12" VerticalAlignment="Top" Style="{StaticResource Card}"
+                Visibility="{Binding IsRunning, Converter={StaticResource BoolToVisibility}}">
+            <controls:ScaleToFit MaxScale="1.4" MinScale="0.4">
+                <StackPanel>
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="130" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ItemsControl Grid.Column="1" Focusable="False" ItemTemplate="{StaticResource BoardClassHeader}" ItemsSource="{Binding BoardClassTotals}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="3" Rows="1" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </Grid>
+                    <ItemsControl Focusable="False" ItemTemplate="{StaticResource BoardTier}" ItemsSource="{Binding Board}" />
+                </StackPanel>
+            </controls:ScaleToFit>
+        </Border>
     </Grid>
 </Window>

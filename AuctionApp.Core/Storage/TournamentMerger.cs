@@ -32,6 +32,11 @@ public static class TournamentMerger
                 changes.Add($"Title changed to \"{incoming.Title}\"");
             }
 
+            if (!result.TierMinimums.SequenceEqual(incoming.TierMinimums))
+            {
+                changes.Add("Minimum bids changed");
+            }
+
             if (!SamePool(result, incoming))
             {
                 changes.Add($"Player pool updated ({incoming.Players.Count} players)");
@@ -44,6 +49,7 @@ public static class TournamentMerger
 
             result.Title = incoming.Title;
             result.Format = incoming.Format;
+            result.TierMinimums = incoming.TierMinimums;
             result.Players = incoming.Players;
             result.PoolUpdatedAt = incoming.PoolUpdatedAt;
         }

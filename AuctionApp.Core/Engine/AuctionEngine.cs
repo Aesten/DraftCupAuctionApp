@@ -30,7 +30,7 @@ public sealed class AuctionEngine
     public AuctionSession Session => Division.Session ?? throw new AuctionException("The auction hasn't started.");
 
     /// <summary>Captain Pick: the price bidding starts at for this player.</summary>
-    public decimal MinimumBid(SessionPlayer player) => Session.CaptainPick ? Division.MinimumBid(player.Tier) : 0m;
+    public decimal MinimumBid(SessionPlayer player) => Session.CaptainPick ? Tournament.MinimumBid(player.Tier) : 0m;
 
     /// <summary>Validates the division and creates its auction from the players still available in the pool.</summary>
     public void Start()

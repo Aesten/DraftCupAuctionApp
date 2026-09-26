@@ -1,0 +1,44 @@
+<Window x:Class="AuctionApp.Views.TierMinimumsDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Minimum bids"
+        Width="380"
+        SizeToContent="Height"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+    <!-- Captain Pick: the minimum bid of each tier, for the whole tournament. -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="24,20,24,20">
+            <TextBlock Style="{StaticResource SectionTitle}" Text="Minimum bids" />
+            <TextBlock Margin="0,8,0,16" FontSize="14" Style="{StaticResource Caption}" TextWrapping="Wrap"
+                       Text="The captain who picks a player bids this amount; the others can bid higher. For every division of the tournament." />
+            <Grid x:Name="Fields">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="90" />
+                    <ColumnDefinition Width="110" />
+                </Grid.ColumnDefinitions>
+            </Grid>
+            <TextBlock x:Name="ProblemText" Margin="0,6,0,0" Foreground="{DynamicResource SystemFillColorCautionBrush}" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <Border Grid.Row="1"
+                Padding="24,16"
+                Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}"
+                BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+                BorderThickness="0,1,0,0">
+            <DockPanel>
+                <Button Click="Defaults_Click" Content="Defaults" Style="{StaticResource SubtleButton}" ToolTip="2.0, 1.5, 1.0, 0.5 and 0.1" />
+                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                    <Button x:Name="OkButton" MinWidth="96" Click="Ok_Click" Content="Save" IsDefault="True" Style="{DynamicResource AccentButtonStyle}" />
+                    <Button MinWidth="96" Margin="8,0,0,0" Content="Cancel" IsCancel="True" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

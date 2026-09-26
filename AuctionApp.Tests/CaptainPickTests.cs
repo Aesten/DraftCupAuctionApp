@@ -67,10 +67,10 @@ public class CaptainPickTests
     }
 
     [Fact]
-    public void TierMinimums_AreSetPerDivision()
+    public void TierMinimums_AreSetForTheTournament()
     {
         var tournament = CaptainPickTournament();
-        tournament.Divisions[0].TierMinimums[0] = 3m;
+        tournament.TierMinimums[0] = 3m;
         var engine = TestData.Start(tournament);
 
         Assert.Equal(3m, engine.MinimumBid(Board(engine, "Player 1")));
@@ -234,7 +234,7 @@ public class CaptainPickTests
         Assert.True(copy.IsCaptainPick);
         Assert.Equal(3, copy.Players[2].Tier);
         Assert.Equal("Player 3", copy.Divisions[0].Session!.CurrentPlayer!.Name);
-        Assert.Equal(Tiers.DefaultMinimums, copy.Divisions[0].TierMinimums);
+        Assert.Equal(Tiers.DefaultMinimums, copy.TierMinimums);
     }
 
     [Fact]
