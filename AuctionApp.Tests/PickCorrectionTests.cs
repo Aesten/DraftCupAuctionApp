@@ -128,3 +128,42 @@ public class PickCorrectionTests
         Assert.Equal(PlayerClasses.Archer, tournament.Divisions[0].CaptainClass(captain.Id));
     }
 }
+
+public class UnlockedSettingsTests
+{
+    [Fact]
+    public void SyncSession_FollowsBudgetsOrderAndNewCaptains()
+    {
+        var tournament = TestData.Tournament(captains: 2);
+        var division = tournament.Divisions[0];
+        var engine = TestData.Start(tournament);
+
+        division.Captains[0].Budget = 25m;
+        division.Captains.Reverse();
+        division.Captains.Add(new Captain { Name = "Newcomer", Budget = 18m });
+        var changes = division.SyncSession();
+
+        Assert.Equal(division.Captains.Select(c => c.Id), engine.Session.Teams.Select(t => t.CaptainId));
+        Assert.Equal(25m, engine.GetTeam(division.Captains[1].Id).InitialBudget);
+        Assert.Equal(18m, engine.Session.Teams[2].InitialBudget);
+        Assert.Contains(changes, change => change.Contains("Newcomer"));
+    }
+
+    [Fact]
+    public void SyncSession_RemovedCaptain_ReleasesTheirPlayers()
+    {
+        var tournament = TestData.Tournament(captains: 2);
+        var division = tournament.Divisions[0];
+        var engine = TestData.Start(tournament);
+        var leaving = division.Captains[1];
+        var sold = engine.Session.CurrentPlayer!;
+        engine.Sell(leaving.Id, 1m);
+
+        division.Captains.Remove(leaving);
+        division.SyncSession();
+
+        Assert.Single(engine.Session.Teams);
+        Assert.Contains(sold, engine.Session.Skipped);
+        Assert.Contains("left the auction", engine.Session.Activity[^1].Text);
+    }
+}

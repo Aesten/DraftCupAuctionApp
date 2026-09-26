@@ -75,7 +75,7 @@ The layout is made for 8 teams (4 × 2) and adapts to 4–10 teams and to roster
   - new players go to the skipped list, ready whenever you want them;
   - name and class changes show up immediately;
   - removing a player who was already sold takes them off the team and refunds the price.
-- A team is a slot led by its captain: captains' names and classes can be changed during the auction, on the **Configure** page. Budgets, the team size and the list of captains are locked until the auction is reset.
+- A team is a slot led by its captain: captains' names and classes can be changed during the auction, on the **Configure** page. Budgets, the team size and the list of captains are locked while the auction runs. If they really need to change, **Unlock settings…** in the Configure page's banner allows it after a warning: the running auction follows right away (a new captain joins with an empty team, a removed captain's players become available again, budgets and the team size apply to every team), and its undo history is cleared. **Lock settings** closes them again; they're also locked again when the tournament is reopened.
 
 Rules the app enforces:
 

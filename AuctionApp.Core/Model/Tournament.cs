@@ -229,6 +229,52 @@ public sealed class Division
         }
     }
 
+    /// <summary>
+    /// The settings were changed during the auction (unlocked by the auctioneer): the teams follow the captains.
+    /// A new captain gets a new team, budgets and order follow, and a removed captain's team leaves the auction; the
+    /// players it bought become available again (skipped list, or the board in Captain Pick). Returns what changed
+    /// in the teams, which is also written to the auction's activity.
+    /// </summary>
+    public List<string> SyncSession()
+    {
+        if (Session is not { } session)
+        {
+            return [];
+        }
+
+        var changes = new List<string>();
+        var teams = new List<SessionTeam>();
+        foreach (var captain in Captains)
+        {
+            var team = session.Teams.FirstOrDefault(t => t.CaptainId == captain.Id);
+            if (team == null)
+            {
+                team = new SessionTeam { CaptainId = captain.Id, InitialBudget = captain.Budget };
+                changes.Add($"{(captain.Name.Trim().Length > 0 ? captain.Name.Trim() : "A new captain")}'s team joined the auction");
+            }
+
+            team.CaptainName = captain.Name.Trim();
+            team.InitialBudget = captain.Budget;
+            teams.Add(team);
+        }
+
+        foreach (var removed in session.Teams.Where(team => !teams.Contains(team)))
+        {
+            var players = removed.Picks.Select(pick => pick.Player).ToList();
+            (session.CaptainPick ? session.Queue : session.Skipped).AddRange(players);
+            changes.Add($"{removed.CaptainName}'s team left the auction"
+                + (players.Count > 0 ? $"; {string.Join(", ", players.Select(player => player.Name))} {(players.Count == 1 ? "is" : "are")} available again" : string.Empty));
+        }
+
+        session.Teams = teams;
+        foreach (var change in changes)
+        {
+            session.Activity.Add(new ActivityEntry { Kind = ActivityKind.Info, Text = change });
+        }
+
+        return changes;
+    }
+
     /// <summary>The class of the captain leading a team, or empty.</summary>
     public string CaptainClass(Guid captainId) => Captains.FirstOrDefault(captain => captain.Id == captainId)?.Class ?? string.Empty;
 

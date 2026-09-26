@@ -41,25 +41,50 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Shown once the auction has started -->
-        <Border Margin="0,0,0,12" Padding="16,10" CornerRadius="8"
-                Background="{DynamicResource SystemFillColorAttentionBackgroundBrush}"
+        <!-- Shown once the auction has started: the settings are locked, unless the auctioneer unlocks them -->
+        <Border x:Name="Banner" Margin="0,0,0,12" Padding="16,10" CornerRadius="8" BorderThickness="1"
                 BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1"
                 Visibility="{Binding IsLocked, Converter={StaticResource BoolToVisibility}}">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Background" Value="{DynamicResource SystemFillColorAttentionBackgroundBrush}" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsUnlocked}" Value="True">
+                            <Setter Property="Background" Value="{DynamicResource SystemFillColorCautionBackgroundBrush}" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <TextBlock VerticalAlignment="Center" FontSize="16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Style="{StaticResource Glyph}" Text="&#xE72E;" />
+                <TextBlock x:Name="BannerIcon" VerticalAlignment="Center" FontSize="16">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource Glyph}">
+                            <Setter Property="Text" Value="&#xE72E;" />
+                            <Setter Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsUnlocked}" Value="True">
+                                    <Setter Property="Text" Value="&#xE785;" />
+                                    <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
                 <StackPanel Grid.Column="1" Margin="12,0">
-                    <TextBlock Style="{StaticResource Strong}" Text="The auction has started" />
-                    <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap"
-                               Text="Names and captains' classes can still be edited. Budgets, the team size and the list of captains are locked until the auction is reset." />
+                    <TextBlock Style="{StaticResource Strong}" Text="{Binding BannerTitle}" />
+                    <TextBlock Style="{StaticResource Caption}" Text="{Binding BannerText}" TextWrapping="Wrap" />
                 </StackPanel>
-                <Button Grid.Column="2" VerticalAlignment="Center" Command="{Binding ResetAuctionCommand}" ToolTip="Clears every sale of this division and unlocks its settings">
+                <Button Grid.Column="2" Margin="0,0,8,0" VerticalAlignment="Center" Command="{Binding ToggleLockCommand}"
+                        ToolTip="Change budgets, the team size or the captains while the auction runs">
+                    <controls:IconLabel Glyph="{Binding LockButtonGlyph}" Text="{Binding LockButtonText}" />
+                </Button>
+                <Button Grid.Column="3" VerticalAlignment="Center" Command="{Binding ResetAuctionCommand}" ToolTip="Clears every sale of this division and unlocks its settings">
                     <controls:IconLabel Glyph="&#xE72C;" Text="Reset auction…" />
                 </Button>
             </Grid>
@@ -98,8 +123,8 @@
 
                         <!-- Captain Pick: where bidding starts for each tier (set for the whole tournament, from the menu) -->
                         <StackPanel Visibility="{Binding IsCaptainPick, Converter={StaticResource BoolToVisibility}}">
-                            <TextBlock Style="{StaticResource FieldLabel}" Text="Minimum bids" />
-                            <TextBlock Style="{StaticResource Body}" Text="{Binding MinimumBidsText}" />
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="Minimum bids, tier 1 to 5" />
+                            <TextBlock Style="{StaticResource Body}" Text="{Binding MinimumBidsText}" TextWrapping="Wrap" />
                             <TextBlock Margin="0,4,0,0" FontSize="12" Style="{StaticResource Caption}" Text="The same for every division: ☰ menu › Minimum bids…" TextWrapping="Wrap" />
                         </StackPanel>
 
