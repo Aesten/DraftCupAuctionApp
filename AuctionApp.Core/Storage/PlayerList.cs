@@ -13,6 +13,7 @@ namespace AuctionApp.Core.Storage;
 /// <item>CSV, as it exported its player list: <c>Player,INF,ARC,CAV</c>, one column per class marked <c>x</c>.</item>
 /// <item>JSON, as its files stored players: <c>{ "players": [ { "name": "Alice", "classes": ["inf"] } ] }</c>.</item>
 /// </list>
+/// Captain Pick adds each player's tier: a <c>Tier</c> column after the classes, or <c>"tier": 3</c>.
 /// </summary>
 public static class PlayerList
 {
@@ -21,22 +22,27 @@ public static class PlayerList
         WriteIndented = true,
         // Names stay readable (accents, symbols) for people editing the file by hand.
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
     };
 
-    public static string ToCsv(IEnumerable<Player> players)
+    /// <summary>The CSV layout; <paramref name="withTiers"/> adds the Tier column (Captain Pick).</summary>
+    public static string ToCsv(IEnumerable<Player> players, bool withTiers = false)
     {
         var csv = new StringBuilder();
-        AppendRow(csv, ["Player", .. PlayerClasses.All.Select(PlayerClasses.ShortName)]);
+        string[] header = ["Player", .. PlayerClasses.All.Select(PlayerClasses.ShortName)];
+        AppendRow(csv, withTiers ? [.. header, "Tier"] : header);
         foreach (var player in players)
         {
-            AppendRow(csv, [player.Name, .. PlayerClasses.All.Select(code => player.Classes.Contains(code) ? "x" : string.Empty)]);
+            string[] row = [player.Name, .. PlayerClasses.All.Select(code => player.Classes.Contains(code) ? "x" : string.Empty)];
+            AppendRow(csv, withTiers ? [.. row, player.Tier?.ToString() ?? string.Empty] : row);
         }
 
         return csv.ToString();
     }
 
-    public static string ToJson(IEnumerable<Player> players) =>
-        JsonSerializer.Serialize(new PlayerListFile(players.Select(p => new PlayerEntry(p.Name, [.. p.Classes])).ToList()), JsonOptions);
+    /// <summary>The JSON layout; <paramref name="withTiers"/> adds each player's tier (Captain Pick).</summary>
+    public static string ToJson(IEnumerable<Player> players, bool withTiers = false) =>
+        JsonSerializer.Serialize(new PlayerListFile(players.Select(p => new PlayerEntry(p.Name, [.. p.Classes], withTiers ? p.Tier : null)).ToList()), JsonOptions);
 
     /// <summary>
     /// Reads a player list: JSON (an object with <c>players</c>, or just the array), or CSV and other text layouts
@@ -78,10 +84,18 @@ public static class PlayerList
                 (entry["name"]?.GetValueKind() == JsonValueKind.String ? entry["name"]!.GetValue<string>() : string.Empty).Trim(),
                 PlayerClasses.Normalize((entry["classes"] as JsonArray ?? [])
                     .Where(value => value?.GetValueKind() == JsonValueKind.String)
-                    .Select(value => value!.GetValue<string>()))))
+                    .Select(value => value!.GetValue<string>())),
+                ReadTier(entry["tier"])))
             .Where(player => player.Name.Length > 0)
             .ToList();
     }
+
+    private static int? ReadTier(JsonNode? node) => node?.GetValueKind() switch
+    {
+        JsonValueKind.Number when node.AsValue().TryGetValue(out int tier) && Tiers.IsValid(tier) => tier,
+        JsonValueKind.String => RosterParser.ParseTier(node.GetValue<string>()),
+        _ => null,
+    };
 
     private static void AppendRow(StringBuilder csv, IEnumerable<string> cells)
     {
@@ -94,5 +108,5 @@ public static class PlayerList
 
     private sealed record PlayerListFile(List<PlayerEntry> Players);
 
-    private sealed record PlayerEntry(string Name, List<string> Classes);
+    private sealed record PlayerEntry(string Name, List<string> Classes, int? Tier);
 }

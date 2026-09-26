@@ -44,6 +44,37 @@
             </Setter>
         </Style>
 
+        <!-- Captain Pick: a tier button (1 to 5); the player's tier is the checked one. -->
+        <Style x:Key="TierToggle" TargetType="ToggleButton">
+            <Setter Property="Width" Value="26" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Margin" Value="0,0,3,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="ToolTip" Value="{Binding Tag, RelativeSource={RelativeSource Self}, StringFormat='Tier {0} (or select players and press {0})'}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Frame" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" CornerRadius="5">
+                            <TextBlock x:Name="Number" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextFillColorDisabledBrush}" Text="{TemplateBinding Tag}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                                <Setter TargetName="Number" Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Frame" Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                <Setter TargetName="Number" Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="FilterToggle" TargetType="ToggleButton" BasedOn="{StaticResource ClassToggle}">
             <Setter Property="Width" Value="34" />
             <Setter Property="Height" Value="34" />
@@ -95,12 +126,15 @@
             </StackPanel>
 
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal">
-                <ListBox Margin="0,0,8,0" SelectedIndex="{Binding IsSortedByDate, Converter={x:Static controls:BoolToIndexConverter.Instance}}" Style="{StaticResource SegmentedList}">
+                <ListBox Margin="0,0,8,0" SelectedIndex="{Binding SortIndex}" Style="{StaticResource SegmentedList}">
                     <ListBoxItem ToolTip="Sorted by name">
                         <TextBlock Text="A–Z" />
                     </ListBoxItem>
                     <ListBoxItem ToolTip="In the order the players were added">
                         <TextBlock Text="Date added" />
+                    </ListBoxItem>
+                    <ListBoxItem ToolTip="By tier, then by name (players without a tier first)" Visibility="{Binding IsCaptainPick, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="Tier" />
                     </ListBoxItem>
                 </ListBox>
                 <Button Command="{Binding RemovePlayersCommand}" CommandParameter="{Binding SelectedItems, ElementName=PlayersGrid}" Style="{StaticResource SubtleButton}"
@@ -133,7 +167,9 @@
                 <Border DockPanel.Dock="Top" Height="34" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Width="{Binding Columns[0].ActualWidth, ElementName=PlayersGrid}" Padding="6,0" VerticalAlignment="Center" Style="{StaticResource Overline}" Text="NAME" />
-                        <TextBlock Width="{Binding Columns[1].ActualWidth, ElementName=PlayersGrid}" VerticalAlignment="Center" Style="{StaticResource Overline}" Text="CLASSES" />
+                        <TextBlock Width="{Binding Columns[1].ActualWidth, ElementName=PlayersGrid}" VerticalAlignment="Center" Style="{StaticResource Overline}" Text="{Binding ClassesHeader}" />
+                        <TextBlock Width="{Binding Columns[2].ActualWidth, ElementName=PlayersGrid}" VerticalAlignment="Center" Style="{StaticResource Overline}" Text="TIER"
+                                   Visibility="{Binding IsCaptainPick, Converter={StaticResource BoolToVisibility}}" />
                         <TextBlock Padding="6,0" VerticalAlignment="Center" Style="{StaticResource Overline}" Text="STATUS" />
                     </StackPanel>
                 </Border>
@@ -143,7 +179,7 @@
                         <Grid Width="{Binding Columns[0].ActualWidth, ElementName=PlayersGrid}">
                             <TextBox x:Name="NewPlayerBox" Margin="0,0,12,0" Padding="32,5,10,6" VerticalAlignment="Center" VerticalContentAlignment="Center"
                                      Text="{Binding NewPlayerText, UpdateSourceTrigger=PropertyChanged}"
-                                     ToolTip="A name, optionally followed by classes (Alice, inf cav), or tick the classes on the right. Enter adds the player.">
+                                     ToolTip="A name, optionally followed by classes (Alice, inf cav) and in Captain Pick a tier (Alice, inf 3), or tick them on the right. Enter adds the player.">
                                 <TextBox.InputBindings>
                                     <KeyBinding Key="Enter" Command="{Binding AddPlayerCommand}" />
                                 </TextBox.InputBindings>
@@ -158,6 +194,14 @@
                             <ToggleButton Margin="0,0,4,0" IsChecked="{Binding NewInfantry}" Style="{StaticResource ClassToggle}" Tag="inf" />
                             <ToggleButton Margin="0,0,4,0" IsChecked="{Binding NewArcher}" Style="{StaticResource ClassToggle}" Tag="arc" />
                             <ToggleButton IsChecked="{Binding NewCavalry}" Style="{StaticResource ClassToggle}" Tag="cav" />
+                        </StackPanel>
+                        <StackPanel Width="{Binding Columns[2].ActualWidth, ElementName=PlayersGrid}" VerticalAlignment="Center" Orientation="Horizontal"
+                                    Visibility="{Binding IsCaptainPick, Converter={StaticResource BoolToVisibility}}">
+                            <ToggleButton IsChecked="{Binding NewTier, Converter={x:Static controls:IntEqualsConverter.Instance}, ConverterParameter=1}" Style="{StaticResource TierToggle}" Tag="1" />
+                            <ToggleButton IsChecked="{Binding NewTier, Converter={x:Static controls:IntEqualsConverter.Instance}, ConverterParameter=2}" Style="{StaticResource TierToggle}" Tag="2" />
+                            <ToggleButton IsChecked="{Binding NewTier, Converter={x:Static controls:IntEqualsConverter.Instance}, ConverterParameter=3}" Style="{StaticResource TierToggle}" Tag="3" />
+                            <ToggleButton IsChecked="{Binding NewTier, Converter={x:Static controls:IntEqualsConverter.Instance}, ConverterParameter=4}" Style="{StaticResource TierToggle}" Tag="4" />
+                            <ToggleButton IsChecked="{Binding NewTier, Converter={x:Static controls:IntEqualsConverter.Instance}, ConverterParameter=5}" Style="{StaticResource TierToggle}" Tag="5" />
                         </StackPanel>
                         <StackPanel Margin="6,0,0,0" VerticalAlignment="Center" Orientation="Horizontal">
                             <Button Command="{Binding AddPlayerCommand}" Style="{DynamicResource AccentButtonStyle}" ToolTip="Add the player (Enter)">
@@ -180,6 +224,7 @@
                           IsKeyboardFocusWithinChanged="PlayersGrid_IsKeyboardFocusWithinChanged"
                           ItemsSource="{Binding PlayersView}"
                           PreviewKeyDown="PlayersGrid_PreviewKeyDown"
+                          PreviewTextInput="PlayersGrid_PreviewTextInput"
                           RowHeight="44"
                           SelectionMode="Extended"
                           SelectionUnit="FullRow"
@@ -189,6 +234,32 @@
                         <SolidColorBrush x:Key="DataGridRowSelectedBackgroundThemeBrush" Opacity="0.22" Color="{DynamicResource {x:Static SystemColors.AccentColorKey}}" />
                         <SolidColorBrush x:Key="DataGridRowSelectedForegroundThemeBrush" Color="{DynamicResource TextFillColorPrimary}" />
                     </DataGrid.Resources>
+                    <!--
+                        Cells without the theme's focus frame (a dark box around the clicked cell, doubled by the
+                        keyboard focus outline when Alt is pressed): the selected row's wash is enough.
+                    -->
+                    <DataGrid.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="OverridesDefaultStyle" Value="True" />
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                            <Setter Property="MinHeight" Value="32" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="DataGridCell">
+                                        <Border x:Name="Border" Background="Transparent" SnapsToDevicePixels="True">
+                                            <ContentPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource DataGridRowSelectedBackgroundThemeBrush}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource DataGridRowSelectedForegroundThemeBrush}" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </DataGrid.CellStyle>
                     <DataGrid.Columns>
                         <DataGridTextColumn Width="*" MinWidth="200" Binding="{Binding Name}" EditingElementStyle="{StaticResource CellEditor}" ElementStyle="{StaticResource CellText}" Header="NAME" />
 
@@ -199,6 +270,20 @@
                                         <ToggleButton Margin="0,0,4,0" IsChecked="{Binding Infantry, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ClassToggle}" Tag="inf" />
                                         <ToggleButton Margin="0,0,4,0" IsChecked="{Binding Archer, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ClassToggle}" Tag="arc" />
                                         <ToggleButton IsChecked="{Binding Cavalry, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ClassToggle}" Tag="cav" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTemplateColumn x:Name="TierColumn" Width="150" Header="TIER">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                                        <ToggleButton IsChecked="{Binding Tier, Converter={x:Static controls:IntEqualsConverter.Instance}, ConverterParameter=1, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TierToggle}" Tag="1" />
+                                        <ToggleButton IsChecked="{Binding Tier, Converter={x:Static controls:IntEqualsConverter.Instance}, ConverterParameter=2, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TierToggle}" Tag="2" />
+                                        <ToggleButton IsChecked="{Binding Tier, Converter={x:Static controls:IntEqualsConverter.Instance}, ConverterParameter=3, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TierToggle}" Tag="3" />
+                                        <ToggleButton IsChecked="{Binding Tier, Converter={x:Static controls:IntEqualsConverter.Instance}, ConverterParameter=4, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TierToggle}" Tag="4" />
+                                        <ToggleButton IsChecked="{Binding Tier, Converter={x:Static controls:IntEqualsConverter.Instance}, ConverterParameter=5, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TierToggle}" Tag="5" />
                                     </StackPanel>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>

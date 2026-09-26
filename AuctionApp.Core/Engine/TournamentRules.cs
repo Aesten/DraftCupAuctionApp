@@ -92,7 +92,7 @@ public static class TournamentRules
 
     /// <summary>
     /// Puts pool players that running auctions don't know about yet (late sign-ups, players released by another
-    /// division) in their skipped list, where the auctioneer can bring them up when they like. Returns how many
+    /// division) in their skipped list (on the board in Captain Pick), where the auctioneer can bring them up when they like. Returns how many
     /// players were added in total.
     /// </summary>
     public static int AddNewPlayersToRunningAuctions(Tournament tournament)
@@ -103,8 +103,12 @@ public static class TournamentRules
             var session = division.Session!;
             foreach (var player in NewlyAvailable(tournament, division))
             {
-                session.Skipped.Add(SessionPlayer.From(player));
-                session.Activity.Add(new ActivityEntry { Kind = ActivityKind.Info, Text = $"{player.Name} joined the auction (in the skipped list)" });
+                (session.CaptainPick ? session.Queue : session.Skipped).Add(SessionPlayer.From(player));
+                session.Activity.Add(new ActivityEntry
+                {
+                    Kind = ActivityKind.Info,
+                    Text = $"{player.Name} joined the auction ({(session.CaptainPick ? "on the board" : "in the skipped list")})",
+                });
                 added++;
             }
 
@@ -137,6 +141,7 @@ public static class TournamentRules
 
             session.Queue.RemoveAll(player => taken.Contains(player.Id));
             session.Skipped.RemoveAll(player => taken.Contains(player.Id));
+            session.Normalize();
             foreach (var player in removed)
             {
                 var buyer = tournament.Divisions.First(other => other != division && other.Session?.Teams.Any(team => team.Picks.Any(pick => pick.Player.Id == player.Id)) == true);
@@ -160,7 +165,7 @@ public static class TournamentRules
             .Select(group => (group.First().Player.Name, group.Select(entry => entry.Division).Distinct().ToList()))
             .ToList();
 
-    /// <summary>Copies a pool player's edited name and classes into every auction that holds them.</summary>
+    /// <summary>Copies a pool player's edited name, classes and tier into every auction that holds them.</summary>
     public static void SyncPlayer(Tournament tournament, Player player)
     {
         foreach (var sessionPlayer in tournament.Divisions
@@ -170,6 +175,7 @@ public static class TournamentRules
         {
             sessionPlayer.Name = player.Name;
             sessionPlayer.Classes = [.. player.Classes];
+            sessionPlayer.Tier = player.Tier;
         }
     }
 
@@ -195,6 +201,7 @@ public static class TournamentRules
             var changed = session.Queue.RemoveAll(p => p.Id == player.Id)
                           + session.Skipped.RemoveAll(p => p.Id == player.Id)
                           + session.Unsold.RemoveAll(p => p.Id == player.Id);
+            session.Normalize();
             foreach (var team in session.Teams)
             {
                 foreach (var pick in team.Picks.Where(pick => pick.Player.Id == player.Id).ToList())

@@ -110,8 +110,69 @@ public sealed partial class TournamentViewModel : ObservableObject
         get
         {
             var divisions = Tournament.Divisions.Count == 1 ? "1 division" : $"{Tournament.Divisions.Count} divisions";
-            return $"{Tournament.Players.Count} players in the pool · {divisions}";
+            return $"{FormatName} · {Tournament.Players.Count} players · {divisions}";
         }
+    }
+
+    public bool IsCaptainPick => Tournament.IsCaptainPick;
+
+    public string FormatName => IsCaptainPick ? "Captain Pick" : "Random Pick";
+
+    /// <summary>The format can be switched until an auction starts.</summary>
+    public bool CanChangeFormat => Tournament.CanChangeFormat;
+
+    public string SwitchFormatText => IsCaptainPick ? "Switch to Random Pick…" : "Switch to Captain Pick…";
+
+    /// <summary>Captain Pick: the minimum bid of each tier, for the whole tournament (from the menu).</summary>
+    [RelayCommand]
+    private void EditMinimumBids()
+    {
+        _main.IsMenuOpen = false;
+        if (Dialogs.EditTierMinimums(Tournament.TierMinimums) is { } minimums && !minimums.SequenceEqual(Tournament.TierMinimums))
+        {
+            Tournament.TierMinimums = [.. minimums];
+            PoolChanged();
+        }
+    }
+
+    /// <summary>The menu opened: what it shows about the tournament may have changed (an auction started...).</summary>
+    internal void RefreshMenu()
+    {
+        OnPropertyChanged(nameof(CanChangeFormat));
+        OnPropertyChanged(nameof(Summary));
+    }
+
+    [RelayCommand]
+    private void SwitchFormat()
+    {
+        if (!CanChangeFormat)
+        {
+            return;
+        }
+
+        var toCaptainPick = !IsCaptainPick;
+        var multiClass = Tournament.Players.Count(player => player.Classes.Count > 1);
+        var message = toCaptainPick
+            ? "Captains will name the player they want, and bidding starts at the minimum of the player's tier. "
+              + "Give every player a tier (1 to 5) in the player pool."
+              + (multiClass > 0 ? $"\n\nIn Captain Pick a player has one class: {multiClass} player(s) with several classes keep only the first one." : string.Empty)
+            : "Players will come up one by one in a random order. Their tiers are kept in case you switch back.";
+        var answer = Dialogs.Ask(
+            toCaptainPick ? "Switch to Captain Pick?" : "Switch to Random Pick?",
+            message,
+            toCaptainPick ? "Switch to Captain Pick" : "Switch to Random Pick");
+        if (answer != DialogChoice.Primary)
+        {
+            return;
+        }
+
+        _main.IsMenuOpen = false;
+        Tournament.SetFormat(toCaptainPick ? AuctionFormat.CaptainPick : AuctionFormat.RandomPick);
+        _dirty = true;
+        SaveNow();
+
+        // Every page shows the format differently: reopen the tournament.
+        _main.Open(Id, reload: true);
     }
 
     // Change tracking

@@ -35,11 +35,58 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
 
     public ObservableCollection<CaptainRowViewModel> Captains { get; } = [];
 
+    /// <summary>Captain Pick: the tournament's minimum bids, shown for reference (changed from the menu).</summary>
+    public string MinimumBidsText => string.Join("  ·  ", Tiers.All.Select(tier => Money.Format(Tournament.MinimumBid(tier))));
+
+    public bool IsCaptainPick => Tournament.IsCaptainPick;
+
+    public bool IsRandomPick => !IsCaptainPick;
+
     public ObservableCollection<ValidationIssue> Issues { get; } = [];
 
     public bool IsLocked => Division.Session != null;
 
-    public bool IsEditable => !IsLocked;
+    /// <summary>
+    /// The auctioneer unlocked the settings during the auction (after a warning): budgets, team size and captains
+    /// can be changed, and the running auction follows straight away. Not saved: settings are locked again when the
+    /// tournament is reopened.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsEditable), nameof(BannerTitle), nameof(BannerText), nameof(LockButtonText), nameof(LockButtonGlyph))]
+    public partial bool IsUnlocked { get; set; }
+
+    public bool IsEditable => !IsLocked || IsUnlocked;
+
+    public string BannerTitle => IsUnlocked ? "Settings unlocked during the auction" : "The auction has started";
+
+    public string BannerText => IsUnlocked
+        ? "Changes apply to the running auction right away, and its undo history is cleared. Lock the settings again when you're done."
+        : "Names and captains' classes can still be edited. Budgets, the team size and the list of captains are locked: unlock them to change them anyway, or reset the auction.";
+
+    public string LockButtonText => IsUnlocked ? "Lock settings" : "Unlock settings…";
+
+    /// <summary>Segoe icons: a closed padlock to lock again, an open one to unlock.</summary>
+    public string LockButtonGlyph => IsUnlocked ? "\uE72E" : "\uE785";
+
+    [RelayCommand]
+    private void ToggleLock()
+    {
+        if (IsUnlocked)
+        {
+            IsUnlocked = false;
+            return;
+        }
+
+        var answer = Dialogs.Ask(
+            "Unlock the settings during the auction?",
+            "Changes apply to the running auction right away:\n\n"
+            + "• Budgets: each team's starting budget changes; what it already spent stays spent, so a lower budget can leave a team in the red.\n"
+            + "• Team size: a smaller size can leave teams with more players than allowed.\n"
+            + "• Captains: a new captain joins with an empty team; removing one removes their team, and the players it bought become available again.\n\n"
+            + "The auction's undo history is cleared. Lock the settings again once you're done.",
+            "Unlock settings");
+        IsUnlocked = answer == DialogChoice.Primary;
+    }
 
     [ObservableProperty]
     public partial bool CanStart { get; set; }
@@ -88,9 +135,17 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
         Changed();
     }
 
-    /// <summary>Records a change: re-checks the division and schedules a save.</summary>
+    /// <summary>Records a change: re-checks the division and schedules a save. Unlocked, the running auction follows.</summary>
     internal void Changed()
     {
+        if (IsLocked && IsUnlocked)
+        {
+            Division.SyncSession();
+            _owner.Auction.Reload();
+            _owner.AuctionChanged();
+            _owner.Owner.Pool.RefreshStatuses();
+        }
+
         Refresh();
         _owner.SettingsChanged();
     }
@@ -113,8 +168,14 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
     /// <summary>Re-checks the division, e.g. after the pool or another division changed.</summary>
     internal void Refresh()
     {
+        if (!IsLocked)
+        {
+            IsUnlocked = false;
+        }
+
         OnPropertyChanged(nameof(IsLocked));
         OnPropertyChanged(nameof(IsEditable));
+        OnPropertyChanged(nameof(MinimumBidsText));
         Issues.Clear();
         if (!IsLocked)
         {
@@ -131,7 +192,7 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
         var available = TournamentRules.AvailablePlayers(Tournament, Division).Count;
         var picked = TournamentRules.PickedPlayerIds(Tournament, except: Division).Count;
         AvailabilityText = IsLocked
-            ? "Players added to the pool from now on go to this auction's skipped list."
+            ? $"Players added to the pool from now on go to this auction's {(IsCaptainPick ? "pick board" : "skipped list")}."
             : $"{available} of the {Tournament.Players.Count} players in the pool will be auctioned"
               + (picked > 0 ? $" ({picked} already bought in other divisions)." : ".");
         OnPropertyChanged(nameof(CaptainsHeader));
@@ -150,6 +211,15 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
     [RelayCommand]
     private void RemoveCaptain(CaptainRowViewModel row)
     {
+        if (Division.Session?.Teams.FirstOrDefault(team => team.CaptainId == row.Model.Id) is { Picks.Count: > 0 } team
+            && Dialogs.Ask(
+                $"Remove {team.CaptainName}'s team?",
+                $"It leaves the auction, and the {team.Picks.Count} player(s) it bought become available again: {string.Join(", ", team.Picks.Select(pick => pick.Player.Name))}.",
+                "Remove team") != DialogChoice.Primary)
+        {
+            return;
+        }
+
         Division.Captains.Remove(row.Model);
         Captains.Remove(row);
         Changed();

@@ -18,7 +18,21 @@ public sealed class AuctionSession
     /// <summary>When on, a team may only spend down to half of its initial budget (the other half stays reserved).</summary>
     public bool HalfBudgetCap { get; set; } = true;
 
-    /// <summary>Players still to be auctioned, the first one being on the block.</summary>
+    /// <summary>
+    /// Captain Pick: captains name the player they want instead of players coming up in order. The queue is then the
+    /// board of players still available, and <see cref="OnBlockId"/> the one being bid on.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool CaptainPick { get; set; }
+
+    /// <summary>Captain Pick: the player picked and being bid on, or null while waiting for a pick.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Guid? OnBlockId { get; set; }
+
+    /// <summary>
+    /// Players still to be auctioned. Random Pick: in order, the first one being on the block. Captain Pick: the
+    /// players captains can still pick.
+    /// </summary>
     public List<SessionPlayer> Queue { get; set; } = [];
 
     /// <summary>Players nobody bought (yet).</summary>
@@ -33,7 +47,9 @@ public sealed class AuctionSession
     public List<ActivityEntry> Activity { get; set; } = [];
 
     [JsonIgnore]
-    public SessionPlayer? CurrentPlayer => Queue.Count > 0 ? Queue[0] : null;
+    public SessionPlayer? CurrentPlayer => CaptainPick
+        ? Queue.FirstOrDefault(player => player.Id == OnBlockId)
+        : Queue.Count > 0 ? Queue[0] : null;
 
     [JsonIgnore]
     public int SoldCount => Teams.Sum(team => team.Picks.Count);
@@ -60,6 +76,11 @@ public sealed class AuctionSession
             player.Name ??= string.Empty;
             player.Classes ??= [];
         }
+
+        if (OnBlockId is { } id && Queue.All(player => player.Id != id))
+        {
+            OnBlockId = null;
+        }
     }
 }
 
@@ -72,11 +93,16 @@ public sealed class SessionPlayer
 
     public List<string> Classes { get; set; } = [];
 
+    /// <summary>Captain Pick: the player's tier (see <see cref="Tiers"/>).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? Tier { get; set; }
+
     public static SessionPlayer From(Player player) => new()
     {
         Id = player.Id,
         Name = player.Name,
         Classes = [.. player.Classes],
+        Tier = player.Tier,
     };
 }
 

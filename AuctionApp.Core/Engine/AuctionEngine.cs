@@ -29,6 +29,9 @@ public sealed class AuctionEngine
 
     public AuctionSession Session => Division.Session ?? throw new AuctionException("The auction hasn't started.");
 
+    /// <summary>Captain Pick: the price bidding starts at for this player.</summary>
+    public decimal MinimumBid(SessionPlayer player) => Session.CaptainPick ? Tournament.MinimumBid(player.Tier) : 0m;
+
     /// <summary>Validates the division and creates its auction from the players still available in the pool.</summary>
     public void Start()
     {
@@ -44,9 +47,14 @@ public sealed class AuctionEngine
         }
 
         var players = TournamentRules.AvailablePlayers(Tournament, Division).Select(SessionPlayer.From).ToList();
-        Shuffle(players);
+        if (!Tournament.IsCaptainPick)
+        {
+            Shuffle(players);
+        }
+
         Division.Session = new AuctionSession
         {
+            CaptainPick = Tournament.IsCaptainPick,
             HalfBudgetCap = Division.HalfBudgetCapAtStart,
             Queue = players,
             Teams = Division.Captains.Select(captain => new SessionTeam
@@ -79,7 +87,7 @@ public sealed class AuctionEngine
             return new("The auction is finished.", CanOverride: false);
         }
 
-        if (Session.CurrentPlayer == null)
+        if (Session.CurrentPlayer is not { } player)
         {
             return new("There is no player on the block.", CanOverride: false);
         }
@@ -98,6 +106,11 @@ public sealed class AuctionEngine
         if (SlotsLeft(team) == 0)
         {
             return new($"{team.CaptainName}'s team is already full.", CanOverride: false);
+        }
+
+        if (price < MinimumBid(player))
+        {
+            return new($"The minimum bid for {player.Name} ({Tiers.Name(player.Tier!.Value).ToLowerInvariant()}) is {Money.Format(MinimumBid(player))}.", CanOverride: true);
         }
 
         var spendable = team.Spendable(Session.HalfBudgetCap);
@@ -123,18 +136,45 @@ public sealed class AuctionEngine
         }
 
         var team = GetTeam(captainId);
-        var player = Session.Queue[0];
-        Session.Queue.RemoveAt(0);
+        var player = Session.CurrentPlayer!;
+        Session.Queue.Remove(player);
+        Session.OnBlockId = null;
         var pick = new Pick { Player = player, Price = price };
         team.Picks.Add(pick);
-        Log(ActivityKind.Sold, $"{player.Name} sold to {team.CaptainName} for {Money.Format(price)}" + (issue != null ? " (over the limit, confirmed)" : string.Empty));
+        Log(ActivityKind.Sold, $"{player.Name} sold to {team.CaptainName} for {Money.Format(price)}" + (issue == null ? string.Empty : price < MinimumBid(player) ? " (below the minimum, confirmed)" : " (over the limit, confirmed)"));
         return pick;
+    }
+
+    /// <summary>Captain Pick: puts the player a captain picked on the block (a player already there goes back to the board).</summary>
+    public void PutOnBlock(Guid playerId)
+    {
+        EnsureRunning();
+        EnsureCaptainPick();
+        var player = Session.Queue.FirstOrDefault(p => p.Id == playerId) ?? throw new AuctionException("That player can't be picked.");
+        if (Session.OnBlockId == playerId)
+        {
+            return;
+        }
+
+        Session.OnBlockId = playerId;
+        Log(ActivityKind.Info, $"{player.Name} picked" + (Tiers.IsValid(player.Tier) ? $" ({Tiers.Name(player.Tier!.Value).ToLowerInvariant()}, from {Money.Format(MinimumBid(player))})" : string.Empty));
+    }
+
+    /// <summary>Captain Pick: takes the player off the block, back to the board, without a sale.</summary>
+    public void ReturnToBoard()
+    {
+        EnsureRunning();
+        EnsureCaptainPick();
+        var player = Session.CurrentPlayer ?? throw new AuctionException("There is no player on the block.");
+        Session.OnBlockId = null;
+        Log(ActivityKind.Returned, $"{player.Name} back on the board");
     }
 
     /// <summary>Moves the player on the block to the skipped list.</summary>
     public void Skip()
     {
         EnsureRunning();
+        EnsureRandomPick();
         var player = Session.CurrentPlayer ?? throw new AuctionException("There is no player on the block.");
         Session.Queue.RemoveAt(0);
         Session.Skipped.Add(player);
@@ -145,6 +185,7 @@ public sealed class AuctionEngine
     public void BringBack(Guid playerId)
     {
         EnsureRunning();
+        EnsureRandomPick();
         var player = Session.Skipped.FirstOrDefault(p => p.Id == playerId) ?? throw new AuctionException("That player isn't in the skipped list.");
         Session.Skipped.Remove(player);
         Session.Queue.Insert(0, player);
@@ -155,6 +196,7 @@ public sealed class AuctionEngine
     public void RequeueSkipped()
     {
         EnsureRunning();
+        EnsureRandomPick();
         if (Session.Skipped.Count == 0)
         {
             return;
@@ -173,16 +215,35 @@ public sealed class AuctionEngine
         EnsureRunning();
         var (team, pick) = FindPick(captainId, playerId);
         team.Picks.Remove(pick);
-        Session.Queue.Insert(0, pick.Player);
+        if (Session.CaptainPick)
+        {
+            Session.Queue.Add(pick.Player);
+            Session.OnBlockId = pick.Player.Id;
+        }
+        else
+        {
+            Session.Queue.Insert(0, pick.Player);
+        }
+
         Log(ActivityKind.Returned, $"{pick.Player.Name} taken back from {team.CaptainName} (refunded {Money.Format(pick.Price)}), back on the block");
     }
 
-    /// <summary>Takes a player back from a team (refunding the price) and puts them in the skipped list.</summary>
+    /// <summary>
+    /// Takes a player back from a team (refunding the price) and puts them in the skipped list, or back on the board
+    /// in Captain Pick.
+    /// </summary>
     public void ReturnPickToSkipped(Guid captainId, Guid playerId)
     {
         EnsureRunning();
         var (team, pick) = FindPick(captainId, playerId);
         team.Picks.Remove(pick);
+        if (Session.CaptainPick)
+        {
+            Session.Queue.Add(pick.Player);
+            Log(ActivityKind.Returned, $"{pick.Player.Name} taken back from {team.CaptainName} (refunded {Money.Format(pick.Price)}), back on the board");
+            return;
+        }
+
         Session.Skipped.Add(pick.Player);
         Log(ActivityKind.Returned, $"{pick.Player.Name} taken back from {team.CaptainName} (refunded {Money.Format(pick.Price)}), sent to the skipped list");
     }
@@ -243,6 +304,11 @@ public sealed class AuctionEngine
         var other = list[index];
         list[index] = pick.Player;
         var old = pick.Player;
+        if (Session.OnBlockId == other.Id)
+        {
+            Session.OnBlockId = old.Id;
+        }
+
         pick.Player = other;
         Log(ActivityKind.Info, $"{old.Name} swapped with {other.Name} in {team.CaptainName}'s team ({Money.Format(pick.Price)})");
     }
@@ -255,11 +321,12 @@ public sealed class AuctionEngine
         Session.Unsold.AddRange(Session.Skipped);
         Session.Queue.Clear();
         Session.Skipped.Clear();
+        Session.OnBlockId = null;
         Session.FinishedAt = DateTimeOffset.Now;
         Log(ActivityKind.Info, "Auction finished");
     }
 
-    /// <summary>Reopens a finished auction; the unsold players go to the skipped list.</summary>
+    /// <summary>Reopens a finished auction; the unsold players go to the skipped list (back on the board in Captain Pick).</summary>
     public void Reopen()
     {
         if (!Session.IsFinished)
@@ -268,7 +335,7 @@ public sealed class AuctionEngine
         }
 
         Session.FinishedAt = null;
-        Session.Skipped.AddRange(Session.Unsold);
+        (Session.CaptainPick ? Session.Queue : Session.Skipped).AddRange(Session.Unsold);
         Session.Unsold.Clear();
         Log(ActivityKind.Info, "Auction reopened");
     }
@@ -309,6 +376,22 @@ public sealed class AuctionEngine
         if (!KeepPoolOrder)
         {
             _random.Shuffle(CollectionsMarshal.AsSpan(players));
+        }
+    }
+
+    private void EnsureCaptainPick()
+    {
+        if (!Session.CaptainPick)
+        {
+            throw new AuctionException("Players are picked by captains only in Captain Pick.");
+        }
+    }
+
+    private void EnsureRandomPick()
+    {
+        if (Session.CaptainPick)
+        {
+            throw new AuctionException("Captain Pick has no queue or skipped list.");
         }
     }
 

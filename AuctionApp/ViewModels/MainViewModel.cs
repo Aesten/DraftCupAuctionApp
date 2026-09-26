@@ -86,6 +86,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (value)
         {
             Current?.SaveNow();
+            Current?.RefreshMenu();
             RefreshRecent();
         }
     }
@@ -99,7 +100,25 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void NewTournament()
     {
-        var tournament = new Tournament { Title = $"Draft Cup {DateTime.Now:MMMM yyyy}" };
+        var format = _dialogs.Ask(
+            "New tournament",
+            "How do players come up for auction?\n\n"
+            + "• Random Pick: players come up one by one in a random order. Nobody bids → the player is skipped.\n\n"
+            + "• Captain Pick: players are sorted in tiers. A captain names the player they want, and bidding starts at "
+            + "that player's tier minimum.\n\n"
+            + "You can switch from the menu until an auction starts.",
+            "Random Pick",
+            "Captain Pick");
+        if (format == DialogChoice.Cancel)
+        {
+            return;
+        }
+
+        var tournament = new Tournament
+        {
+            Title = $"Draft Cup {DateTime.Now:MMMM yyyy}",
+            Format = format == DialogChoice.Secondary ? AuctionFormat.CaptainPick : AuctionFormat.RandomPick,
+        };
         tournament.AddDivision();
         if (TrySave(tournament))
         {
@@ -293,10 +312,11 @@ public sealed partial class TournamentListItem(TournamentSummary summary) : Obse
     private static string Describe(TournamentSummary summary)
     {
         var divisions = summary.DivisionCount == 1 ? "1 division" : $"{summary.DivisionCount} divisions";
+        var format = summary.Format == AuctionFormat.CaptainPick ? "Captain Pick · " : string.Empty;
         var state = summary.DivisionsInProgress > 0
             ? " · auction in progress"
             : summary.DivisionsFinished == summary.DivisionCount && summary.DivisionCount > 0 ? " · done" : string.Empty;
-        return $"{summary.PlayerCount} players · {divisions}{state}";
+        return $"{format}{summary.PlayerCount} players · {divisions}{state}";
     }
 
     private static string Relative(DateTimeOffset time)

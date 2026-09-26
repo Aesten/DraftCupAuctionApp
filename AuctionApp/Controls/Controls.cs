@@ -110,6 +110,15 @@ public sealed class BoolToHiddenConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
 }
 
+/// <summary>Hidden (still taking its space) when true, visible when false.</summary>
+public sealed class InverseBoolToHiddenConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+        value is true ? Visibility.Hidden : Visibility.Visible;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
+}
+
 /// <summary>Visible when the value is set (non-null, non-empty string), collapsed otherwise.</summary>
 public sealed class NotEmptyToVisibilityConverter : IValueConverter
 {
@@ -210,4 +219,19 @@ public sealed class BoolToIndexConverter : IValueConverter
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture) => value is true ? 1 : 0;
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => value is 1;
+}
+
+/// <summary>
+/// Binds a toggle to "this number is the selected one" (ConverterParameter = the number): checking it selects the
+/// number, unchecking it clears the selection (null).
+/// </summary>
+public sealed class IntEqualsConverter : IValueConverter
+{
+    public static IntEqualsConverter Instance { get; } = new();
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+        value is int number && number == System.Convert.ToInt32(parameter, CultureInfo.InvariantCulture);
+
+    public object? ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        value is true ? System.Convert.ToInt32(parameter, CultureInfo.InvariantCulture) : null;
 }

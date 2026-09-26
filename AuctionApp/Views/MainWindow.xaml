@@ -215,6 +215,16 @@
                                         ToolTip="New tournament with the same pool and divisions, without any auction results">
                                     <controls:IconLabel Glyph="&#xE8C8;" Text="Duplicate for a new event" />
                                 </Button>
+                                <Button Command="{Binding Current.EditMinimumBidsCommand}" Style="{StaticResource MenuButton}"
+                                        ToolTip="Captain Pick: where bidding starts for each tier"
+                                        Visibility="{Binding Current.IsCaptainPick, Converter={StaticResource BoolToVisibility}}">
+                                    <controls:IconLabel Glyph="&#xE8EF;" Text="Minimum bids…" />
+                                </Button>
+                                <Button Command="{Binding Current.SwitchFormatCommand}" Style="{StaticResource MenuButton}"
+                                        ToolTip="Random Pick: players come up in a random order. Captain Pick: captains name the player they want, bidding starts at their tier's minimum. Possible until an auction starts."
+                                        Visibility="{Binding Current.CanChangeFormat, Converter={StaticResource BoolToVisibility}}">
+                                    <controls:IconLabel Glyph="&#xE8AB;" Text="{Binding Current.SwitchFormatText}" />
+                                </Button>
                                 <Button Command="{Binding CloseTournamentCommand}" Style="{StaticResource MenuButton}" ToolTip="Back to the start page">
                                     <controls:IconLabel Glyph="&#xE8BB;" Text="Close the tournament" />
                                 </Button>

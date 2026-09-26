@@ -14,9 +14,9 @@ using CommunityToolkit.Mvvm.Input;
 namespace AuctionApp.ViewModels;
 
 /// <summary>
-/// The tournament's player pool, shared by every division. It is shown sorted by name by default, so opening it
-/// during an auction doesn't reveal who comes next; the "auction order" view is where it gets rearranged for
-/// divisions that don't shuffle. Rows edit the tournament directly, running auctions follow, and every change is saved.
+/// The tournament's player pool, shared by every division, sorted by name or by date added (and by tier in Captain
+/// Pick, where each player also has a tier and a single class). Rows edit the tournament directly, running auctions
+/// follow, and every change is saved.
 /// </summary>
 public sealed partial class PoolViewModel : ObservableObject
 {
@@ -40,6 +40,11 @@ public sealed partial class PoolViewModel : ObservableObject
 
     private Tournament Tournament => _owner.Tournament;
 
+    /// <summary>Captain Pick: players have a tier and one class.</summary>
+    public bool IsCaptainPick => Tournament.IsCaptainPick;
+
+    public string ClassesHeader => IsCaptainPick ? "CLASS" : "CLASSES";
+
     private IDialogService Dialogs => _owner.Dialogs;
 
     public string Header => "Player pool";
@@ -54,7 +59,7 @@ public sealed partial class PoolViewModel : ObservableObject
     [ObservableProperty]
     public partial string Summary { get; set; } = string.Empty;
 
-    /// <summary>The "add a player" row: a name, optionally followed by classes ("Alice, inf cav").</summary>
+    /// <summary>The "add a player" row: a name, optionally followed by classes ("Alice, inf cav") and a tier ("Alice, inf 3").</summary>
     [ObservableProperty]
     public partial string NewPlayerText { get; set; } = string.Empty;
 
@@ -68,25 +73,68 @@ public sealed partial class PoolViewModel : ObservableObject
     [ObservableProperty]
     public partial bool NewCavalry { get; set; }
 
+    /// <summary>Captain Pick: the tier picked in the "add a player" row.</summary>
+    [ObservableProperty]
+    public partial int? NewTier { get; set; }
+
+    // Captain Pick: one class per player, so ticking a class in the add row unticks the others.
+    partial void OnNewInfantryChanged(bool value) => KeepOneNewClass(value, nameof(NewInfantry));
+
+    partial void OnNewArcherChanged(bool value) => KeepOneNewClass(value, nameof(NewArcher));
+
+    partial void OnNewCavalryChanged(bool value) => KeepOneNewClass(value, nameof(NewCavalry));
+
+    private void KeepOneNewClass(bool value, string ticked)
+    {
+        if (!value || !IsCaptainPick)
+        {
+            return;
+        }
+
+        NewInfantry = ticked == nameof(NewInfantry);
+        NewArcher = ticked == nameof(NewArcher);
+        NewCavalry = ticked == nameof(NewCavalry);
+    }
+
     /// <summary>Raised after a player is added, so the view can select and show them.</summary>
     public event Action<PoolPlayerRowViewModel>? PlayerAdded;
 
     [ObservableProperty]
     public partial bool IsFiltered { get; set; }
 
-    /// <summary>False: sorted by name. True: in the order the players were added (the pool's own order).</summary>
+    /// <summary>0: sorted by name. 1: in the order the players were added (the pool's own order). 2: by tier, then name (Captain Pick).</summary>
     [ObservableProperty]
-    public partial bool IsSortedByDate { get; set; }
+    public partial int SortIndex { get; set; }
 
-    partial void OnIsSortedByDateChanged(bool value) => ApplySort();
+    partial void OnSortIndexChanged(int value) => ApplySort();
 
     private void ApplySort()
     {
         EndPendingEdits();
         PlayersView.SortDescriptions.Clear();
-        if (!IsSortedByDate)
+        if (SortIndex == 2)
+        {
+            PlayersView.SortDescriptions.Add(new SortDescription(nameof(PoolPlayerRowViewModel.Tier), ListSortDirection.Ascending));
+        }
+
+        if (SortIndex != 1)
         {
             PlayersView.SortDescriptions.Add(new SortDescription(nameof(PoolPlayerRowViewModel.Name), ListSortDirection.Ascending));
+        }
+    }
+
+    /// <summary>Captain Pick: sets the tier of the selected players (keys 1 to 5 in the list).</summary>
+    public void SetTier(IEnumerable<PoolPlayerRowViewModel> rows, int tier)
+    {
+        foreach (var row in rows.ToList())
+        {
+            row.Tier = tier;
+        }
+
+        // Keeps the list in tier order when it is sorted by tier.
+        if (SortIndex == 2)
+        {
+            PlayersView.Refresh();
         }
     }
 
@@ -175,6 +223,10 @@ public sealed partial class PoolViewModel : ObservableObject
         }
 
         parts.Add($"{Players.Count - picked} available");
+        if (IsCaptainPick && Players.Count(row => row.Tier == null && !string.IsNullOrWhiteSpace(row.Name)) is > 0 and var noTier)
+        {
+            parts.Add($"{noTier} without a tier");
+        }
 
         Summary = string.Join("  ·  ", parts);
         if (IsFiltered && AvailabilityFilter != 0)
@@ -315,10 +367,18 @@ public sealed partial class PoolViewModel : ObservableObject
         var ticked = new[] { (NewInfantry, PlayerClasses.Infantry), (NewArcher, PlayerClasses.Archer), (NewCavalry, PlayerClasses.Cavalry) }
             .Where(entry => entry.Item1)
             .Select(entry => entry.Item2);
-        var row = new PoolPlayerRowViewModel(new Player { Name = parsed.Name, Classes = PlayerClasses.Normalize(parsed.Classes.Concat(ticked)) });
+        var classes = PlayerClasses.Normalize(ticked.Concat(parsed.Classes));
+        var player = new Player { Name = parsed.Name, Classes = IsCaptainPick ? classes.Take(1).ToList() : classes };
+        if (IsCaptainPick)
+        {
+            player.Tier = NewTier ?? parsed.Tier;
+        }
+
+        var row = new PoolPlayerRowViewModel(player);
         Players.Add(row);
         NewPlayerText = string.Empty;
         NewInfantry = NewArcher = NewCavalry = false;
+        NewTier = null;
         PlayerAdded?.Invoke(row);
     }
 
@@ -327,7 +387,7 @@ public sealed partial class PoolViewModel : ObservableObject
     private void ImportPlayers()
     {
         EndPendingEdits();
-        if (Dialogs.PickPlayerListToImport() is not { } path)
+        if (Dialogs.PickPlayerListToImport(IsCaptainPick) is not { } path)
         {
             return;
         }
@@ -356,7 +416,12 @@ public sealed partial class PoolViewModel : ObservableObject
                     continue;
                 }
 
-                Players.Add(new PoolPlayerRowViewModel(new Player { Name = player.Name, Classes = player.Classes }));
+                Players.Add(new PoolPlayerRowViewModel(new Player
+                {
+                    Name = player.Name,
+                    Classes = IsCaptainPick ? player.Classes.Take(1).ToList() : player.Classes,
+                    Tier = IsCaptainPick ? player.Tier : null,
+                }));
             }
         }
         finally
@@ -367,11 +432,13 @@ public sealed partial class PoolViewModel : ObservableObject
         Changed();
         var added = parsed.Count - skipped;
         var message = $"{added} player(s) added to the pool."
-            + (skipped > 0 ? $" {skipped} name(s) were already listed and were not added twice." : string.Empty);
+            + (skipped > 0 ? $" {skipped} name(s) were already listed and were not added twice." : string.Empty)
+            + (IsCaptainPick && parsed.Any(player => player.Classes.Count > 1) ? " Players listed with several classes kept only the first one." : string.Empty)
+            + (IsCaptainPick && added > 0 && parsed.All(player => player.Tier == null) ? " The file had no tiers: select players and press 1 to 5 to set them." : string.Empty);
         Dialogs.Ask("Players imported", message, "OK", cancel: null);
     }
 
-    /// <summary>Saves the pool as a player list (names and classes only). Format: "csv" or "json".</summary>
+    /// <summary>Saves the pool as a player list (names and classes, and tiers in Captain Pick). Format: "csv" or "json".</summary>
     [RelayCommand]
     private void ExportPlayers(string format)
     {
@@ -387,7 +454,7 @@ public sealed partial class PoolViewModel : ObservableObject
         }
 
         var players = Tournament.Players.Where(player => !string.IsNullOrWhiteSpace(player.Name));
-        Dialogs.TryWriteFile(path, isJson ? PlayerList.ToJson(players) : PlayerList.ToCsv(players));
+        Dialogs.TryWriteFile(path, isJson ? PlayerList.ToJson(players, IsCaptainPick) : PlayerList.ToCsv(players, IsCaptainPick));
     }
 }
 
@@ -446,6 +513,24 @@ public sealed partial class PoolPlayerRowViewModel : ObservableObject
         set => SetClass(PlayerClasses.Cavalry, value);
     }
 
+    /// <summary>Captain Pick: the player's tier, 1 to 5, or null while not set.</summary>
+    public int? Tier
+    {
+        get => Model.Tier;
+        set
+        {
+            var tier = Tiers.IsValid(value) ? value : null;
+            if (Model.Tier == tier)
+            {
+                return;
+            }
+
+            Model.Tier = tier;
+            OnPropertyChanged();
+            Owner?.PlayerEdited(this);
+        }
+    }
+
     internal void SetStatus(PoolStatus status)
     {
         StatusKind = status.Kind;
@@ -459,16 +544,21 @@ public sealed partial class PoolPlayerRowViewModel : ObservableObject
 
     private bool HasClass(string code) => Model.Classes.Contains(code);
 
-    private void SetClass(string code, bool value, [System.Runtime.CompilerServices.CallerMemberName] string? property = null)
+    private void SetClass(string code, bool value)
     {
         if (HasClass(code) == value)
         {
             return;
         }
 
-        var classes = value ? Model.Classes.Append(code) : Model.Classes.Where(c => c != code);
+        // Captain Pick: a player plays one class, so ticking one replaces the other.
+        IEnumerable<string> classes = value && Owner?.IsCaptainPick == true ? [code]
+            : value ? Model.Classes.Append(code)
+            : Model.Classes.Where(c => c != code);
         Model.Classes = PlayerClasses.Normalize(classes);
-        OnPropertyChanged(property);
+        OnPropertyChanged(nameof(Infantry));
+        OnPropertyChanged(nameof(Archer));
+        OnPropertyChanged(nameof(Cavalry));
         Owner?.PlayerEdited(this);
     }
 }

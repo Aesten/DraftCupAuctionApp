@@ -37,6 +37,30 @@ public partial class AuctionView : UserControl
         }
     }
 
+    // One pick board at a time, shared by every auction page (a page can be rebuilt while its board stays open).
+    private static PickBoardWindow? _board;
+
+    /// <summary>Captain Pick: opens the pick board in its own window (or brings it to the front if it's already open).</summary>
+    private void BoardButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not AuctionViewModel viewModel)
+        {
+            return;
+        }
+
+        if (_board is { IsLoaded: true } && _board.DataContext == viewModel)
+        {
+            _board.WindowState = _board.WindowState == WindowState.Minimized ? WindowState.Normal : _board.WindowState;
+            _board.Activate();
+            return;
+        }
+
+        _board?.Close();
+        _board = new PickBoardWindow(viewModel) { Owner = Window.GetWindow(this) };
+        _board.Closed += (_, _) => _board = null;
+        _board.Show();
+    }
+
     /// <summary>Leaving the price box (Enter, or a click elsewhere) shows the price as it will be used.</summary>
     private void PriceBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e) => (DataContext as AuctionViewModel)?.CommitPrice();
 

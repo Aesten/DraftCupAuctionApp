@@ -15,7 +15,7 @@
         <StackPanel Margin="24,20,24,24">
             <TextBlock x:Name="HeadingText" Style="{StaticResource SectionTitle}" TextWrapping="Wrap" />
             <TextBlock x:Name="MessageText" Margin="0,8,0,0" Style="{StaticResource Caption}" FontSize="14" TextWrapping="Wrap" />
-            <TextBox x:Name="PriceBox" Margin="0,16,0,0" HorizontalContentAlignment="Center" FontSize="24" FontWeight="SemiBold" PreviewKeyDown="PriceBox_PreviewKeyDown" TextChanged="PriceBox_TextChanged" />
+            <TextBox x:Name="PriceBox" Margin="0,16,0,0" Style="{StaticResource NumericTextBox}" FontSize="24" FontWeight="SemiBold" PreviewKeyDown="PriceBox_PreviewKeyDown" TextChanged="PriceBox_TextChanged" />
             <TextBlock x:Name="ProblemText" Margin="0,6,0,0" Foreground="{DynamicResource SystemFillColorCautionBrush}" TextWrapping="Wrap" />
         </StackPanel>
 
