@@ -99,10 +99,33 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
 
     public string CaptainsHeader => $"Captains ({Captains.Count})";
 
+    private string? _nameText;
+
+    /// <summary>
+    /// The division's name as typed. It's applied as long as it isn't empty; an emptied box gets the name back when
+    /// it's left (see <see cref="CommitName"/>).
+    /// </summary>
     public string Name
     {
-        get => Division.Name;
-        set => Set(Division.Name, value, v => Division.Name = v);
+        get => _nameText ?? Division.Name;
+        set
+        {
+            _nameText = value;
+            OnPropertyChanged();
+            var clean = Tournament.CleanName(value);
+            if (clean.Length > 0 && clean != Division.Name)
+            {
+                Division.Name = clean;
+                Changed();
+            }
+        }
+    }
+
+    /// <summary>The name box was left: shows the name as kept (trimmed, or the previous one if it was emptied).</summary>
+    internal void CommitName()
+    {
+        _nameText = null;
+        OnPropertyChanged(nameof(Name));
     }
 
     public int TeamSize
@@ -320,25 +343,27 @@ public sealed partial class CaptainRowViewModel : ObservableObject
     /// <summary>Set for rows the user just added, so the view can put the cursor in the name box.</summary>
     public bool FocusRequested { get; set; }
 
+    private string? _nameText;
+
+    /// <summary>
+    /// The captain's name as typed. Once the auction has started, the team keeps a name: an emptied box isn't applied,
+    /// shows in red, and gets the name back when it's left.
+    /// </summary>
     public string Name
     {
-        get => Model.Name;
+        get => _nameText ?? Model.Name;
         set
         {
-            if (Model.Name == value)
-            {
-                return;
-            }
-
-            // Once the auction has started, the team keeps a name: an emptied box isn't applied (and is put back when left).
-            HasNameError = string.IsNullOrWhiteSpace(value) && _owner.IsLocked;
-            if (HasNameError)
-            {
-                return;
-            }
-
-            Model.Name = value;
+            _nameText = value;
             OnPropertyChanged();
+            var clean = Tournament.CleanName(value);
+            HasNameError = clean.Length == 0 && _owner.IsLocked;
+            if (HasNameError || clean == Model.Name)
+            {
+                return;
+            }
+
+            Model.Name = clean;
             _owner.CaptainChanged(Model);
         }
     }
@@ -392,11 +417,9 @@ public sealed partial class CaptainRowViewModel : ObservableObject
     /// </summary>
     internal void CommitEdits()
     {
-        if (HasNameError)
-        {
-            HasNameError = false;
-            OnPropertyChanged(nameof(Name));
-        }
+        HasNameError = false;
+        _nameText = null;
+        OnPropertyChanged(nameof(Name));
 
         if (Money.TryParse(BudgetText, out var budget) && Money.IsValidBudget(budget))
         {

@@ -47,6 +47,14 @@ public sealed partial class AuctionViewModel : ObservableObject
 
     public bool IsCaptainPick => _owner.Tournament.IsCaptainPick;
 
+    /// <summary>
+    /// Raised when this auction's page goes away (its tournament was closed, or its division deleted), so windows
+    /// still showing it, like the pick board, close instead of editing an auction nobody sees any more.
+    /// </summary>
+    public event Action? Detached;
+
+    internal void Detach() => Detached?.Invoke();
+
     public bool IsRandomPick => !IsCaptainPick;
 
     /// <summary>Captain Pick: how many players of each class are left on the board (the board's column headers).</summary>
@@ -223,13 +231,16 @@ public sealed partial class AuctionViewModel : ObservableObject
 
         StageMessage = IsFinished ? "The auction is finished." : QueueEmptyText;
 
-        // Captain Pick: a newly picked player starts at their tier's minimum, with no winner chosen yet.
-        if (session.CaptainPick && current?.Id != _lastOnBlock)
+        // Whenever a different player is on the block (sold, skipped, removed from the pool, brought up, undone...),
+        // the bidding starts over: no winner chosen, and the starting price (the tier minimum in Captain Pick), so a
+        // price meant for someone else can't be used by mistake.
+        if (current?.Id != _lastOnBlock)
         {
             if (current != null)
             {
-                PriceText = Money.Format(_engine.MinimumBid(current));
+                PriceText = session.CaptainPick ? Money.Format(_engine.MinimumBid(current)) : DefaultPrice;
                 SelectedTeam = null;
+                IsSaleWarningOpen = false;
             }
 
             _lastOnBlock = current?.Id;
@@ -675,6 +686,18 @@ public sealed partial class AuctionViewModel : ObservableObject
         var wasFinished = Division.Session?.IsFinished;
         Division.Session = snapshot;
         _engine = new AuctionEngine(_owner.Tournament, Division);
+
+        // The snapshot has names, classes and tiers as they were then: the pool and the captains may have been edited since.
+        foreach (var player in _owner.Tournament.Players)
+        {
+            TournamentRules.SyncPlayer(_owner.Tournament, player);
+        }
+
+        foreach (var captain in Division.Captains)
+        {
+            Division.SyncCaptain(captain);
+        }
+
         _owner.AuctionChanged();
         Refresh();
         if (wasFinished != snapshot.IsFinished)

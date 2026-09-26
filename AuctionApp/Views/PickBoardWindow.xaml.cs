@@ -16,6 +16,8 @@ public partial class PickBoardWindow : Window
     {
         InitializeComponent();
         DataContext = auction;
+        auction.Detached += Close;
+        Closed += (_, _) => auction.Detached -= Close;
         Title = $"Pick board — {auction.Title}";
     }
 

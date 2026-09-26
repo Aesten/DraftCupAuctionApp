@@ -81,6 +81,11 @@ public static class DivisionValidator
             }
         }
 
+        foreach (var name in Duplicates(available.Select(player => player.Name)))
+        {
+            Warning($"\"{name}\" is in the pool more than once: viewers won't be able to tell them apart.");
+        }
+
         var unnamed = tournament.Players.Count(player => string.IsNullOrWhiteSpace(player.Name));
         if (unnamed > 0)
         {

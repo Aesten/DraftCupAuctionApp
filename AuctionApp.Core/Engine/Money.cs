@@ -13,6 +13,9 @@ public static class Money
     /// <summary>The smallest budget a captain can have.</summary>
     public const decimal MinBudget = 0.1m;
 
+    /// <summary>An amount read from a file (possibly edited by hand), brought within 0 to <see cref="Max"/> in 0.1 steps.</summary>
+    public static decimal Sanitize(decimal amount) => Math.Clamp(decimal.Round(amount, 1), 0m, Max);
+
     /// <summary>Whether an amount typed for a budget is acceptable: 0.1 to 30.0, in steps of 0.1.</summary>
     public static bool IsValidBudget(decimal amount) => amount is >= MinBudget and <= Max && IsWholeStep(amount);
 

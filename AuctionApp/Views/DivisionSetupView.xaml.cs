@@ -11,6 +11,9 @@ public partial class DivisionSetupView : UserControl
         InitializeComponent();
     }
 
+    private void DivisionName_LostKeyboardFocus(object sender, System.Windows.Input.KeyboardFocusChangedEventArgs e) =>
+        (DataContext as DivisionSetupViewModel)?.CommitName();
+
     private void CaptainBox_LostKeyboardFocus(object sender, System.Windows.Input.KeyboardFocusChangedEventArgs e) =>
         ((sender as FrameworkElement)?.DataContext as CaptainRowViewModel)?.CommitEdits();
 

@@ -89,20 +89,33 @@ public sealed partial class TournamentViewModel : ObservableObject
     [ObservableProperty]
     public partial string? SaveError { get; set; }
 
+    private string? _titleText;
+
+    /// <summary>
+    /// The title as typed (up to 80 characters). It's applied as long as it isn't empty; an emptied box gets the title
+    /// back when it's left.
+    /// </summary>
     public string Title
     {
-        get => Tournament.Title;
+        get => _titleText ?? Tournament.Title;
         set
         {
-            if (Tournament.Title == value)
-            {
-                return;
-            }
-
-            Tournament.Title = value;
+            _titleText = value;
             OnPropertyChanged();
-            PoolChanged();
+            var clean = value?.Trim() ?? string.Empty;
+            if (clean.Length > 0 && clean != Tournament.Title)
+            {
+                Tournament.Title = clean;
+                PoolChanged();
+            }
         }
+    }
+
+    /// <summary>The title box was left: shows the title as kept.</summary>
+    internal void CommitTitle()
+    {
+        _titleText = null;
+        OnPropertyChanged(nameof(Title));
     }
 
     public string Summary
@@ -278,6 +291,10 @@ public sealed partial class TournamentViewModel : ObservableObject
     {
         SaveNow();
         _closed = true;
+        foreach (var division in Divisions)
+        {
+            division.Auction.Detach();
+        }
     }
 
     // Divisions
@@ -321,6 +338,7 @@ public sealed partial class TournamentViewModel : ObservableObject
         var index = Tabs.IndexOf(page);
         Tournament.Divisions.Remove(page.Division);
         Divisions.Remove(page);
+        page.Auction.Detach();
         Tabs.Remove(page);
         SelectedTab = Tabs[Math.Clamp(index - 1, 0, Tabs.Count - 1)];
         Tournament.UpdatedAt = DateTimeOffset.Now;

@@ -1,3 +1,4 @@
+using AuctionApp.Core.Engine;
 using System.Text.Json.Serialization;
 
 namespace AuctionApp.Core.Model;
@@ -70,18 +71,33 @@ public sealed class Tournament
         return division;
     }
 
-    /// <summary>Makes sure invariants hold after loading a file that may be older or edited by hand.</summary>
+    /// <summary>Longest name kept for a tournament, a division, a captain or a player.</summary>
+    public const int MaxNameLength = 40;
+
+    /// <summary>A name as typed or read from a file: trimmed, and cut to <see cref="MaxNameLength"/> characters.</summary>
+    public static string CleanName(string? name)
+    {
+        var trimmed = (name ?? string.Empty).Trim();
+        return trimmed.Length > MaxNameLength ? trimmed[..MaxNameLength].TrimEnd() : trimmed;
+    }
+
+    /// <summary>
+    /// Makes sure invariants hold after loading a file that may be older or edited by hand: names, amounts and sizes
+    /// are brought back within what the app allows, so a damaged file can't break the screens.
+    /// </summary>
     public void Normalize()
     {
-        Title ??= string.Empty;
+        Title = Title?.Trim().Length > 80 ? Title.Trim()[..80] : Title ?? string.Empty;
         Players ??= [];
         Divisions ??= [];
+        Players.RemoveAll(player => player == null);
+        Divisions.RemoveAll(division => division == null);
         TierMinimums ??= [];
-        TierMinimums = TierMinimums.Take(Tiers.Count).Select(minimum => Math.Max(0m, decimal.Round(minimum, 1))).ToList();
+        TierMinimums = TierMinimums.Take(Tiers.Count).Select(Money.Sanitize).ToList();
         TierMinimums.AddRange(Tiers.DefaultMinimums.Skip(TierMinimums.Count));
         foreach (var player in Players)
         {
-            player.Name ??= string.Empty;
+            player.Name = CleanName(player.Name);
             player.Classes = PlayerClasses.Normalize(player.Classes ?? []);
             player.Tier = Tiers.IsValid(player.Tier) ? player.Tier : null;
             if (IsCaptainPick && player.Classes.Count > 1)
@@ -280,15 +296,18 @@ public sealed class Division
 
     public void Normalize()
     {
-        Name ??= string.Empty;
+        Name = Tournament.CleanName(Name);
         Captains ??= [];
+        Captains.RemoveAll(captain => captain == null);
         foreach (var captain in Captains)
         {
-            captain.Name ??= string.Empty;
+            captain.Name = Tournament.CleanName(captain.Name);
             captain.Class = PlayerClasses.FromName(captain.Class ?? string.Empty) ?? string.Empty;
+            captain.Budget = Math.Max(Money.MinBudget, Money.Sanitize(captain.Budget));
         }
 
-        UpcomingShown = Math.Clamp(UpcomingShown, 0, 10);
+        TeamSize = Math.Clamp(TeamSize, MinTeamSize, MaxTeamSize);
+        UpcomingShown = Math.Clamp(UpcomingShown, 0, 5);
         Session?.Normalize();
     }
 }

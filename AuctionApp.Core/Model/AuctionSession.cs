@@ -1,3 +1,4 @@
+using AuctionApp.Core.Engine;
 using System.Text.Json.Serialization;
 
 namespace AuctionApp.Core.Model;
@@ -65,16 +66,28 @@ public sealed class AuctionSession
         Unsold ??= [];
         Teams ??= [];
         Activity ??= [];
+        Queue.RemoveAll(player => player == null);
+        Skipped.RemoveAll(player => player == null);
+        Unsold.RemoveAll(player => player == null);
+        Teams.RemoveAll(team => team == null);
+        Activity.RemoveAll(entry => entry == null);
         foreach (var team in Teams)
         {
             team.Picks ??= [];
-            team.CaptainName ??= string.Empty;
+            team.CaptainName = Tournament.CleanName(team.CaptainName);
+            team.InitialBudget = Money.Sanitize(team.InitialBudget);
+            team.Picks.RemoveAll(pick => pick.Player == null);
+            foreach (var pick in team.Picks)
+            {
+                pick.Price = Money.Sanitize(pick.Price);
+            }
         }
 
         foreach (var player in AllPlayers())
         {
-            player.Name ??= string.Empty;
+            player.Name = Tournament.CleanName(player.Name);
             player.Classes ??= [];
+            player.Tier = Tiers.IsValid(player.Tier) ? player.Tier : null;
         }
 
         if (OnBlockId is { } id && Queue.All(player => player.Id != id))

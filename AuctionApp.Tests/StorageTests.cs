@@ -176,3 +176,40 @@ public sealed class StorageTests : IDisposable
         Assert.Equal(2, copy.Divisions[0].Captains.Count);
     }
 }
+
+public class DamagedFileTests
+{
+    [Fact]
+    public void Normalize_BringsHandEditedValuesBackWithinLimits()
+    {
+        var tournament = TestData.Tournament();
+        var engine = TestData.Start(tournament);
+        engine.Sell(engine.Session.Teams[0].CaptainId, 2m);
+        var json = Core.Storage.TournamentJson.Serialize(tournament)
+            .Replace("\"teamSize\": 5", "\"teamSize\": 100000")
+            .Replace("\"budget\": 20", "\"budget\": -5")
+            .Replace("\"price\": 2", "\"price\": 9999")
+            .Replace("\"name\": \"Player 3\"", "\"name\": \"" + new string('x', 500) + "\"");
+
+        var loaded = Core.Storage.TournamentJson.Deserialize(json);
+        var division = loaded.Divisions[0];
+
+        Assert.Equal(Division.MaxTeamSize, division.TeamSize);
+        Assert.All(division.Captains, captain => Assert.Equal(Core.Engine.Money.MinBudget, captain.Budget));
+        Assert.Equal(Core.Engine.Money.Max, division.Session!.Teams[0].Picks.Single().Price);
+        Assert.Equal(Tournament.MaxNameLength, loaded.Players[2].Name.Length);
+    }
+
+    [Fact]
+    public void Normalize_DropsEmptyEntries()
+    {
+        var json = Core.Storage.TournamentJson.Serialize(TestData.Tournament())
+            .Replace("\"players\": [", "\"players\": [ null,")
+            .Replace("\"captains\": [", "\"captains\": [ null,");
+
+        var loaded = Core.Storage.TournamentJson.Deserialize(json);
+
+        Assert.Equal(12, loaded.Players.Count);
+        Assert.Equal(2, loaded.Divisions[0].Captains.Count);
+    }
+}

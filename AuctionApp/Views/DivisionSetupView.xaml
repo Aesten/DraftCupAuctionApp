@@ -103,7 +103,7 @@
                     <TextBlock Style="{StaticResource SectionTitle}" Text="Settings" />
 
                     <TextBlock Style="{StaticResource FieldLabel}" Text="Division name" />
-                    <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBox LostKeyboardFocus="DivisionName_LostKeyboardFocus" MaxLength="40" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
 
                     <StackPanel IsEnabled="{Binding IsEditable}">
                         <TextBlock Style="{StaticResource FieldLabel}" Text="Team size" />

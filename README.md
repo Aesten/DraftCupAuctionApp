@@ -129,6 +129,8 @@ Tournaments are saved automatically after every change in `%LOCALAPPDATA%\DraftC
 
 When you import a copy of a tournament you already have, the two are **merged**. For each division, and for the pool, whichever copy changed it last wins. The app lists what will change before applying it. If two copies auctioned at the same time bought the same player, you're warned. Players bought elsewhere are also taken out of any auction still running.
 
+Imported files are checked: anything out of range (edited by hand, or damaged) is brought back within the app's limits, such as names of up to 40 characters, budgets and prices up to 30.0, and team sizes of 5 to 10. Files over 20 MB are refused.
+
 Each save keeps the previous version as a backup. Deleted tournaments, and tournaments before a reset or an import, are copied to the `Deleted` folder rather than erased.
 
 ## Player lists

@@ -27,6 +27,7 @@
         -->
         <Style x:Key="CellEditor" TargetType="TextBox">
             <Setter Property="FontSize" Value="15" />
+            <Setter Property="MaxLength" Value="40" />
             <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
             <Setter Property="CaretBrush" Value="{DynamicResource TextFillColorPrimaryBrush}" />
             <Setter Property="Padding" Value="4,0" />
@@ -177,7 +178,7 @@
                 <Border DockPanel.Dock="Top" Height="48" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
                     <StackPanel Orientation="Horizontal">
                         <Grid Width="{Binding Columns[0].ActualWidth, ElementName=PlayersGrid}">
-                            <TextBox x:Name="NewPlayerBox" Margin="0,0,12,0" Padding="32,5,10,6" VerticalAlignment="Center" VerticalContentAlignment="Center"
+                            <TextBox x:Name="NewPlayerBox" Margin="0,0,12,0" MaxLength="80" Padding="32,5,10,6" VerticalAlignment="Center" VerticalContentAlignment="Center"
                                      Text="{Binding NewPlayerText, UpdateSourceTrigger=PropertyChanged}"
                                      ToolTip="A name, optionally followed by classes (Alice, inf cav) and in Captain Pick a tier (Alice, inf 3), or tick them on the right. Enter adds the player.">
                                 <TextBox.InputBindings>
