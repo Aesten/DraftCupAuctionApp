@@ -478,7 +478,7 @@ public sealed partial class AuctionViewModel : ObservableObject
         }
 
         var current = Money.TryParse(PriceText, out var price) ? price : 0m;
-        PriceText = Money.Format(Math.Max(0, decimal.Round(current, 1) + step));
+        PriceText = Money.Format(Math.Clamp(decimal.Round(current, 1) + step, 0, Money.Max));
     }
 
     [RelayCommand]
@@ -509,6 +509,10 @@ public sealed partial class AuctionViewModel : ObservableObject
         }
     }
 
+    /// <summary>Random Pick: a player from the queue goes on the block now (from the remaining players list).</summary>
+    internal void BringToBlock(PlayerItemViewModel player) =>
+        Apply($"bring {player.Name} to the block", engine => engine.BringToBlock(player.Id));
+
     [RelayCommand]
     private void BringBack(PlayerItemViewModel player) =>
         Apply($"bring back {player.Name}", engine => engine.BringBack(player.Id));
@@ -527,17 +531,71 @@ public sealed partial class AuctionViewModel : ObservableObject
     internal void ReturnToSkipped(TeamCardViewModel team, PickItemViewModel pick) =>
         Apply(IsCaptainPick ? $"put {pick.Name} back on the board" : $"send {pick.Name} to the skipped list", engine => engine.ReturnPickToSkipped(team.CaptainId, pick.PlayerId));
 
+    /// <summary>Corrects a sale's price; going over the team's budget is allowed once the auctioneer confirms it.</summary>
     internal void ChangePickPrice(TeamCardViewModel team, PickItemViewModel pick)
     {
-        if (Dialogs.AskPrice($"Change {pick.Name}'s price", $"{team.Name} paid {pick.PriceText}. The difference is refunded or charged to {team.Name}.", pick.Price) is { } price
-            && price != pick.Price)
+        if (_engine == null
+            || Dialogs.AskPrice($"Change {pick.Name}'s price", $"{team.Name} paid {pick.PriceText}. The difference is refunded or charged to {team.Name}.", pick.Price) is not { } price
+            || price == pick.Price)
         {
-            Apply($"change {pick.Name}'s price", engine => engine.ChangePickPrice(team.CaptainId, pick.PlayerId, price));
+            return;
+        }
+
+        var issue = _engine.CheckPickPrice(team.CaptainId, pick.PlayerId, price);
+        if (Confirm(issue, $"Change {pick.Name}'s price anyway?", "Change anyway") is { } overBudget)
+        {
+            Apply($"change {pick.Name}'s price", engine => engine.ChangePickPrice(team.CaptainId, pick.PlayerId, price, overBudget));
         }
     }
 
-    internal void MovePick(TeamCardViewModel team, PickItemViewModel pick, TeamCardViewModel target) =>
-        Apply($"move {pick.Name} to {target.Name}", engine => engine.MovePick(team.CaptainId, pick.PlayerId, target.CaptainId));
+    /// <summary>
+    /// Moves a bought player to another team, which pays the same price (going over its budget needs the
+    /// auctioneer's confirmation). Once the auction is finished, the move is free.
+    /// </summary>
+    internal void MovePick(TeamCardViewModel team, PickItemViewModel pick, TeamCardViewModel target)
+    {
+        if (_engine == null)
+        {
+            return;
+        }
+
+        var issue = _engine.CheckMovePick(team.CaptainId, pick.PlayerId, target.CaptainId);
+        if (Confirm(issue, $"Move {pick.Name} to {target.Name} anyway?", "Move anyway") is not { } overBudget)
+        {
+            return;
+        }
+
+        if (IsFinished && issue == null && pick.Price > 0
+            && Dialogs.Ask(
+                $"Move {pick.Name} to {target.Name}?",
+                $"The auction is finished, so the move is free: {team.Name} gets {pick.PriceText} back and {target.Name} pays nothing.",
+                "Move") != DialogChoice.Primary)
+        {
+            return;
+        }
+
+        Apply($"move {pick.Name} to {target.Name}", engine => engine.MovePick(team.CaptainId, pick.PlayerId, target.CaptainId, overBudget));
+    }
+
+    /// <summary>
+    /// For a correction that breaks a rule: null when it can't be done (the reason is shown) or the auctioneer
+    /// declines; otherwise whether the budget limit is being overridden.
+    /// </summary>
+    private bool? Confirm(SaleIssue? issue, string question, string confirm)
+    {
+        if (issue == null)
+        {
+            return false;
+        }
+
+        if (!issue.CanOverride)
+        {
+            Dialogs.ShowError("That can't be done", issue.Message);
+            return null;
+        }
+
+        return Dialogs.Ask(question, issue.Message, confirm) == DialogChoice.Primary ? true : null;
+    }
 
     internal void SwapPick(TeamCardViewModel team, PickItemViewModel pick)
     {

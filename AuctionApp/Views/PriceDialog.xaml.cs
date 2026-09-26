@@ -26,8 +26,8 @@ public partial class PriceDialog : Window
 
     private void PriceBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        var valid = Money.TryParse(PriceBox.Text, out var price) && price >= 0 && Money.IsWholeStep(price);
-        ProblemText.Text = valid ? string.Empty : $"Enter a price in steps of {Money.Format(Money.Step)}.";
+        var valid = Money.TryParse(PriceBox.Text, out var price) && price >= 0 && price <= Money.Max && Money.IsWholeStep(price);
+        ProblemText.Text = valid ? string.Empty : $"Enter a price from 0.0 to {Money.Format(Money.Max)}, in steps of {Money.Format(Money.Step)}.";
         OkButton.IsEnabled = valid;
     }
 

@@ -28,12 +28,13 @@
     </Style>
 
     <!--
-        Numbers (prices, budgets): the text stays where it is. The Fluent theme adds a clear (×) button to a focused
+        Numbers (prices, budgets): only amounts can be typed (up to "30.0"), and the text stays where it is. The Fluent theme adds a clear (×) button to a focused
         text box, which pushes the text aside; it leaves it out of text boxes that wrap, and a number never wraps.
     -->
     <Style x:Key="NumericTextBox" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
         <Setter Property="TextWrapping" Value="Wrap" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="controls:NumericInput.IsEnabled" Value="True" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
 

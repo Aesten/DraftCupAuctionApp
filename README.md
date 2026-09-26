@@ -42,12 +42,12 @@ A tournament holds:
   - Filter it with the search box (it narrows the list as you type), the class buttons, and **All / Available / Unavailable** (not bought yet / already bought). Click a player's class icons to switch those classes on or off.
   - Each player shows where they stand: available, in a running auction, or bought (division, team and price).
 - **Divisions**: one auction each, with its own:
-  - captains, each with the class they signed up with and their own budget;
+  - captains, each with the class they signed up with and their own budget (0.1 to 30.0);
   - team size (5 to 10 players besides the captain);
   - number of upcoming players revealed on screen (3 by default, Random Pick only);
   - half budget cap setting.
 
-  In Random Pick, players come up in a random order, shuffled when the auction starts. Divisions can be auctioned in any order, on different days and different computers. **Whichever division starts first gets the whole pool; each later one gets the pool minus the players already bought.**
+  In Random Pick, players come up in a random order, shuffled when the auction starts. Divisions can be auctioned in any order, on different days and different computers, but one at a time: a division can't start while another one's auction is running. **Whichever division starts first gets the whole pool; each later one gets the pool minus the players already bought.**
 
 Each division has three pages, switched from the top bar: **Configure**, **Auction** and **Teams**.
 
@@ -57,7 +57,7 @@ This describes Random Pick; [Captain Pick](#captain-pick) works the same way apa
 
 The auction page is meant to be screen-shared (F11 for full screen). It shows only what viewers need, all at once and without scrolling:
 
-- at the top, in three parts: the auctioneer's controls (left), the player on the block with their classes (center), and the next few players (right; the rest of the queue stays hidden, but **Remaining players** under them lists everyone still in the queue in alphabetical order);
+- at the top, in three parts: the auctioneer's controls (left), the player on the block with their classes (center), and the next few players (right; the rest of the queue stays hidden, but **Remaining players** under them lists everyone still in the queue in alphabetical order, and can put one on the block right away);
 - below, every team: the captain and their class, what the team can still spend (in large), a budget bar, the roster with prices and empty spots, how many players of each class it has (captain included) and how full it is (e.g. 2/6).
   - The large number is the budget left or, while the half budget cap is on, what's left above the half (the most the team can bid).
   - The bar goes from 0 (left) to the team's starting budget (right) and is filled up to what's left. While the cap is on, the locked half is striped.
@@ -69,8 +69,8 @@ The layout is made for 8 teams (4 × 2) and adapts to 4–10 teams and to roster
 - **Skip** a player nobody wants. **Skipped players** opens the full list: put one back on the block, or send them all back to the queue.
 - Click a bought player to fix the sale:
   - refund and put them back on the block, or send them to the skipped list;
-  - change the price;
-  - move them to another team (the first team is refunded);
+  - change the price (going over the team's budget asks for confirmation);
+  - move them to another team: the first team is refunded and the other one pays the same price (going over its budget asks for confirmation). Once the auction is finished, moves are free;
   - swap them with a player not bought yet, at the same price.
 - **More** has the half budget cap switch, **Undo** (also Ctrl+Z) and **Finish the auction**.
 - The pool can be edited mid-auction, and the auction follows along:
@@ -89,7 +89,7 @@ The layout is made for 8 teams (4 × 2) and adapts to 4–10 teams and to roster
 Rules the app enforces:
 
 - A team can't buy more players than the division's team size.
-- Prices go in steps of 0.1. Going over what the team has left needs the auctioneer's confirmation (**Sell anyway**).
+- Prices go in steps of 0.1, up to 30.0. Going over what the team has left needs the auctioneer's confirmation (**Sell anyway**).
 - **Half budget cap**: while it's on, a team can only spend down to half of its starting budget (rounded up to 0.1), unless the auctioneer confirms a sale anyway. It can be switched on and off at any time, and the auction screen shows when it's on. Fixing a sale afterwards only checks that the team stays within its budget.
 
 When a division is done, share its teams from **Teams**: **Copy as text** (formatted for Discord) or a spreadsheet (CSV).
@@ -101,7 +101,7 @@ In a Captain Pick tournament, players don't come up in a random order: captains 
 - In the player pool, each player has **one class** and a **tier**, from 1 (best) to 5. Click the tier's number, or select players and press **1** to **5**. The pool can also be sorted by tier.
 - Each tier has a **minimum bid**: 2.0, 1.5, 1.0, 0.5 and 0.1 by default, for the whole tournament (☰ menu › **Minimum bids…** to change them). The captain who picks a player bids that amount; the others can bid higher.
 - During the auction, **Pick board** opens a separate window with every player still available, as one grid: a row per tier, a column per class, names in alphabetical order. It can go on another screen or be shown on stream (F11 for full screen), and it scales so nothing is ever cut or scrolled.
-- When a captain names a player, click them on the board: they go on the block, highlighted on the board, with the price set to their tier's minimum. Sell as usual. **Put back** returns them to the board if they were picked by mistake.
+- When a captain names a player, click them on the board: they go on the block, highlighted on the board, with the price set to their tier's minimum. **Double-click** picks them and closes the board in one go; Esc closes it too. Sell as usual. **Put back** returns them to the board if they were picked by mistake.
 - Selling under the minimum asks for confirmation (**Sell anyway**), like going over a budget. There's no queue or skipped list: players nobody buys stay on the board, players added to the pool mid-auction join it, and a sold player taken back returns to the block or to the board.
 - The auction screen shows how many players are left in each tier and class, where Random Pick shows the next players.
 
@@ -112,7 +112,7 @@ In a Captain Pick tournament, players don't come up in a random order: captains 
 | Enter (in a text box) | Confirm and leave the box (in the price box: confirm the price, it doesn't sell) |
 | Up / Down (in the price box) | Price ±0.1 |
 | Ctrl+Enter (auction page) | Sold! to the selected team |
-| Enter / Escape (pick board) | Close the board and go back to the auction (Enter once a player is picked) |
+| Escape (pick board) | Close the board and go back to the auction (double-clicking a player picks them and closes it too) |
 | Delete (in the player pool) | Remove the selected players |
 | 1 to 5 (in the player pool, Captain Pick) | Set the tier of the selected players |
 | Ctrl+Z | Undo the last auction action |

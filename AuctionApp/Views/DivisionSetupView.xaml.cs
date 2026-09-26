@@ -11,6 +11,9 @@ public partial class DivisionSetupView : UserControl
         InitializeComponent();
     }
 
+    private void CaptainBox_LostKeyboardFocus(object sender, System.Windows.Input.KeyboardFocusChangedEventArgs e) =>
+        ((sender as FrameworkElement)?.DataContext as CaptainRowViewModel)?.CommitEdits();
+
     /// <summary>Puts the cursor in the name box of a captain that was just added.</summary>
     private void CaptainName_Loaded(object sender, RoutedEventArgs e)
     {

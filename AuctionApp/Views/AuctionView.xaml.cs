@@ -70,8 +70,10 @@ public partial class AuctionView : UserControl
         {
             new PlayerListDialog(
                 $"Remaining players ({viewModel.Remaining.Count})",
-                "Everyone still in the queue, in alphabetical order so the auction order stays hidden. Skipped players aren't included.",
-                viewModel.Remaining) { Owner = Window.GetWindow(this) }.ShowDialog();
+                "Everyone still in the queue, in alphabetical order so the auction order stays hidden. Skipped players aren't included. "
+                + "Put one on the block to auction them now; the player on the block comes up right after.",
+                viewModel.Remaining,
+                viewModel.BringToBlock) { Owner = Window.GetWindow(this) }.ShowDialog();
         }
     }
 

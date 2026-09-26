@@ -201,8 +201,13 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
     [RelayCommand]
     private void AddCaptain()
     {
-        // Budgets are balanced per captain; start from the last one entered as a guess.
-        var captain = new Captain { Budget = Division.Captains.LastOrDefault()?.Budget ?? 20m };
+        // Budgets are balanced per captain; start from the last one entered as a guess. During the auction (settings
+        // unlocked), the new team needs a name straight away.
+        var captain = new Captain
+        {
+            Budget = Division.Captains.LastOrDefault()?.Budget ?? 20m,
+            Name = IsLocked ? $"Captain {Division.Captains.Count + 1}" : string.Empty,
+        };
         Division.Captains.Add(captain);
         Captains.Add(new CaptainRowViewModel(captain, this) { FocusRequested = true });
         Changed();
@@ -325,6 +330,13 @@ public sealed partial class CaptainRowViewModel : ObservableObject
                 return;
             }
 
+            // Once the auction has started, the team keeps a name: an emptied box isn't applied (and is put back when left).
+            HasNameError = string.IsNullOrWhiteSpace(value) && _owner.IsLocked;
+            if (HasNameError)
+            {
+                return;
+            }
+
             Model.Name = value;
             OnPropertyChanged();
             _owner.CaptainChanged(Model);
@@ -371,13 +383,35 @@ public sealed partial class CaptainRowViewModel : ObservableObject
     [ObservableProperty]
     public partial bool HasBudgetError { get; set; }
 
-    partial void OnBudgetTextChanged(string value)
+    [ObservableProperty]
+    public partial bool HasNameError { get; set; }
+
+    /// <summary>
+    /// The boxes were left (or Enter pressed): a valid budget is applied, and anything that can't be (an empty name, a
+    /// budget out of range) is put back. Budgets wait until then, so "25" never passes through a budget of 2.
+    /// </summary>
+    internal void CommitEdits()
     {
-        HasBudgetError = !Money.TryParse(value, out var budget) || budget < 0 || !Money.IsWholeStep(budget);
-        if (!HasBudgetError && Model.Budget != budget)
+        if (HasNameError)
         {
-            Model.Budget = budget;
-            _owner?.Changed();
+            HasNameError = false;
+            OnPropertyChanged(nameof(Name));
         }
+
+        if (Money.TryParse(BudgetText, out var budget) && Money.IsValidBudget(budget))
+        {
+            if (Model.Budget != budget)
+            {
+                Model.Budget = budget;
+                _owner.Changed();
+            }
+        }
+
+        HasBudgetError = false;
+        BudgetText = Money.Format(Model.Budget);
     }
+
+    /// <summary>0.1 to 30.0, in steps of 0.1: anything else shows the box in red while typing.</summary>
+    partial void OnBudgetTextChanged(string value) =>
+        HasBudgetError = !Money.TryParse(value, out var budget) || !Money.IsValidBudget(budget);
 }

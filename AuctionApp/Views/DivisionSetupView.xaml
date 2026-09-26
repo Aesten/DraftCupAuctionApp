@@ -166,7 +166,10 @@
                                             <ColumnDefinition Width="90" />
                                             <ColumnDefinition Width="104" />
                                         </Grid.ColumnDefinitions>
-                                        <TextBox VerticalContentAlignment="Center" Loaded="CaptainName_Loaded" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+                                        <Border Style="{StaticResource ErrorBorder}" Tag="{Binding HasNameError}">
+                                            <TextBox VerticalContentAlignment="Center" Loaded="CaptainName_Loaded" LostKeyboardFocus="CaptainBox_LostKeyboardFocus" MaxLength="40"
+                                                     Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+                                        </Border>
                                         <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" Orientation="Horizontal" ToolTip="The class the captain signed up with">
                                             <ToggleButton IsChecked="{Binding IsInfantry}" Style="{StaticResource ClassToggle}" Tag="inf" />
                                             <ToggleButton IsChecked="{Binding IsArcher}" Style="{StaticResource ClassToggle}" Tag="arc" />
@@ -174,7 +177,8 @@
                                         </StackPanel>
                                         <Border Grid.Column="2" Margin="8,0,0,0" IsEnabled="{Binding Data.IsEditable, Source={StaticResource Proxy}}"
                                                 Style="{StaticResource ErrorBorder}" Tag="{Binding HasBudgetError}">
-                                            <TextBox HorizontalContentAlignment="Right" Style="{StaticResource NumericTextBox}" Text="{Binding BudgetText, UpdateSourceTrigger=PropertyChanged}" />
+                                            <TextBox HorizontalContentAlignment="Right" LostKeyboardFocus="CaptainBox_LostKeyboardFocus" Style="{StaticResource NumericTextBox}"
+                                                     Text="{Binding BudgetText, UpdateSourceTrigger=PropertyChanged}" ToolTip="From 0.1 to 30.0" />
                                         </Border>
                                         <StackPanel Grid.Column="3" Margin="4,0,0,0" IsEnabled="{Binding Data.IsEditable, Source={StaticResource Proxy}}" Orientation="Horizontal">
                                             <Button Command="{Binding Data.MoveCaptainUpCommand, Source={StaticResource Proxy}}" CommandParameter="{Binding}"
