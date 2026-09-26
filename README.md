@@ -77,7 +77,7 @@ The layout is made for 8 teams (4 × 2) and adapts to 4–10 teams and to roster
   - new players go to the skipped list, ready whenever you want them;
   - name and class changes show up immediately;
   - removing a player who was already sold takes them off the team and refunds the price.
-- A team is a slot led by its captain: captains' names and classes can be changed during the auction, on the **Configure** page.
+- A team is a slot led by its captain: captains' names and classes can be changed during the auction, on the **Configure** page. A captain left without a name, or two with the same one, is flagged at the bottom of the page.
 - Budgets, the team size and the list of captains are locked while the auction runs. If they really need to change, **Unlock settings…** in the Configure page's banner allows it after a warning, and the running auction follows right away:
   - budgets and the team size apply to every team (what was already spent stays spent);
   - a new captain joins with an empty team;
@@ -100,7 +100,7 @@ In a Captain Pick tournament, players don't come up in a random order: captains 
 
 - In the player pool, each player has **one class** and a **tier**, from 1 (best) to 5. Click the tier's number, or select players and press **1** to **5**. The pool can also be sorted by tier.
 - Each tier has a **minimum bid**: 2.0, 1.5, 1.0, 0.5 and 0.1 by default, for the whole tournament (☰ menu › **Minimum bids…** to change them). The captain who picks a player bids that amount; the others can bid higher.
-- During the auction, **Pick board** opens a separate window with every player still available, as one grid: a row per tier, a column per class, names in alphabetical order. It can go on another screen or be shown on stream (F11 for full screen), and it scales so nothing is ever cut or scrolled.
+- During the auction, **Pick board** opens a separate window with every player still available, as one grid: a row per tier, a column per class, names in alphabetical order. It can go on another screen or be shown on stream (F11 for full screen), and it scales so nothing is ever cut or scrolled. It opens where it was last time, full screen included; the main window remembers its place too.
 - When a captain names a player, click them on the board: they go on the block, highlighted on the board, with the price set to their tier's minimum. **Double-click** picks them and closes the board in one go; Esc closes it too. Sell as usual. **Put back** returns them to the board if they were picked by mistake.
 - Selling under the minimum asks for confirmation (**Sell anyway**), like going over a budget. There's no queue or skipped list: players nobody buys stay on the board, players added to the pool mid-auction join it, and a sold player taken back returns to the block or to the board.
 - The auction screen shows how many players are left in each tier and class, where Random Pick shows the next players.

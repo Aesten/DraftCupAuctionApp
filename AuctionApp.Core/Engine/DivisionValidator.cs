@@ -101,6 +101,33 @@ public static class DivisionValidator
         return issues;
     }
 
+    /// <summary>
+    /// While the auction runs, only the captains can still change (names always, the rest once unlocked): warnings
+    /// about what would look wrong on stream.
+    /// </summary>
+    public static IReadOnlyList<ValidationIssue> ValidateRunning(Division division)
+    {
+        var issues = new List<ValidationIssue>();
+        var unnamed = division.Captains
+            .Select((captain, index) => (captain, number: index + 1))
+            .Where(entry => string.IsNullOrWhiteSpace(entry.captain.Name))
+            .Select(entry => entry.number.ToString())
+            .ToList();
+        if (unnamed.Count > 0)
+        {
+            issues.Add(new ValidationIssue(
+                IssueSeverity.Warning,
+                $"{(unnamed.Count == 1 ? "Captain" : "Captains")} {string.Join(", ", unnamed)} {(unnamed.Count == 1 ? "has" : "have")} no name: {(unnamed.Count == 1 ? "their team shows" : "their teams show")} without one."));
+        }
+
+        foreach (var name in Duplicates(division.Captains.Select(captain => captain.Name)))
+        {
+            issues.Add(new ValidationIssue(IssueSeverity.Warning, $"Captain \"{name}\" is listed more than once: viewers won't be able to tell the teams apart."));
+        }
+
+        return issues;
+    }
+
     private static string Count(int players) => players == 1 ? "1 player" : $"{players} players";
 
     private static string Names(List<string> names) =>

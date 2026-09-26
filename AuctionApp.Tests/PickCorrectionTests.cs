@@ -250,3 +250,22 @@ public class SaleLimitTests
         Assert.Contains(issues, issue => issue.Severity == IssueSeverity.Warning && issue.Message.Contains("no class"));
     }
 }
+
+public class RunningAuctionWarningTests
+{
+    [Fact]
+    public void ValidateRunning_WarnsAboutUnnamedAndDuplicateCaptains()
+    {
+        var tournament = TestData.Tournament(captains: 3);
+        var division = tournament.Divisions[0];
+        TestData.Start(tournament);
+        division.Captains[0].Name = string.Empty;
+        division.Captains[2].Name = division.Captains[1].Name;
+
+        var issues = DivisionValidator.ValidateRunning(division);
+
+        Assert.All(issues, issue => Assert.Equal(IssueSeverity.Warning, issue.Severity));
+        Assert.Contains(issues, issue => issue.Message.StartsWith("Captain 1 has no name"));
+        Assert.Contains(issues, issue => issue.Message.Contains("more than once"));
+    }
+}

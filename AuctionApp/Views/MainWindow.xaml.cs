@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using AuctionApp.Services;
 using AuctionApp.ViewModels;
 
 namespace AuctionApp.Views;
@@ -16,6 +17,17 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
+        // Opens where it was last time (maximized again if it was; full screen stays an F11 away).
+        if (AppSettings.Current?.MainWindow is { } placement)
+        {
+            placement.ApplyTo(this);
+            if (placement.Maximized || placement.FullScreen)
+            {
+                SourceInitialized += (_, _) => WindowState = WindowState.Maximized;
+            }
+        }
+
         DataContextChanged += (_, e) =>
         {
             if (e.OldValue is MainViewModel oldModel)
@@ -80,6 +92,20 @@ public partial class MainWindow : Window
     protected override void OnClosing(CancelEventArgs e)
     {
         ViewModel?.Shutdown();
+        if (AppSettings.Current is { } settings)
+        {
+            var placement = WindowPlacement.Capture(this);
+            if (placement.FullScreen)
+            {
+                // Full screen goes back to how it was before (maximized or not).
+                placement.Maximized = _stateBeforeFullScreen == WindowState.Maximized;
+                placement.FullScreen = false;
+            }
+
+            settings.MainWindow = placement;
+            settings.Save();
+        }
+
         base.OnClosing(e);
     }
 

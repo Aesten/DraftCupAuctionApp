@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Input;
+using AuctionApp.Services;
 using AuctionApp.ViewModels;
 
 namespace AuctionApp.Views;
@@ -19,6 +20,23 @@ public partial class PickBoardWindow : Window
         auction.Detached += Close;
         Closed += (_, _) => auction.Detached -= Close;
         Title = $"Pick board — {auction.Title}";
+
+        // Opens where it was last time, e.g. full screen on the streaming monitor.
+        if (AppSettings.Current?.PickBoard is { } placement)
+        {
+            placement.ApplyTo(this);
+            SourceInitialized += (_, _) =>
+            {
+                if (placement.FullScreen)
+                {
+                    SetFullScreen(true);
+                }
+                else if (placement.Maximized)
+                {
+                    WindowState = WindowState.Maximized;
+                }
+            };
+        }
     }
 
     /// <summary>
@@ -28,7 +46,18 @@ public partial class PickBoardWindow : Window
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
         base.OnClosing(e);
-        if (!e.Cancel && IsActive)
+        if (e.Cancel)
+        {
+            return;
+        }
+
+        if (AppSettings.Current is { } settings)
+        {
+            settings.PickBoard = WindowPlacement.Capture(this);
+            settings.Save();
+        }
+
+        if (IsActive)
         {
             Owner?.Activate();
         }

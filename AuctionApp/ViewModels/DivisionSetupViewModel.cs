@@ -200,12 +200,10 @@ public sealed partial class DivisionSetupViewModel : ObservableObject
         OnPropertyChanged(nameof(IsEditable));
         OnPropertyChanged(nameof(MinimumBidsText));
         Issues.Clear();
-        if (!IsLocked)
+        var issues = IsLocked ? DivisionValidator.ValidateRunning(Division) : DivisionValidator.Validate(Tournament, Division);
+        foreach (var issue in issues.OrderByDescending(issue => issue.Severity))
         {
-            foreach (var issue in DivisionValidator.Validate(Tournament, Division).OrderByDescending(issue => issue.Severity))
-            {
-                Issues.Add(issue);
-            }
+            Issues.Add(issue);
         }
 
         CanStart = !IsLocked && Issues.All(issue => issue.Severity != IssueSeverity.Error);
@@ -346,8 +344,8 @@ public sealed partial class CaptainRowViewModel : ObservableObject
     private string? _nameText;
 
     /// <summary>
-    /// The captain's name as typed. Once the auction has started, the team keeps a name: an emptied box isn't applied,
-    /// shows in red, and gets the name back when it's left.
+    /// The captain's name as typed (trimmed, up to 40 characters). It can be emptied, e.g. to retype it: the box shows
+    /// in red and the Configure page lists it (a warning during the auction, where the team then shows without a name).
     /// </summary>
     public string Name
     {
@@ -357,8 +355,8 @@ public sealed partial class CaptainRowViewModel : ObservableObject
             _nameText = value;
             OnPropertyChanged();
             var clean = Tournament.CleanName(value);
-            HasNameError = clean.Length == 0 && _owner.IsLocked;
-            if (HasNameError || clean == Model.Name)
+            HasNameError = clean.Length == 0;
+            if (clean == Model.Name)
             {
                 return;
             }
@@ -412,14 +410,14 @@ public sealed partial class CaptainRowViewModel : ObservableObject
     public partial bool HasNameError { get; set; }
 
     /// <summary>
-    /// The boxes were left (or Enter pressed): a valid budget is applied, and anything that can't be (an empty name, a
-    /// budget out of range) is put back. Budgets wait until then, so "25" never passes through a budget of 2.
+    /// The boxes were left (or Enter pressed): the name shows as kept (trimmed), a valid budget is applied, and a budget
+    /// out of range is put back. Budgets wait until then, so "25" never passes through a budget of 2.
     /// </summary>
     internal void CommitEdits()
     {
-        HasNameError = false;
         _nameText = null;
         OnPropertyChanged(nameof(Name));
+        HasNameError = Model.Name.Length == 0;
 
         if (Money.TryParse(BudgetText, out var budget) && Money.IsValidBudget(budget))
         {
