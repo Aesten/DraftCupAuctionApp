@@ -95,7 +95,7 @@ public sealed class AuctionEngine
         var team = Session.Teams.FirstOrDefault(t => t.CaptainId == captainId);
         if (team == null)
         {
-            return new("Select the team that won the bid.", CanOverride: false);
+            return new("Select the bidding team.", CanOverride: false);
         }
 
         if (PriceProblem(price) is { } priceProblem)

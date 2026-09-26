@@ -64,7 +64,7 @@ The auction page is meant to be screen-shared (F11 for full screen). It shows on
 
 The layout is made for 8 teams (4 × 2) and adapts to 4–10 teams and to rosters of 5–10 players, shrinking only if the window is too small.
 
-- Click the winning team's card, type the price (Enter confirms it) and click **Sold!** (or press Ctrl+Enter). The price box accepts `2.5` as well as `2,5`, and **−** / **+** change it by 0.1.
+- Click the bidding team's card, type the price (Enter confirms it) and click **Sold!** (or press Ctrl+Enter). The price box accepts `2.5` as well as `2,5`, and **−** / **+** change it by 0.1.
 - If the price is more than the team may spend, **Sold!** says why in a small popup, and offers to **sell anyway**.
 - **Skip** a player nobody wants. **Skipped players** opens the full list: put one back on the block, or send them all back to the queue.
 - Click a bought player to fix the sale:

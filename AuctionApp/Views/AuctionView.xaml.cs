@@ -100,7 +100,7 @@ public partial class AuctionView : UserControl
         }
     }
 
-    /// <summary>After picking the winning team, the price box gets the focus so the price can be typed straight away.</summary>
+    /// <summary>After selecting the bidding team, the price box gets the focus so the price can be typed straight away.</summary>
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(AuctionViewModel.SelectedTeam) && sender is AuctionViewModel { SelectedTeam: not null })
