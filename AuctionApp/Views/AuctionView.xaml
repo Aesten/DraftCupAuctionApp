@@ -285,23 +285,24 @@
                                                    Visibility="{Binding SelectedTeam, Converter={StaticResource NotEmptyToVisibility}}" />
                                     </Grid>
                                 </Border>
-                                <Grid Margin="0,8,0,0">
+                                <!-- The price: typed, −/+, Up/Down, or the mouse wheel anywhere over this row -->
+                                <Grid Margin="0,8,0,0" Background="Transparent" PreviewMouseWheel="PriceRow_PreviewMouseWheel">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <RepeatButton Width="44" Height="44" Command="{Binding ChangePriceCommand}" CommandParameter="-0.1" Content="−" FontSize="18" ToolTip="−0.1 (Down arrow)" />
+                                    <RepeatButton Width="44" Height="44" Command="{Binding ChangePriceCommand}" CommandParameter="-0.1" Content="−" FontSize="18" ToolTip="−0.1 (Down arrow, or scroll down)" />
                                     <TextBox x:Name="PriceBox" Grid.Column="1" Margin="6,0" Style="{StaticResource NumericTextBox}" FontSize="24" FontWeight="SemiBold"
                                              HorizontalContentAlignment="Center" LostKeyboardFocus="PriceBox_LostKeyboardFocus"
                                              Text="{Binding PriceText, UpdateSourceTrigger=PropertyChanged}"
-                                             ToolTip="Price in millions. Up/Down change it by 0.1, Enter confirms it, Ctrl+Enter sells.">
+                                             ToolTip="Price in millions&#x0a;Scroll or Up/Down: ±0.1  ·  Ctrl+scroll: ±1.0&#x0a;Enter: confirm the price  ·  Ctrl+Enter: sell">
                                         <TextBox.InputBindings>
                                             <KeyBinding Key="Up" Command="{Binding ChangePriceCommand}" CommandParameter="0.1" />
                                             <KeyBinding Key="Down" Command="{Binding ChangePriceCommand}" CommandParameter="-0.1" />
                                         </TextBox.InputBindings>
                                     </TextBox>
-                                    <RepeatButton Grid.Column="2" Width="44" Height="44" Command="{Binding ChangePriceCommand}" CommandParameter="0.1" Content="+" FontSize="18" ToolTip="+0.1 (Up arrow)" />
+                                    <RepeatButton Grid.Column="2" Width="44" Height="44" Command="{Binding ChangePriceCommand}" CommandParameter="0.1" Content="+" FontSize="18" ToolTip="+0.1 (Up arrow, or scroll up)" />
                                 </Grid>
                                 <Grid Margin="0,8,0,0">
                                     <Grid.ColumnDefinitions>

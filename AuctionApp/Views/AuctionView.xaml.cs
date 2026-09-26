@@ -61,6 +61,37 @@ public partial class AuctionView : UserControl
         _board.Show();
     }
 
+    // Wheel notches not turned into price steps yet (touchpads send small deltas).
+    private int _wheelDelta;
+
+    /// <summary>
+    /// Scrolling over the price (the box or its −/+ buttons) changes it: 0.1 per notch, 1.0 with Ctrl held. Works on
+    /// hover, without clicking the box first.
+    /// </summary>
+    private void PriceRow_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (DataContext is not AuctionViewModel { HasCurrentPlayer: true } viewModel)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        _wheelDelta += e.Delta;
+        var notches = _wheelDelta / Mouse.MouseWheelDeltaForOneLine;
+        if (notches == 0)
+        {
+            return;
+        }
+
+        _wheelDelta -= notches * Mouse.MouseWheelDeltaForOneLine;
+        var step = (Keyboard.Modifiers & ModifierKeys.Control) != 0 ? 1.0m : 0.1m;
+        viewModel.ChangePriceCommand.Execute((notches * step).ToString(System.Globalization.CultureInfo.InvariantCulture));
+        if (PriceBox.IsKeyboardFocusWithin)
+        {
+            PriceBox.SelectAll();
+        }
+    }
+
     /// <summary>Leaving the price box (Enter, or a click elsewhere) shows the price as it will be used.</summary>
     private void PriceBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e) => (DataContext as AuctionViewModel)?.CommitPrice();
 
