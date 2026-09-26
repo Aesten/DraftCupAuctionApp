@@ -2,7 +2,7 @@
 
 A Windows app for hosting draft cup auctions offline: captains bid on players with their own budget until every team is full. It's built to be shown on stream.
 
-- **Made for streaming**: the auction screen shows the player on the block, the next players and every team's roster and budget at once, without scrolling.
+- **Made for streaming**: the auction screen shows the player on the block and every team's roster and budget at once, without scrolling.
 - **Two formats**: **Random Pick** (players come up in a random order) or **Captain Pick** (captains name the player they want from a board sorted by tier and class).
 - **Tournaments with several divisions** sharing one player pool: players bought in one division are out of the next.
 - **Nothing to save**: every change is saved automatically. A tournament can be exported to a file, run on another PC, and merged back.
@@ -12,7 +12,7 @@ A Windows app for hosting draft cup auctions offline: captains bid on players wi
 
 ## Download
 
-1. Get `DraftCupAuction.exe` from the latest successful run of the [**Build** workflow](https://github.com/Aesten/DraftCupAuctionApp/actions/workflows/build.yml?query=branch%3Amaster+is%3Asuccess) (open the run, then **Artifacts › DraftCupAuction**; this needs a GitHub account and comes as a zip), or from a release when there is one.
+1. Get `DraftCupAuction.exe` from the [latest release](https://github.com/Aesten/DraftCupAuctionApp/releases/latest). Builds of the latest changes are also available from the [**Build** workflow](https://github.com/Aesten/DraftCupAuctionApp/actions/workflows/build.yml?query=branch%3Amaster+is%3Asuccess) (open a run, then **Artifacts › DraftCupAuction**; this needs a GitHub account and comes as a zip).
 2. Run it. It's a single file of about 1 MB, for 64-bit Windows 10 or 11, and needs no setup of its own.
 
 The app needs the **.NET 10 Desktop Runtime**, a one-time install per PC (a newer version works too). If it's missing, the app says so when started and offers to open the download page: pick the **Desktop Runtime** for **x64**, install it, and start the app again. It can also be installed ahead of time from [dotnet.microsoft.com](https://dotnet.microsoft.com/download/dotnet/10.0), or from a terminal:
@@ -27,7 +27,7 @@ The app works like a document editor: you open one **tournament** at a time. The
 
 Once a tournament is open, the ☰ menu (top left) has:
 
-- the open tournament: export, duplicate for a new event, close, delete;
+- the open tournament: export, duplicate for a new event, close, delete, and switch its format (until an auction starts); in Captain Pick, **Minimum bids…** too;
 - the recent tournaments, to switch between them;
 - new tournament, import, the data folder, and the **Light / Dark** theme.
 
@@ -35,23 +35,25 @@ Click ☰ again (or press Esc) to close it. The theme starts like Windows' own s
 
 A tournament holds:
 
-- **Player pool**: shared by the whole tournament. Players have classes (INF / ARC / CAV).
+- **Player pool**: shared by the whole tournament. Players have classes (INF / ARC / CAV); in Captain Pick, one class and a tier.
   - Add players from the first row of the list: type the name, tick the classes (or type them: `Alice, inf cav`) and press Enter.
   - **Import…** adds the players of a player list, for example from a sign-up sheet, and **Export…** saves the pool as one (see [Player lists](#player-lists)).
-  - The pool is sorted **A–Z**, or by **Date added**. Auctions always shuffle the players, so neither reveals who comes next.
+  - The pool is sorted **A–Z**, or by **Date added** (or by **Tier** in Captain Pick). Random Pick auctions always shuffle the players, so the pool never reveals who comes next.
   - Filter it with the search box (it narrows the list as you type), the class buttons, and **All / Available / Unavailable** (not bought yet / already bought). Click a player's class icons to switch those classes on or off.
   - Each player shows where they stand: available, in a running auction, or bought (division, team and price).
 - **Divisions**: one auction each, with its own:
   - captains, each with the class they signed up with and their own budget;
   - team size (5 to 10 players besides the captain);
-  - number of upcoming players revealed on screen (3 by default);
+  - number of upcoming players revealed on screen (3 by default, Random Pick only);
   - half budget cap setting.
 
-  Players come up in a random order, shuffled when the auction starts. Divisions can be auctioned in any order, on different days and different computers. **Whichever division starts first gets the whole pool; each later one gets the pool minus the players already bought.**
+  In Random Pick, players come up in a random order, shuffled when the auction starts. Divisions can be auctioned in any order, on different days and different computers. **Whichever division starts first gets the whole pool; each later one gets the pool minus the players already bought.**
 
 Each division has three pages, switched from the top bar: **Configure**, **Auction** and **Teams**.
 
 ### Running an auction
+
+This describes Random Pick; [Captain Pick](#captain-pick) works the same way apart from how players come up.
 
 The auction page is meant to be screen-shared (F11 for full screen). It shows only what viewers need, all at once and without scrolling:
 
@@ -62,7 +64,7 @@ The auction page is meant to be screen-shared (F11 for full screen). It shows on
 
 The layout is made for 8 teams (4 × 2) and adapts to 4–10 teams and to rosters of 5–10 players, shrinking only if the window is too small.
 
-- Click the winning team's card, type the price (Enter confirms it) and click **Sold!**. The price box accepts `2.5` as well as `2,5`, and **−** / **+** change it by 0.1.
+- Click the winning team's card, type the price (Enter confirms it) and click **Sold!** (or press Ctrl+Enter). The price box accepts `2.5` as well as `2,5`, and **−** / **+** change it by 0.1.
 - If the price is more than the team may spend, **Sold!** says why in a small popup, and offers to **sell anyway**.
 - **Skip** a player nobody wants. **Skipped players** opens the full list: put one back on the block, or send them all back to the queue.
 - Click a bought player to fix the sale:
@@ -75,7 +77,14 @@ The layout is made for 8 teams (4 × 2) and adapts to 4–10 teams and to roster
   - new players go to the skipped list, ready whenever you want them;
   - name and class changes show up immediately;
   - removing a player who was already sold takes them off the team and refunds the price.
-- A team is a slot led by its captain: captains' names and classes can be changed during the auction, on the **Configure** page. Budgets, the team size and the list of captains are locked while the auction runs. If they really need to change, **Unlock settings…** in the Configure page's banner allows it after a warning: the running auction follows right away (a new captain joins with an empty team, a removed captain's players become available again, budgets and the team size apply to every team), and its undo history is cleared. **Lock settings** closes them again; they're also locked again when the tournament is reopened.
+- A team is a slot led by its captain: captains' names and classes can be changed during the auction, on the **Configure** page.
+- Budgets, the team size and the list of captains are locked while the auction runs. If they really need to change, **Unlock settings…** in the Configure page's banner allows it after a warning, and the running auction follows right away:
+  - budgets and the team size apply to every team (what was already spent stays spent);
+  - a new captain joins with an empty team;
+  - a removed captain's team leaves, and the players it bought become available again;
+  - the undo history is cleared.
+
+  **Lock settings** closes them again; they're also locked again when the tournament is reopened.
 
 Rules the app enforces:
 
@@ -93,7 +102,7 @@ In a Captain Pick tournament, players don't come up in a random order: captains 
 - Each tier has a **minimum bid**: 2.0, 1.5, 1.0, 0.5 and 0.1 by default, for the whole tournament (☰ menu › **Minimum bids…** to change them). The captain who picks a player bids that amount; the others can bid higher.
 - During the auction, **Pick board** opens a separate window with every player still available, as one grid: a row per tier, a column per class, names in alphabetical order. It can go on another screen or be shown on stream (F11 for full screen), and it scales so nothing is ever cut or scrolled.
 - When a captain names a player, click them on the board: they go on the block, highlighted on the board, with the price set to their tier's minimum. Sell as usual. **Put back** returns them to the board if they were picked by mistake.
-- Selling under the minimum asks for confirmation (**Sell anyway**), like going over a budget. There's no queue or skipped list: players nobody buys stay on the board, and a sold player taken back returns to the block or to the board.
+- Selling under the minimum asks for confirmation (**Sell anyway**), like going over a budget. There's no queue or skipped list: players nobody buys stay on the board, players added to the pool mid-auction join it, and a sold player taken back returns to the block or to the board.
 - The auction screen shows how many players are left in each tier and class, where Random Pick shows the next players.
 
 ### Keyboard
@@ -124,7 +133,7 @@ Each save keeps the previous version as a backup. Deleted tournaments, and tourn
 
 ## Player lists
 
-A player list is only players, names and classes: the link between a sign-up sheet and the app. In the player pool, **Import…** adds the players of a list (names already in the pool are skipped) and shows the format first. **Export…** saves the pool as a list. There are two layouts, both from the previous version of the app:
+A player list is only players (names, classes, and tiers in Captain Pick): the link between a sign-up sheet and the app. In the player pool, **Import…** adds the players of a list (names already in the pool are skipped) and shows the format first. **Export…** saves the pool as a list. There are two layouts, both from the previous version of the app:
 
 - **CSV**, the layout it exported: one column per class, marked `x`. From Excel: **File › Save As › CSV**. A column of classes written out (`inf cav`) is read too.
 
@@ -153,7 +162,7 @@ Requirements: the [.NET 10 SDK](https://dotnet.microsoft.com/download). Any IDE 
 
 ```sh
 dotnet build                     # everything
-dotnet test                      # auction rules, pool sharing, storage, import and merge tests
+dotnet test                      # auction rules (both formats), pool sharing, storage, import and merge tests
 dotnet run --project AuctionApp  # start the app (Windows only)
 
 # Release: one small DraftCupAuction.exe in ./publish (needs the .NET 10 Desktop Runtime to run)
