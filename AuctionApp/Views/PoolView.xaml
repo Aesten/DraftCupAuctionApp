@@ -234,6 +234,32 @@
                         <SolidColorBrush x:Key="DataGridRowSelectedBackgroundThemeBrush" Opacity="0.22" Color="{DynamicResource {x:Static SystemColors.AccentColorKey}}" />
                         <SolidColorBrush x:Key="DataGridRowSelectedForegroundThemeBrush" Color="{DynamicResource TextFillColorPrimary}" />
                     </DataGrid.Resources>
+                    <!--
+                        Cells without the theme's focus frame (a dark box around the clicked cell, doubled by the
+                        keyboard focus outline when Alt is pressed): the selected row's wash is enough.
+                    -->
+                    <DataGrid.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="OverridesDefaultStyle" Value="True" />
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                            <Setter Property="MinHeight" Value="32" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="DataGridCell">
+                                        <Border x:Name="Border" Background="Transparent" SnapsToDevicePixels="True">
+                                            <ContentPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource DataGridRowSelectedBackgroundThemeBrush}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource DataGridRowSelectedForegroundThemeBrush}" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </DataGrid.CellStyle>
                     <DataGrid.Columns>
                         <DataGridTextColumn Width="*" MinWidth="200" Binding="{Binding Name}" EditingElementStyle="{StaticResource CellEditor}" ElementStyle="{StaticResource CellText}" Header="NAME" />
 
