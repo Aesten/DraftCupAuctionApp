@@ -20,7 +20,6 @@
     -->
     <UserControl.InputBindings>
         <KeyBinding Command="{Binding UndoCommand}" Gesture="Ctrl+Z" />
-        <KeyBinding Command="{Binding SellCommand}" Gesture="Ctrl+Enter" />
     </UserControl.InputBindings>
 
     <UserControl.Resources>
