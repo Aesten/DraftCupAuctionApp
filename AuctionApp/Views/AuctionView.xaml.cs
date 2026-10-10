@@ -14,6 +14,48 @@ public partial class AuctionView : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+        Loaded += (_, _) => AttachToWindow();
+        Unloaded += (_, _) => DetachFromWindow();
+    }
+
+    // Ctrl+Enter sells wherever the focus is. It's caught on its way down from the window, before the focused element
+    // sees it: a focused button (the price's + after a click, a team card...) would otherwise take the Enter and
+    // click itself, and other controls swallow it without doing anything.
+    private Window? _window;
+
+    private void AttachToWindow()
+    {
+        DetachFromWindow();
+        _window = Window.GetWindow(this);
+        if (_window != null)
+        {
+            _window.PreviewKeyDown += Window_PreviewKeyDown;
+        }
+    }
+
+    private void DetachFromWindow()
+    {
+        if (_window != null)
+        {
+            _window.PreviewKeyDown -= Window_PreviewKeyDown;
+            _window = null;
+        }
+    }
+
+    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter || Keyboard.Modifiers != ModifierKeys.Control || !IsVisible || DataContext is not AuctionViewModel viewModel)
+        {
+            return;
+        }
+
+        // Handled even when there's nothing to sell, so the focused element doesn't act on it instead; a held key
+        // doesn't sell twice.
+        e.Handled = true;
+        if (!e.IsRepeat && viewModel.SellCommand.CanExecute(null))
+        {
+            viewModel.SellCommand.Execute(null);
+        }
     }
 
     private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
